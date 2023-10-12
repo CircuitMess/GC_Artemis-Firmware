@@ -28,10 +28,39 @@
 #include "Screens/Lock/LockScreen.h"
 #include "JigHWTest/JigHWTest.h"
 #include "Util/Notes.h"
+#include "Util/stdafx.h"
+#include "esp_heap_caps.h"
+#include "Periph/WiFiSTA.h"
+#include "Services/TCPClient.h"
 
 LVGL* lvgl;
 BacklightBrightness* bl;
 SleepMan* sleepMan;
+
+void startHeapMonitor(){
+	static const uint32_t MeasureInt = 50;
+	static const uint32_t ReportInt = 1000;
+	static uint32_t minHeap = 0, maxBlock = 0;
+
+	auto heapThread = new ThreadedClosure([](){
+		uint32_t heap = 0;
+		uint32_t block = 0;
+		for(int i = 0; i < ReportInt / MeasureInt; ++i){
+			heap = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+			block = heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+
+			if(heap < minHeap || minHeap == 0){
+				minHeap = heap;
+			}
+			if(block < maxBlock || maxBlock == 0){
+				maxBlock = block;
+			}
+			vTaskDelay(MeasureInt);
+		}
+		printf("current: heap: %lu, largest block: %lu | minimum: heap: %lu, largest block: %lu \n", heap, block, minHeap, maxBlock);
+	}, "HeapThread", 3*1024);
+	heapThread->start();
+}
 
 void shutdown(){
 	lvgl->stop(0);
@@ -61,6 +90,11 @@ void setLEDs(){
 
 void init(){
 	setLEDs();
+	startHeapMonitor();
+
+	esp_log_level_set("WiFi_STA", ESP_LOG_VERBOSE);
+	esp_log_level_set("TCPClient", ESP_LOG_VERBOSE);
+
 
 	if(JigHWTest::checkJig()){
 		printf("Jig\n");
@@ -150,6 +184,22 @@ void init(){
 	// Start Battery scanning after everything else, otherwise Critical
 	// Battery event might come while initialization is still in progress
 	battery->begin();
+
+	auto wifi = new WiFiSTA();
+	wifi->connect();
+	while(wifi->getState() != WiFiSTA::Connected){
+		vTaskDelay(100);
+	}
+	auto tcp = new TCPClient();
+	tcp->connect();
+	while(!tcp->isConnected()){
+		vTaskDelay(100);
+	}
+	static const char t[] = "Hello";
+	tcp->write((uint8_t*)t, 6);
+	auto heap = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+	auto block = heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+	printf("tcp connect: heap: %zu largest block: %zu \n", heap, block);
 }
 
 extern "C" void app_main(void){

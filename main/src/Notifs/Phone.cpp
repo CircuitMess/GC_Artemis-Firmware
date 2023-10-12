@@ -55,6 +55,12 @@ void Phone::doNeg(uint32_t id){
 }
 
 void Phone::onConnect(NotifSource* src){
+
+
+	auto heap = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+	auto block = heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+	printf("onConnect heap: %zu largest block: %zu \n", heap, block);
+
 	current = src;
 	Events::post(Facility::Phone, Event { .action = Event::Connected, .data = { .phoneType = getPhoneType() } });
 
