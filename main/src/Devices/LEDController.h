@@ -9,6 +9,7 @@
 #include "Periph/PWM.h"
 #include "Periph/Timer.h"
 #include "Util/SleepLock.h"
+#include "Periph/PinOut.h"
 
 template <typename T>
 class LEDController : private Threaded {
@@ -119,6 +120,20 @@ protected:
 
 private:
 	PWM& pwm;
+};
+
+class DigitalLEDController : public LEDController<uint8_t> {
+public:
+	explicit DigitalLEDController(gpio_num_t pin, bool inverted = false);
+
+protected:
+	void write(uint8_t val) override;
+
+	void init() override;
+	void deinit() override;
+
+private:
+	PinOut led;
 };
 
 //RGBLEDController template type is vector of floats to allow multiplication by a float value, this is a limitation set by glm

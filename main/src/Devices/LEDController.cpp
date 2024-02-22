@@ -305,6 +305,15 @@ void SingleLEDController::write(uint8_t val){
 	pwm.setDuty(fVal);
 }
 
+DigitalLEDController::DigitalLEDController(gpio_num_t pin, bool inverted) : led(pin, inverted) {}
+
+void DigitalLEDController::write(uint8_t val){
+	led.set(val);
+}
+
+void DigitalLEDController::init(){}
+
+void DigitalLEDController::deinit() {}
 
 template
 class LEDController<glm::vec3>;

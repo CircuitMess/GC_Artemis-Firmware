@@ -28,7 +28,7 @@ private:
 	Settings& settings;
 	RGBLEDController* led;
 
-	std::array<std::shared_ptr<SingleLEDController>, 6> singleLeds;
+	std::array<std::shared_ptr<DigitalLEDController>, 6> singleLeds;
 
 	bool audioBlocked = false;
 	bool hasNotifs = false;
