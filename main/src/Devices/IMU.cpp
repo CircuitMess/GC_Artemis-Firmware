@@ -220,10 +220,10 @@ void IMU::fetchEvents(){
 		Event evt = { .action = Event::WristTilt, .wristTiltDir = tiltDirection };
 		Events::post(Facility::Motion, &evt, sizeof(evt));
 
-		if(tiltDirection == TiltDirection::Lifted){
+//		if(tiltDirection == TiltDirection::Lifted){
 			auto sleep = (SleepMan*) Services.get(Service::Sleep);
-			sleep->wake();
-		}
+			sleep->imuSignal();
+//		}
 	}
 }
 

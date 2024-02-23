@@ -5,6 +5,8 @@
 #include <esp_sleep.h>
 #include "Screens/MainMenu/MainMenu.h"
 
+static const char* tag = "SleepMan";
+
 SleepMan::SleepMan(LVGL& lvgl) : events(12), lvgl(lvgl),
 								 imu(*((IMU*) Services.get(Service::IMU))),
 								 bl(*((BacklightBrightness*) Services.get(Service::Backlight))),
@@ -26,7 +28,12 @@ void SleepMan::goSleep(){
 	MainMenu::resetMenuIndex();
 
 	lvgl.stopScreen();
-	imu.setTiltDirection(IMU::TiltDirection::Lifted);
+
+	if(waitForLower){
+		imu.setTiltDirection(IMU::TiltDirection::Lowered);
+	}else{
+		imu.setTiltDirection(IMU::TiltDirection::Lifted);
+	}
 
 	inSleep = true;
 	sleep.sleep([this](){
@@ -41,6 +48,7 @@ void SleepMan::goSleep(){
 
 	wakeTime = actTime = millis();
 	events.reset();
+	waitForLower = false;
 }
 
 void SleepMan::wake(bool blockLock){
@@ -104,6 +112,13 @@ void SleepMan::handleInput(const Input::Data& evt){
 		if(millis() - wakeTime < WakeCooldown) return;
 		altPress = millis();
 	}else if(millis() - altPress < AltHoldTime){
+		const auto sample = imu.getSample();
+		ESP_LOGD(tag, "sample.accelY: %.4f\n", sample.accelY);
+		static constexpr float LiftThreshold = -8*0.0015625;
+		if(sample.accelY <= LiftThreshold){
+			waitForLower = true;
+			ESP_LOGD(tag, "wait for lower!\n");
+		}
 		goSleep();
 	}
 }
@@ -124,4 +139,11 @@ void SleepMan::enAltLock(bool altLock){
 
 void SleepMan::enAutoSleep(bool autoSleep){
 	SleepMan::autoSleep = autoSleep;
+}
+
+void SleepMan::imuSignal(){
+	if(!waitForLower) wake();
+
+	imu.setTiltDirection(IMU::TiltDirection::Lifted);
+	waitForLower = false;
 }

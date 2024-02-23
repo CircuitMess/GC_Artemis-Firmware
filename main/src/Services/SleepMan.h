@@ -19,6 +19,7 @@ public:
 	static constexpr uint32_t ShutdownTime = 3000; //3s
 
 	void wake(bool blockLockScreen = false);
+	void imuSignal();
 	void shutdown();
 
 private:
@@ -51,6 +52,9 @@ private:
 	uint32_t altPress;
 
 	bool nsBlocked = false;
+
+	//if sleep is caused by btn press, register for Lowered event instead of Lifted, then ignore lowered
+	bool waitForLower = false;
 
 };
 
