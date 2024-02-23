@@ -54,7 +54,7 @@ void TimePickerModal::buildUI(){
 	addLabel(dateCont, "/");
 
 	month = lv_roller_create(dateCont);
-	lv_roller_set_options(month, MonthsNames, LV_ROLLER_MODE_NORMAL);
+	lv_roller_set_options(month, MonthsNames, LV_ROLLER_MODE_INFINITE);
 	lv_roller_set_visible_row_count(month, 1);
 	lv_roller_set_selected(month, time.tm_mon, LV_ANIM_OFF);
 
@@ -86,7 +86,7 @@ void TimePickerModal::buildUI(){
 	}, LV_EVENT_FOCUSED, this);
 
 
-	year = createPicker(*this, time.tm_year + 1900, 1970, 2100);
+	year = createPicker(*this, time.tm_year + 1900, 1900, 9999);
 
 	lv_obj_add_event_cb(month, [](lv_event_t* e){
 		auto modal = (TimePickerModal*) e->user_data;
@@ -128,6 +128,7 @@ lv_obj_t* TimePickerModal::createPicker(lv_obj_t* parent, int32_t value, int32_t
 	lv_obj_t* picker = lv_spinbox_create(parent);
 	lv_spinbox_set_value(picker, value);
 	lv_spinbox_set_range(picker, rangeMin, rangeMax);
+	lv_spinbox_set_rollover(picker, true);
 	lv_spinbox_set_digit_format(picker, maxDigits, 0);
 	lv_obj_add_style(picker, focusedStyle, SelFocus);
 	lv_obj_add_style(picker, defaultStyle, SelDefault);
