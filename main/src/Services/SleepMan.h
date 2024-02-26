@@ -53,9 +53,11 @@ private:
 
 	bool nsBlocked = false;
 
-	//if sleep is caused by btn press, register for Lowered event instead of Lifted, then ignore lowered
+	//if sleep is caused by btn press, register for Lowered event instead of Lifted, then clear this flag when Lowered occurs
 	bool waitForLower = false;
 
+	//if wake is caused by btn press, and we are in lowered position, register for Lifted event instead of Lowered, then clear this flag when Lifted occurs
+	bool waitForLift = false;
 };
 
 

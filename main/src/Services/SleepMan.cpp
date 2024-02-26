@@ -36,7 +36,21 @@ void SleepMan::goSleep(){
 	}
 
 	inSleep = true;
-	sleep.sleep([this](){
+
+	bool buttonWakeWhileLowered = false;
+	sleep.sleep([this, &buttonWakeWhileLowered](){
+
+		const auto sample = imu.getSample();
+		ESP_LOGD(tag, "sample.accelY: %.4f\n", sample.accelY);
+		static constexpr float LiftThreshold = 8 * 0.0015625;
+
+		if(sample.accelY >= LiftThreshold){
+			buttonWakeWhileLowered = true;
+			ESP_LOGD(tag, "button wake while lowered!\n");
+		}else{
+			buttonWakeWhileLowered = false;
+		}
+
 		if(!nsBlocked){
 			lvgl.startScreen([](){ return std::make_unique<LockScreen>(); });
 		}
@@ -44,7 +58,13 @@ void SleepMan::goSleep(){
 	});
 	nsBlocked = inSleep = false;
 
-	imu.setTiltDirection(IMU::TiltDirection::Lowered);
+	if(buttonWakeWhileLowered){
+		imu.setTiltDirection(IMU::TiltDirection::Lifted);
+		waitForLift = true;
+	}else{
+		imu.setTiltDirection(IMU::TiltDirection::Lowered);
+		waitForLift = false;
+	}
 
 	wakeTime = actTime = millis();
 	events.reset();
@@ -114,16 +134,21 @@ void SleepMan::handleInput(const Input::Data& evt){
 	}else if(millis() - altPress < AltHoldTime){
 		const auto sample = imu.getSample();
 		ESP_LOGD(tag, "sample.accelY: %.4f\n", sample.accelY);
-		static constexpr float LiftThreshold = -8*0.0015625;
+		static constexpr float LiftThreshold = -8 * 0.0015625;
 		if(sample.accelY <= LiftThreshold){
 			waitForLower = true;
-			ESP_LOGD(tag, "wait for lower!\n");
+			ESP_LOGD(tag, "button sleep while lifted!\n");
 		}
 		goSleep();
 	}
 }
 
 void SleepMan::handleMotion(const IMU::Event& evt){
+	if(evt.action == IMU::Event::WristTilt && evt.wristTiltDir == IMU::TiltDirection::Lifted && waitForLift){
+		waitForLift = false;
+		imu.setTiltDirection(IMU::TiltDirection::Lowered);
+	}
+
 	if(!autoSleep) return;
 
 	const bool wristSleep = settings.get().motionDetection;
