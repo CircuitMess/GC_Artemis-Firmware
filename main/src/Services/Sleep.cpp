@@ -72,7 +72,9 @@ void IRAM_ATTR Sleep::sleepStart(){
 void IRAM_ATTR Sleep::intr(void* arg){
 	gpio_set_intr_type(WakePin, GPIO_INTR_POSEDGE);
 	auto sem = (SemaphoreHandle_t*) arg;
-	xSemaphoreGive(*sem);
+	auto priority = pdFALSE;
+	xSemaphoreGiveFromISR(*sem, &priority);
+//	xSemaphoreGive(*sem);
 }
 
 void Sleep::confPM(bool sleep, bool firstTime){

@@ -41,12 +41,13 @@ void SleepMan::goSleep(){
 	sleep.sleep([this, &buttonWakeWhileLowered](){
 
 		const auto sample = imu.getSample();
-		ESP_LOGD(tag, "sample.accelY: %.4f\n", sample.accelY);
+		ESP_LOGD(tag, "wake sample.accelY: %.4f\n", sample.accelY);
 		static constexpr float LiftThreshold = 8 * 0.0015625;
 
 		if(sample.accelY >= LiftThreshold){
 			buttonWakeWhileLowered = true;
-			ESP_LOGD(tag, "button wake while lowered!\n");
+			ESP_LOGI(tag, "button wake while lowered!");
+
 		}else{
 			buttonWakeWhileLowered = false;
 		}
@@ -65,6 +66,8 @@ void SleepMan::goSleep(){
 		imu.setTiltDirection(IMU::TiltDirection::Lowered);
 		waitForLift = false;
 	}
+	ESP_LOGD(tag, "wakeup! waitForLower: %d, waitForLift: %d", waitForLower, waitForLift);
+
 
 	wakeTime = actTime = millis();
 	events.reset();
@@ -120,6 +123,15 @@ void SleepMan::checkAutoSleep(){
 
 	if((millis() - actTime) / 1000 < sleepSeconds) return;
 
+	const auto sample = imu.getSample();
+	ESP_LOGD(tag, "auto goSleep sample.accelY: %.4f\n", sample.accelY);
+	static constexpr float LiftThreshold = -8 * 0.0015625;
+	if(sample.accelY <= LiftThreshold){
+		waitForLower = true;
+		ESP_LOGI(tag, "auto sleep while lifted!\n");
+		ESP_LOGD(tag, "sleep! waitForLower: %d, waitForLift: %d", waitForLower, waitForLift);
+
+	}
 	goSleep();
 }
 
@@ -133,11 +145,12 @@ void SleepMan::handleInput(const Input::Data& evt){
 		altPress = millis();
 	}else if(millis() - altPress < AltHoldTime){
 		const auto sample = imu.getSample();
-		ESP_LOGD(tag, "sample.accelY: %.4f\n", sample.accelY);
+		ESP_LOGD(tag, "btn goSleep sample.accelY: %.4f\n", sample.accelY);
 		static constexpr float LiftThreshold = -8 * 0.0015625;
 		if(sample.accelY <= LiftThreshold){
 			waitForLower = true;
-			ESP_LOGD(tag, "button sleep while lifted!\n");
+			ESP_LOGI(tag, "button sleep while lifted!\n");
+			ESP_LOGD(tag, "sleep! waitForLower: %d, waitForLift: %d", waitForLower, waitForLift);
 		}
 		goSleep();
 	}
