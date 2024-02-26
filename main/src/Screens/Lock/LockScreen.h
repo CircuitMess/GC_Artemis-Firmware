@@ -39,7 +39,6 @@ private:
 
 	lv_obj_t* mainMid;
 	ClockLabelBig* clock;
-	lv_obj_t* date;
 	lv_obj_t* icons;
 
 	Slider* locker;

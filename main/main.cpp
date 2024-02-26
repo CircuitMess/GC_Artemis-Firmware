@@ -28,6 +28,7 @@
 #include "Screens/Lock/LockScreen.h"
 #include "JigHWTest/JigHWTest.h"
 #include "Util/Notes.h"
+#include "Screens/Intro/IntroScreen.h"
 
 LVGL* lvgl;
 BacklightBrightness* bl;
@@ -129,7 +130,7 @@ void init(){
 	FSLVGL::loadCache();
 
 	// Load start screen here
-	lvgl->startScreen([](){ return std::make_unique<LockScreen>(); });
+	lvgl->startScreen([](){ return std::make_unique<IntroScreen>(); });
 
 	if(settings->get().notificationSounds){
 		audio->play({

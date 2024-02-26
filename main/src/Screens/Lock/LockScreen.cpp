@@ -102,6 +102,8 @@ void LockScreen::processInput(const Input::Data& evt){
 		return;
 	}
 
+	if(lv_group_get_focused(inputGroup) != main) return;
+
 	if(evt.btn == Input::Select){
 		if(evt.action == Input::Data::Press){
 			locker->start();
@@ -257,7 +259,9 @@ void LockScreen::removeNotifIcon(const char* path){
 void LockScreen::updateTime(const tm& time){
 	lastTimeUpdate = millis();
 
-	char dateText[128];
+	// Update any date/time in UI here
+
+	/*char dateText[128];
 
 	static const char* Months[] = { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
 	const int dayLd = time.tm_mday - (time.tm_mday / 10) * 10;
@@ -268,9 +272,7 @@ void LockScreen::updateTime(const tm& time){
 	else if(dayLd == 3) daySuff = "rd";
 	else daySuff = "th";
 
-	snprintf(dateText, sizeof(dateText), "%s %d%s, %d", Months[time.tm_mon % 12], time.tm_mday, daySuff, 1900 + time.tm_year);
-
-	lv_label_set_text(date, dateText);
+	snprintf(dateText, sizeof(dateText), "%s %d%s, %d", Months[time.tm_mon % 12], time.tm_mday, daySuff, 1900 + time.tm_year);*/
 }
 
 void LockScreen::buildUI(){
@@ -278,33 +280,30 @@ void LockScreen::buildUI(){
 	lv_obj_set_flex_flow(*this, LV_FLEX_FLOW_COLUMN);
 
 	main = lv_obj_create(*this);
+	static const lv_coord_t col_dsc[] = { 128, LV_GRID_TEMPLATE_LAST };
+	static const lv_coord_t row_dsc[] = { 15, 17, 50, 29, 17, LV_GRID_TEMPLATE_LAST };
+	lv_obj_set_style_grid_column_dsc_array(main, col_dsc, 0);
+	lv_obj_set_style_grid_row_dsc_array(main, row_dsc, 0);
 	lv_obj_set_size(main, 128, 128);
-	lv_obj_set_flex_flow(main, LV_FLEX_FLOW_COLUMN);
-	lv_obj_set_flex_align(main, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+	lv_obj_set_layout(main, LV_LAYOUT_GRID);
+
 
 	status = new StatusBar(main, false);
+	lv_obj_set_grid_cell(status->operator lv_obj_t*(), LV_GRID_ALIGN_STRETCH, 0, 1, LV_GRID_ALIGN_STRETCH, 0, 1);
 
-	mainMid = lv_obj_create(main);
-	lv_obj_set_size(mainMid, 128, LV_SIZE_CONTENT);
-	lv_obj_set_flex_flow(mainMid, LV_FLEX_FLOW_COLUMN);
-	lv_obj_set_flex_align(mainMid, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-	lv_obj_set_style_pad_gap(mainMid, 2, 0);
+	clock = new ClockLabelBig(main);
+	lv_obj_set_grid_cell(clock->operator lv_obj_t*(), LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_CENTER, 2, 1);
 
-	locker = new Slider(main);
-
-	clock = new ClockLabelBig(mainMid);
-
-	date = lv_label_create(mainMid);
-	lv_obj_set_size(date, 128, 10);
-	lv_obj_set_style_text_align(date, LV_TEXT_ALIGN_CENTER, 0);
-	lv_obj_set_style_pad_top(date, 2, 0);
-
-	icons = lv_obj_create(mainMid);
+	icons = lv_obj_create(main);
 	lv_obj_set_size(icons, 128, 11);
 	lv_obj_set_style_min_height(icons, 1, 0);
 	lv_obj_set_flex_flow(icons, LV_FLEX_FLOW_ROW);
 	lv_obj_set_flex_align(icons, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 	lv_obj_set_style_pad_gap(icons, 2, 0);
+	lv_obj_set_grid_cell(icons, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_CENTER, 3, 1);
+
+	locker = new Slider(main);
+	lv_obj_set_grid_cell(locker->operator lv_obj_t*(), LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_CENTER, 4, 1);
 
 	rest = lv_obj_create(*this);
 	lv_obj_set_size(rest, 128, 128);
@@ -318,11 +317,13 @@ void LockScreen::buildUI(){
 
 	lv_obj_set_style_bg_color(main, lv_color_black(), 0);
 	lv_obj_set_style_bg_opa(main, LV_OPA_COVER, 0);
-	lv_obj_set_style_bg_img_src(main, "S:/bg.bin", 0);
+	lv_obj_set_style_bg_img_src(main, "S:/lockbg.bin", 0);
 
 	lv_obj_set_style_bg_color(rest, lv_color_black(), 0);
 	lv_obj_set_style_bg_opa(rest, LV_OPA_COVER, 0);
-	lv_obj_set_style_bg_img_src(rest, "S:/bg_bot.bin", 0);
+	lv_obj_set_style_border_color(rest, lv_color_make(255, 101, 0), 0);
+	lv_obj_set_style_border_opa(rest, LV_OPA_COVER, 0);
+	lv_obj_set_style_border_width(rest, 1, 0);
 
 	// Scrolling
 

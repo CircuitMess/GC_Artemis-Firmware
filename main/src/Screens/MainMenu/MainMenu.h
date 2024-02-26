@@ -25,17 +25,17 @@ private:
 	};
 
 	struct ItemInfo {
-		const char* labelPath = nullptr;
-		const char* labelAlt = nullptr;
+		const char* labelText = nullptr;
+		const char* labelTextAlt = nullptr;
 		const char* iconPath = nullptr;
 		const char* iconAltPath = nullptr;
 	};
 	static constexpr ItemInfo ItemInfos[] = {
-			{ "S:/menu/labels/find.bin",       "S:/menu/labels/ringing.bin",              "S:/menu/find",         "S:/menu/ring" },
-			{ "S:/menu/labels/level.bin",      nullptr,                                "S:/menu/level",        nullptr },
-			{ "S:/menu/labels/theremin.bin",   nullptr,                                "S:/menu/theremin",     nullptr },
-			{ "S:/menu/labels/connection.bin", ConnDesc[(int) Phone::PhoneType::None], "S:/menu/disconnected", "S:/menu/connected" },
-			{ "S:/menu/labels/settings.bin",   nullptr,                                "S:/menu/settings",     nullptr },
+			{ "Find my phone",    "Ringing phone...",                     "S:/menu/find.bin",       "S:/menu/find.bin" },
+			{ "Level",            nullptr,                                "S:/menu/level.bin",      nullptr },
+			{ "Theremin",         nullptr,                                "S:/menu/theremin.bin",   nullptr },
+			{ "Phone connection", ConnDesc[(int) Phone::PhoneType::None], "S:/menu/connection.bin", "S:/menu/connection.bin" },
+			{ "Settings",         nullptr,                                "S:/menu/settings.bin",   nullptr }
 	};
 	static constexpr uint8_t ItemCount = sizeof(ItemInfos) / sizeof(ItemInfos[0]);
 
@@ -57,6 +57,7 @@ private:
 	StatusBar* statusBar;
 
 	lv_obj_t* bg;
+	lv_obj_t* container;
 	MenuItem* items[ItemCount];
 	// MenuItemAlt* phoneConnection;
 

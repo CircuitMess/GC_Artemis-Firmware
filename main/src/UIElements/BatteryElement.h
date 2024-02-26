@@ -22,14 +22,12 @@ private:
 
 	uint8_t chargingIndex = 0;
 	static constexpr uint32_t ChargingAnimTime = 500;
-	static constexpr uint8_t BatteryLevels = 3;
+	static constexpr uint8_t BatteryLevels = 4;
 	uint32_t chargingMillis = 0;
 
-	static constexpr uint32_t LowBatteryAnimTime = 500;
-	bool lowBatteryAnimToggle = false;
-	uint32_t lowBatMillis = 0;
-
-	static constexpr const char* BatteryIcons[] = { "S:/icons/batteryLow.bin", "S:/icons/batteryMid.bin", "S:/icons/batteryFull.bin" };
+	static constexpr const char* BatteryIcons[] = {
+			"S:/icons/batteryEmpty.bin", "S:/icons/batteryLow.bin", "S:/icons/batteryMid.bin", "S:/icons/batteryFull.bin"
+	};
 };
 
 

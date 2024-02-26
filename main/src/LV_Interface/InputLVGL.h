@@ -16,12 +16,18 @@ public:
 
 	[[nodiscard]] lv_indev_t* getIndev() const;
 
+	void invertDirections(bool invert);
+
+	bool getInvertDirections() const;
+
 protected:
 	void loop() override;
 
 private:
 	static const std::map<Input::Button, lv_key_t> keyMap;
 	lv_indev_t* inputDevice;
+
+	bool invertedDirections = false;
 
 	Input::Button lastKey = Input::Alt;
 	Input::Data::Action action = Input::Data::Release;

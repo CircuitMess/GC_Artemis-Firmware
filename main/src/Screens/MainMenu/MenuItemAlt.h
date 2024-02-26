@@ -6,17 +6,15 @@
 
 class MenuItemAlt : public MenuItem {
 public:
-	MenuItemAlt(lv_obj_t* parent, const char* gifPath, const char* labelPath);
-	void setAltParams(const char* gifPathAlt, const char* labelPathAlt);
+	MenuItemAlt(lv_obj_t* parent, const char* imagePath, const char* labelText);
+	void setAltParams(const char* imagePathAlt, const char* labelTextAlt);
 
 private:
-	const std::string gifPath;
-	const std::string labelPath;
+	const std::string imagePath;
+	const std::string labelText;
 
-	std::string gifPathAlt;
-	std::string labelAlt;
-
-	lv_obj_t* textLabel;
+	std::string imagePathAlt;
+	std::string labelTextAlt;
 
 	void onClick();
 	void onDefocus() override;
@@ -25,9 +23,6 @@ private:
 	void setAlt();
 
 	bool isAlt = false;
-
-	bool altLabelIsText();
-
 };
 
 

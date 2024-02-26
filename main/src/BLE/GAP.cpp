@@ -20,7 +20,7 @@ BLE::GAP::GAP(){
 		self->ble_GAP_cb(event, param);
 	});
 
-	esp_ble_gap_set_device_name("Clockstar"); // TOD: somewhere else, doesn't update the device name when discovering on phone-
+	esp_ble_gap_set_device_name("Artemis Watch"); // TOD: somewhere else, doesn't update the device name when discovering on phone-
 	esp_ble_gap_config_local_icon(ESP_BLE_APPEARANCE_GENERIC_WATCH);
 
 	initSecure();

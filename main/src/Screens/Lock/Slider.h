@@ -27,6 +27,8 @@ private:
 	static constexpr uint32_t InactivityTimeout = 1000; // [ms]
 	uint32_t activityTime = 0;
 
+	static constexpr uint32_t LockY = 3;
+
 };
 
 

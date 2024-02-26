@@ -12,6 +12,8 @@ public:
 
 	void drawTest();
 
+	void setRotation(bool rotation);
+
 private:
 	lgfx::Bus_SPI bus;
 	lgfx::Panel_ST7735S panel;

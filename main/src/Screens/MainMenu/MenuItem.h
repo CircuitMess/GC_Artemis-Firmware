@@ -6,17 +6,18 @@
 
 class MenuItem : public LVObject {
 public:
-	MenuItem(lv_obj_t* parent, const char* gifPath, const char* labelPath);
+	MenuItem(lv_obj_t* parent, const char* imagePath, const char* labelText);
 
 protected:
-	LVGIF* gif = nullptr;
-	lv_obj_t* labelContainer;
-	lv_obj_t* label = nullptr;
+	lv_obj_t* imageContainer;
+	lv_obj_t* image;
+	lv_obj_t* label;
 
-	void constructVis(const char* gifPath, const char* labelPath);
+	void constructVis(const char* imagePath, const char* labelText);
 
-	virtual void onFocus();
-	virtual void onDefocus();
+	virtual void onFocus(){};
+
+	virtual void onDefocus(){};
 
 };
 

@@ -7,9 +7,14 @@
 #include "LabelElement.h"
 #include "DiscreteSliderElement.h"
 #include "Services/StatusCenter.h"
+#include "LV_Interface/LVGL.h"
+#include "TimePickerModal.h"
+#include "Services/Time.h"
+#include "LV_Interface/InputLVGL.h"
 
 SettingsScreen::SettingsScreen() : settings(*(Settings*) Services.get(Service::Settings)), backlight(*(BacklightBrightness*) Services.get(Service::Backlight)),
-								   audio(*(ChirpSystem*) Services.get(Service::Audio)), imu(*(IMU*) Services.get(Service::IMU)), queue(4){
+								   audio(*(ChirpSystem*) Services.get(Service::Audio)), imu(*(IMU*) Services.get(Service::IMU)),
+								   ts(*(Time*)Services.get(Service::Time)), queue(4){
 	lv_obj_set_size(*this, 128, 128);
 
 	bg = lv_obj_create(*this);
@@ -33,6 +38,11 @@ SettingsScreen::SettingsScreen() : settings(*(Settings*) Services.get(Service::S
 	lv_obj_set_pos(*statusBar, 0, 0);
 
 	auto startingSettings = settings.get();
+
+	manualTime = new LabelElement(container, "Adjust date/time", [this](){
+		timePickerModal = std::make_unique<TimePickerModal>(this, ts.getTime());
+	});
+	lv_group_add_obj(inputGroup, *manualTime);
 
 	audioSwitch = new BoolElement(container, "Sound", [this](bool value){
 		if(value){
@@ -76,6 +86,13 @@ SettingsScreen::SettingsScreen() : settings(*(Settings*) Services.get(Service::S
 	}, startingSettings.notificationSounds);
 	lv_group_add_obj(inputGroup, *motionSwitch);
 
+	rotationSwitch = new BoolElement(container, "Rotate screen", [this](bool value){
+		auto s = settings.get();
+		s.motionDetection = value;
+		settings.set(s);
+	}, startingSettings.screenRotate);
+	lv_group_add_obj(inputGroup, *rotationSwitch);
+
 	saveAndExit = new LabelElement(container, "Save and Exit", [this](){
 		transition([](){ return std::make_unique<MainMenu>(); });
 	});
@@ -92,9 +109,13 @@ void SettingsScreen::loop(){
 		if(evt.facility == Facility::Input){
 			auto eventData = (Input::Data*) evt.data;
 			if(eventData->btn == Input::Alt && eventData->action == Input::Data::Press){
-				free(evt.data);
-				transition([](){ return std::make_unique<MainMenu>(); });
-				return;
+				if(timePickerModal){
+					timePickerModal.reset();
+				}else{
+					free(evt.data);
+					transition([](){ return std::make_unique<MainMenu>(); });
+					return;
+				}
 			}
 		}
 		free(evt.data);
@@ -110,11 +131,14 @@ void SettingsScreen::onStop(){
 	savedSettings.sleepTime = sleepSlider->getValue();
 	savedSettings.ledEnable = ledSwitch->getValue();
 	savedSettings.motionDetection = motionSwitch->getValue();
+	savedSettings.screenRotate = rotationSwitch->getValue();
 	settings.set(savedSettings);
 	settings.store();
 
 	backlight.setBrightness(brightnessSlider->getValue());
 	imu.enableTiltDetection(motionSwitch->getValue());
+	lvgl->rotateScreen(rotationSwitch->getValue());
+	InputLVGL::getInstance()->invertDirections(rotationSwitch->getValue());
 	//TODO - apply sleep time
 
 	Events::unlisten(&queue);
@@ -125,11 +149,13 @@ void SettingsScreen::onStop(){
 }
 
 void SettingsScreen::onStarting(){
-	brightnessSlider->setValue(settings.get().screenBrightness);
-	audioSwitch->setValue(settings.get().notificationSounds);
-	ledSwitch->setValue(settings.get().ledEnable);
-	sleepSlider->setValue(settings.get().sleepTime);
-	motionSwitch->setValue(settings.get().motionDetection);
+	auto sets = settings.get();
+	brightnessSlider->setValue(sets.screenBrightness);
+	audioSwitch->setValue(sets.notificationSounds);
+	ledSwitch->setValue(sets.ledEnable);
+	sleepSlider->setValue(sets.sleepTime);
+	motionSwitch->setValue(sets.motionDetection);
+	rotationSwitch->setValue(sets.screenRotate);
 }
 
 void SettingsScreen::onStart(){

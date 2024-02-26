@@ -54,6 +54,10 @@ void LVScreen::onStop(){ }
 
 void LVScreen::loop(){ }
 
+lv_group_t* LVScreen::getInputGroup() const{
+	return inputGroup;
+}
+
 bool LVScreen::isRunning() const{
 	return running;
 }

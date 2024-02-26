@@ -74,3 +74,7 @@ void LVGL::stopScreen(){
 lv_disp_t* LVGL::disp() const{
 	return lvDisplay;
 }
+
+void LVGL::rotateScreen(bool rotation){
+	display.setRotation(rotation);
+}

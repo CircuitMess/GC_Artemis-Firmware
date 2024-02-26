@@ -13,6 +13,8 @@ public:
 	LVScreen();
 	virtual ~LVScreen();
 
+	lv_group_t* getInputGroup() const;
+
 	bool isRunning() const;
 
 protected:
@@ -20,9 +22,9 @@ protected:
 
 	void transition(std::function<std::unique_ptr<LVScreen>()> create);
 
-private:
 	LVGL* lvgl = nullptr;
 
+private:
 	void start(LVGL* lvgl);
 	void stop();
 

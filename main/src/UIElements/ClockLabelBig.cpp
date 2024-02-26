@@ -5,11 +5,14 @@ ClockLabelBig::ClockLabelBig(lv_obj_t* parent) : ClockLabel(parent){
 	lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
 	lv_obj_set_flex_flow(obj, LV_FLEX_FLOW_ROW);
 	lv_obj_set_flex_align(obj, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_START);
-	lv_obj_set_style_pad_gap(obj, 3, 0);
+	lv_obj_set_style_pad_gap(obj, 4, 0);
 
 	for(auto& icon : icons){
 		icon = lv_img_create(obj);
 	}
+
+
+	lv_obj_set_style_pad_hor(icons[2], 1, 0);
 
 	updateTime(ts.getTime());
 }

@@ -1,5 +1,7 @@
 #include "Display.h"
 #include <Pins.hpp>
+#include "Util/Services.h"
+#include "Settings/Settings.h"
 
 Display::Display(){
 	setupBus();
@@ -33,6 +35,9 @@ void Display::setupBus(){
 }
 
 void Display::setupPanel(){
+	auto& settings = *(Settings*) Services.get(Service::Settings);
+	const uint8_t rotation = settings.get().screenRotate ? 3 : 1;
+
 	lgfx::Panel_Device::config_t cfg = {
 			.pin_cs = -1,
 			.pin_rst = TFT_RST,
@@ -43,7 +48,7 @@ void Display::setupPanel(){
 			.panel_height = 128,
 			.offset_x = 2,
 			.offset_y = 1,
-			.offset_rotation = 1,
+			.offset_rotation = rotation,
 			.readable = false,
 			.invert = false,
 			.rgb_order = false,
@@ -68,4 +73,15 @@ void Display::drawTest(){
 	lgfx.drawLine(0, 127, 127, 127, TFT_GREEN);
 	lgfx.drawLine(127, 0, 127, 127, TFT_GREEN);
 	printf("Done.\n");
+}
+
+void Display::setRotation(bool rotation){
+	const uint8_t val = rotation ? 3 : 1;
+	lgfx::Panel_Device::config_t cfg = lgfx.getPanel()->config();
+	if(val == cfg.offset_rotation) return;
+
+	cfg.offset_rotation = val;
+	panel.config(cfg);
+	lgfx.setPanel(&panel);
+	lgfx.init();
 }

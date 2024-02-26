@@ -15,8 +15,6 @@ MainMenu::MainMenu() : phone(*((Phone*) Services.get(Service::Phone))), queue(4)
 
 	lv_obj_set_size(*this, 128, LV_SIZE_CONTENT);
 	lv_obj_add_flag(*this, LV_OBJ_FLAG_SCROLLABLE);
-	lv_obj_set_flex_flow(*this, LV_FLEX_FLOW_COLUMN);
-	lv_obj_set_flex_align(*this, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
 	bg = lv_obj_create(*this);
 	lv_obj_add_flag(bg, LV_OBJ_FLAG_FLOATING);
@@ -24,18 +22,26 @@ MainMenu::MainMenu() : phone(*((Phone*) Services.get(Service::Phone))), queue(4)
 	lv_obj_set_pos(bg, 0, 0);
 	lv_obj_set_style_bg_color(bg, lv_color_black(), 0);
 	lv_obj_set_style_bg_opa(bg, LV_OPA_COVER, 0);
-	lv_obj_set_style_bg_img_src(bg, "S:/bg.bin", 0);
+	lv_obj_set_style_bg_img_src(bg, "S:/menu/bg.bin", 0);
+
+	container = lv_obj_create(*this);
+	lv_obj_set_style_pad_all(container, 1, 0);
+	lv_obj_set_size(container, 128, 128);
+	lv_obj_add_flag(container, LV_OBJ_FLAG_SCROLLABLE);
+	lv_obj_set_flex_flow(container, LV_FLEX_FLOW_COLUMN);
+	lv_obj_set_flex_align(container, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
 
 	for(int i = 0; i < ItemCount; i++){
 		const auto& info = ItemInfos[i];
 
 		MenuItem* item;
-		if(info.iconAltPath || info.labelAlt){
-			auto itemAlt = new MenuItemAlt(*this, info.iconPath, info.labelPath);
-			itemAlt->setAltParams(info.iconAltPath, info.labelAlt);
+		if(info.iconAltPath || info.labelTextAlt){
+			auto itemAlt = new MenuItemAlt(container, info.iconPath, info.labelText);
+			itemAlt->setAltParams(info.iconAltPath, info.labelTextAlt);
 			item = itemAlt;
 		}else{
-			item = new MenuItem(*this, info.iconPath, info.labelPath);
+			item = new MenuItem(container, info.iconPath, info.labelText);
 		}
 
 		lv_obj_add_event_cb(*item, [](lv_event_t* evt){
@@ -73,8 +79,8 @@ MainMenu::MainMenu() : phone(*((Phone*) Services.get(Service::Phone))), queue(4)
 	lv_obj_set_pos(*statusBar, 0, 0);
 
 	// Scrolling
-	lv_obj_add_flag(*this, LV_OBJ_FLAG_SCROLL_ONE);
-	lv_obj_set_scroll_snap_y(*this, LV_SCROLL_SNAP_START);
+	lv_obj_add_flag(container, LV_OBJ_FLAG_SCROLL_ONE);
+	lv_obj_set_scroll_snap_y(container, LV_SCROLL_SNAP_START);
 	lv_group_set_wrap(inputGroup, false);
 
 	Events::listen(Facility::Input, &queue);
@@ -142,7 +148,7 @@ void MainMenu::loop(){
 
 void MainMenu::onClick(){
 	auto focused = lv_group_get_focused(inputGroup);
-	auto index = lv_obj_get_index(focused) - 1; // StatusBar is first
+	auto index = lv_obj_get_index(focused);
 	if(index >= ItemCount) return;
 
 	lastIndex = index;
@@ -160,7 +166,7 @@ void MainMenu::onClick(){
 
 void MainMenu::handlePhoneChange(Phone::Event& event){
 	auto focused = lv_group_get_focused(inputGroup);
-	auto index = lv_obj_get_index(focused) - 1;
+	auto index = lv_obj_get_index(focused);
 	auto& findPhone = *items[0];
 	bool hiddenBefore = lv_obj_has_flag(findPhone, LV_OBJ_FLAG_HIDDEN);
 

@@ -29,6 +29,7 @@ private:
 	bool notifPresent = false;
 
 	lv_obj_t* left;
+	lv_obj_t* right;
 	lv_obj_t* phoneIcon;
 	lv_obj_t* notifIcon;
 	ClockLabelSmall* clock = nullptr;

@@ -37,7 +37,6 @@ float ADC::sample(){
 	float reading = 0;
 	if(pin == GPIO_NUM_6){
 		reading = adc1_get_raw(ADC1_CHANNEL_5);
-		printf("ADC read %d\n", (int) reading);
 	}
 
 	if(val == -1 || ema_a == 1){

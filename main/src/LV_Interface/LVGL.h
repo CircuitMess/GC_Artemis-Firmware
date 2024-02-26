@@ -19,6 +19,8 @@ public:
 	/** startScreen should be called immediately after this function. */
 	void stopScreen();
 
+	void rotateScreen(bool rotation);
+
 private:
 	Display& display;
 
