@@ -40,11 +40,7 @@ void SleepMan::goSleep(){
 	bool buttonWakeWhileLowered = false;
 	sleep.sleep([this, &buttonWakeWhileLowered](){
 
-		const auto sample = imu.getSample();
-		ESP_LOGD(tag, "wake sample.accelY: %.4f\n", sample.accelY);
-		static constexpr float LiftThreshold = 8 * 0.0015625;
-
-		if(sample.accelY >= LiftThreshold){
+		if(checkIMUTilt(IMU::TiltDirection::Lowered)){
 			buttonWakeWhileLowered = true;
 			ESP_LOGI(tag, "button wake while lowered!");
 
@@ -123,10 +119,7 @@ void SleepMan::checkAutoSleep(){
 
 	if((millis() - actTime) / 1000 < sleepSeconds) return;
 
-	const auto sample = imu.getSample();
-	ESP_LOGD(tag, "auto goSleep sample.accelY: %.4f\n", sample.accelY);
-	static constexpr float LiftThreshold = -8 * 0.0015625;
-	if(sample.accelY <= LiftThreshold){
+	if(checkIMUTilt(IMU::TiltDirection::Lifted)){
 		waitForLower = true;
 		ESP_LOGI(tag, "auto sleep while lifted!\n");
 		ESP_LOGD(tag, "sleep! waitForLower: %d, waitForLift: %d", waitForLower, waitForLift);
@@ -144,10 +137,7 @@ void SleepMan::handleInput(const Input::Data& evt){
 		if(millis() - wakeTime < WakeCooldown) return;
 		altPress = millis();
 	}else if(millis() - altPress < AltHoldTime){
-		const auto sample = imu.getSample();
-		ESP_LOGD(tag, "btn goSleep sample.accelY: %.4f\n", sample.accelY);
-		static constexpr float LiftThreshold = -8 * 0.0015625;
-		if(sample.accelY <= LiftThreshold){
+		if(checkIMUTilt(IMU::TiltDirection::Lifted)){
 			waitForLower = true;
 			ESP_LOGI(tag, "button sleep while lifted!\n");
 			ESP_LOGD(tag, "sleep! waitForLower: %d, waitForLift: %d", waitForLower, waitForLift);
@@ -184,4 +174,16 @@ void SleepMan::imuSignal(){
 
 	imu.setTiltDirection(IMU::TiltDirection::Lifted);
 	waitForLower = false;
+}
+
+bool SleepMan::checkIMUTilt(IMU::TiltDirection direction) const{
+	static constexpr float LiftThreshold = 8 * 0.0015625;
+	const auto rotation = settings.get().screenRotate;
+	const auto sample = imu.getSample();
+
+	if((direction == IMU::TiltDirection::Lowered) ^ rotation){
+		return sample.accelY >= LiftThreshold;
+	}else{
+		return sample.accelY <= -LiftThreshold;
+	}
 }

@@ -94,7 +94,13 @@ bool IMU::init(){
 	lsm6ds3tr_c_pin_int1_route_set(&ctx, { 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
 	lsm6ds3tr_c_pin_int2_route_set(&ctx, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }); //wrist tilt to INT2
 
-	setWristPosition(IMU::WatchPosition::FaceDown);
+	auto& settings = *(Settings*)Services.get(Service::Settings);
+	if(settings.get().screenRotate){
+		setWristPosition(IMU::WatchPosition::FaceUp);
+	}else{
+		setWristPosition(IMU::WatchPosition::FaceDown);
+	}
+
 	setTiltDirection(TiltDirection::Lowered);
 
 	gpio_config_t io_conf = {};

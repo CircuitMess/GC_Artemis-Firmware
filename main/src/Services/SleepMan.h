@@ -58,6 +58,8 @@ private:
 
 	//if wake is caused by btn press, and we are in lowered position, register for Lifted event instead of Lowered, then clear this flag when Lifted occurs
 	bool waitForLift = false;
+
+	bool checkIMUTilt(IMU::TiltDirection direction) const;
 };
 
 
