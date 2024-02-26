@@ -288,23 +288,15 @@ void IMU::setTiltDirection(IMU::TiltDirection direction){
 	lsm6ds3tr_c_a_wrist_tilt_mask_t tiltMask = { 0, 0, 0, !ypos, ypos, 0, 0 };
 	lsm6ds3tr_c_tilt_src_set(&ctx, &tiltMask);
 
-
-	uint8_t tiltThresh = 8; // total thresh is tiltThresh * 15.625mg
 	uint8_t tiltLatency = 8; // total latency is tiltLatency * 40ms
-	if(direction == TiltDirection::Lifted){
+	if(this->tiltDirection == TiltDirection::Lifted){
 		//tiltThresh = 8;
 	}else{
 		//tiltThresh = 16;
 		tiltLatency = 6;
 	}
-	lsm6ds3tr_c_tilt_threshold_set(&ctx, &tiltThresh);
 	lsm6ds3tr_c_tilt_latency_set(&ctx, &tiltLatency);
 
-	lsm6ds3tr_c_wrist_tilt_sens_set(&ctx, 1);
-	lsm6ds3tr_c_pin_int2_route_set(&ctx, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }); //wrist tilt to INT2
-
-	clearSources();
-	lsm6ds3tr_c_int_notification_set(&ctx, LSM6DS3TR_C_INT_LATCHED);
 }
 
 
@@ -314,6 +306,13 @@ void IMU::enableTiltDetection(bool enable){
 	tiltEnable = enable;
 	if(tiltEnable){
 		setTiltDirection(tiltDirection);
+		uint8_t tiltThresh = 8; // total thresh is tiltThresh * 15.625mg
+		lsm6ds3tr_c_tilt_threshold_set(&ctx, &tiltThresh);
+		lsm6ds3tr_c_wrist_tilt_sens_set(&ctx, 1);
+		lsm6ds3tr_c_pin_int2_route_set(&ctx, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }); //wrist tilt to INT2
+
+		clearSources();
+		lsm6ds3tr_c_int_notification_set(&ctx, LSM6DS3TR_C_INT_LATCHED);
 	}else{
 		lsm6ds3tr_c_wrist_tilt_sens_set(&ctx, 0);
 		lsm6ds3tr_c_pin_int2_route_set(&ctx, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }); //wrist tilt to INT2
