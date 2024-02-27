@@ -19,24 +19,24 @@ Level::Level() : imu((IMU*) Services.get(Service::IMU)), reader([this](){ reader
 	lv_obj_set_style_bg_img_src(bg, "S:/level/bg.bin", LV_STATE_DEFAULT);
 
 	bubbleCenter = lv_img_create(bg);
-	lv_img_set_src(bubbleCenter, "S:/level/bubbleCenter.bin");
+	lv_img_set_src(bubbleCenter, "S:/level/bubble.bin");
 	bubbleHorizontal = lv_img_create(bg);
-	lv_img_set_src(bubbleHorizontal, "S:/level/bubbleHorizontal.bin");
-	lv_obj_set_y(bubbleHorizontal, 103);
+	lv_img_set_src(bubbleHorizontal, "S:/level/bubble.bin");
+	lv_obj_set_y(bubbleHorizontal, 100);
 	bubbleVertical = lv_img_create(bg);
-	lv_img_set_src(bubbleVertical, "S:/level/bubbleVertical.bin");
-	lv_obj_set_x(bubbleVertical, 102);
+	lv_img_set_src(bubbleVertical, "S:/level/bubble.bin");
+	lv_obj_set_x(bubbleVertical, 100);
 
 
 	markingsCenter = lv_img_create(bg);
 	lv_img_set_src(markingsCenter, "S:/level/markingsCenter.bin");
-	lv_obj_set_pos(markingsCenter, 12, 12);
+	lv_obj_set_pos(markingsCenter, 7, 7);
 	markingsHorizontal = lv_img_create(bg);
 	lv_img_set_src(markingsHorizontal, "S:/level/markingsHorizontal.bin");
-	lv_obj_set_pos(markingsHorizontal, 34, 100);
+	lv_obj_set_pos(markingsHorizontal, 32, 96);
 	markingsVertical = lv_img_create(bg);
 	lv_img_set_src(markingsVertical, "S:/level/markingsVertical.bin");
-	lv_obj_set_pos(markingsVertical, 99, 34);
+	lv_obj_set_pos(markingsVertical, 96, 31);
 }
 
 Level::~Level(){

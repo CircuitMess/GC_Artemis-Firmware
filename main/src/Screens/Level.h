@@ -10,7 +10,7 @@
 class Level : public LVScreen {
 public:
 	Level();
-	virtual ~Level();
+	~Level() override;
 
 	void setOrientation(double pitch, double roll);
 
@@ -48,10 +48,10 @@ private:
 
 	EventQueue queue;
 
-	static constexpr Constraint VerticalConstr = { 10, 73 };
-	static constexpr Constraint HorizontalConstr = { 10, 72 };
-	static constexpr int8_t CenterConstr = 27;
-	static constexpr int8_t CenterPos = 40;
+	static constexpr Constraint VerticalConstr = { 8, 68 };
+	static constexpr Constraint HorizontalConstr = { 8, 68 };
+	static constexpr int8_t CenterConstr = 29;
+	static constexpr int8_t CenterPos = 38;
 	static constexpr double AngleConstraint = 0.5f;
 
 };
