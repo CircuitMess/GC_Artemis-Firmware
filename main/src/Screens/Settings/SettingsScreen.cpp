@@ -40,7 +40,7 @@ SettingsScreen::SettingsScreen() : settings(*(Settings*) Services.get(Service::S
 	auto startingSettings = settings.get();
 
 	manualTime = new LabelElement(container, "Adjust date/time", [this](){
-		timePickerModal = std::make_unique<TimePickerModal>(this, ts.getTime());
+		timePickerModal = new TimePickerModal(this, ts.getTime());
 	});
 	lv_group_add_obj(inputGroup, *manualTime);
 
@@ -93,6 +93,14 @@ SettingsScreen::SettingsScreen() : settings(*(Settings*) Services.get(Service::S
 	}, startingSettings.screenRotate);
 	lv_group_add_obj(inputGroup, *rotationSwitch);
 
+	timeFormatSwitch = new BoolElement(container, "24-hour format", [this](bool value){
+		auto s = settings.get();
+		s.timeFormat24h = value;
+		settings.set(s);
+		statusBar->set24hFormat(value);
+	}, startingSettings.timeFormat24h);
+	lv_group_add_obj(inputGroup, *timeFormatSwitch);
+
 	saveAndExit = new LabelElement(container, "Save and Exit", [this](){
 		transition([](){ return std::make_unique<MainMenu>(); });
 	});
@@ -110,7 +118,8 @@ void SettingsScreen::loop(){
 			auto eventData = (Input::Data*) evt.data;
 			if(eventData->btn == Input::Alt && eventData->action == Input::Data::Press){
 				if(timePickerModal){
-					timePickerModal.reset();
+					delete timePickerModal;
+					timePickerModal = nullptr;
 				}else{
 					free(evt.data);
 					transition([](){ return std::make_unique<MainMenu>(); });
@@ -132,6 +141,7 @@ void SettingsScreen::onStop(){
 	savedSettings.ledEnable = ledSwitch->getValue();
 	savedSettings.motionDetection = motionSwitch->getValue();
 	savedSettings.screenRotate = rotationSwitch->getValue();
+	savedSettings.timeFormat24h = timeFormatSwitch->getValue();
 	settings.set(savedSettings);
 	settings.store();
 

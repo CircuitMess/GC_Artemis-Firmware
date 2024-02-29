@@ -12,6 +12,8 @@ public:
 
 	void loop();
 
+	void set24hFormat(bool format);
+
 protected:
 	void updateTime(const tm& time);
 
@@ -24,6 +26,8 @@ private:
 
 	static constexpr uint32_t TimeUpdateInterval = 200;
 	uint64_t lastTimeUpdate = 0;
+
+	bool format24h = true;
 };
 
 

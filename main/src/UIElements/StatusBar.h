@@ -18,6 +18,8 @@ public:
 
 	void loop();
 
+	void set24hFormat(bool format);
+
 private:
 	Phone& phone;
 	Battery& battery;

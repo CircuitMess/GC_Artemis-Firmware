@@ -9,6 +9,7 @@
 #include "Services/ChirpSystem.h"
 #include "Devices/IMU.h"
 #include "LV_Interface/LVModal.h"
+#include "TimePickerModal.h"
 
 class BoolElement;
 
@@ -46,8 +47,9 @@ private:
 	LabelElement* saveAndExit;
 	BoolElement* motionSwitch;
 	BoolElement* rotationSwitch;
+	BoolElement* timeFormatSwitch;
 
-	std::unique_ptr<LVModal> timePickerModal;
+	TimePickerModal* timePickerModal = nullptr;
 
 	static constexpr uint8_t TopPadding = 18;
 

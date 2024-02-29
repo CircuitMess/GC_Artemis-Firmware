@@ -109,3 +109,9 @@ void StatusBar::setNotifIcon(){
 		notifPresent = false;
 	}
 }
+
+void StatusBar::set24hFormat(bool format){
+	if(!clock) return;
+
+	clock->set24hFormat(format);
+}

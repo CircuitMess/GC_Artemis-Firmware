@@ -10,6 +10,7 @@ struct SettingsStruct {
 	bool ledEnable = true;
 	bool motionDetection = true;
 	bool screenRotate = false;
+	bool timeFormat24h = true;
 };
 
 class Settings {
