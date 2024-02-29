@@ -35,13 +35,14 @@ private:
 
 	static constexpr uint8_t VerticalBarX = 7;
 	static constexpr uint8_t VerticalBarY = 7;
-	static constexpr uint8_t VerticalTextX = 24;
-	static constexpr uint8_t VerticalTextY = 9;
+	static constexpr uint8_t VerticalTextX = 18;
+	static constexpr uint8_t VerticalTextY = 5;
 
 	static constexpr uint8_t HorizontalBarX = 24;
 	static constexpr uint8_t HorizontalBarY = 111;
-	static constexpr uint8_t HorizontalTextX = 40;
-	static constexpr uint8_t HorizontalTextY = 75;
+	static constexpr uint8_t HorizontalTextX = 33;
+	static constexpr uint8_t HorizontalTextY = 69;
+
 	LVStyle textStyleVertical;
 	LVStyle textStyleHorizontal;
 
