@@ -62,11 +62,11 @@ public:
 
 	void shutdown();
 
+	bool init();
+
 private:
 	static constexpr uint8_t Addr = 0x6A;
 	I2C& i2c;
-
-	bool init();
 
 	/**
 	 * !DELETED FUNCTION!

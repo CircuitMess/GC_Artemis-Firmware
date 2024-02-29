@@ -26,7 +26,11 @@ void SleepMan::goSleep(){
 	MainMenu::resetMenuIndex();
 
 	lvgl.stopScreen();
-	imu.setTiltDirection(IMU::TiltDirection::Lifted);
+
+	if(settings.get().motionDetection){
+		imu.init();
+		imu.setTiltDirection(IMU::TiltDirection::Lifted);
+	}
 
 	inSleep = true;
 	sleep.sleep([this](){
@@ -36,8 +40,11 @@ void SleepMan::goSleep(){
 		lv_timer_handler();
 	});
 	nsBlocked = inSleep = false;
-
-	imu.setTiltDirection(IMU::TiltDirection::Lowered);
+	
+	if(settings.get().motionDetection){
+		imu.init();
+		imu.setTiltDirection(IMU::TiltDirection::Lowered);
+	}
 
 	wakeTime = actTime = millis();
 	events.reset();
