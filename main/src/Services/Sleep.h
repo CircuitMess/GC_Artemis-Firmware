@@ -21,7 +21,7 @@ public:
 
 private:
 friend SleepMan;
-	static constexpr gpio_num_t WakePin = (gpio_num_t) BTN_ALT;
+	DRAM_ATTR static constexpr gpio_num_t WakePin = (gpio_num_t) BTN_ALT;
 
 	SemaphoreHandle_t wakeSem;
 	static void intr(void* arg);

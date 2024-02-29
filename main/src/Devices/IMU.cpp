@@ -117,14 +117,14 @@ bool IMU::init(){
 void IRAM_ATTR IMU::isr1(void* arg){
 	gpio_set_intr_type((gpio_num_t) IMU_INT1, GPIO_INTR_POSEDGE);
 	auto imu = static_cast<IMU*>(arg);
-	int wake = 1;
+	auto wake = pdFALSE;
 	xSemaphoreGiveFromISR(imu->sem1, &wake);
 }
 
 void IRAM_ATTR IMU::isr2(void* arg){
 	gpio_set_intr_type((gpio_num_t) IMU_INT2, GPIO_INTR_POSEDGE);
 	auto imu = static_cast<IMU*>(arg);
-	int wake = 1;
+	auto wake = pdFALSE;
 	xSemaphoreGiveFromISR(imu->sem1, &wake);
 }
 
