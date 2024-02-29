@@ -42,6 +42,7 @@ void SleepMan::goSleep(){
 
 		if(checkIMUTilt(IMU::TiltDirection::Lowered)){
 			buttonWakeWhileLowered = true;
+			waitForLower = false;
 			ESP_LOGI(tag, "button wake while lowered!");
 
 		}else{
@@ -121,6 +122,7 @@ void SleepMan::checkAutoSleep(){
 
 	if(checkIMUTilt(IMU::TiltDirection::Lifted)){
 		waitForLower = true;
+		waitForLift = false;
 		ESP_LOGI(tag, "auto sleep while lifted!\n");
 		ESP_LOGD(tag, "sleep! waitForLower: %d, waitForLift: %d", waitForLower, waitForLift);
 
@@ -139,6 +141,7 @@ void SleepMan::handleInput(const Input::Data& evt){
 	}else if(millis() - altPress < AltHoldTime){
 		if(checkIMUTilt(IMU::TiltDirection::Lifted)){
 			waitForLower = true;
+			waitForLift = false;
 			ESP_LOGI(tag, "button sleep while lifted!\n");
 			ESP_LOGD(tag, "sleep! waitForLower: %d, waitForLift: %d", waitForLower, waitForLift);
 		}
@@ -170,7 +173,10 @@ void SleepMan::enAutoSleep(bool autoSleep){
 }
 
 void SleepMan::imuSignal(){
-	if(!waitForLower) wake();
+	if(!waitForLower){
+		wake();
+		return;
+	}
 
 	imu.setTiltDirection(IMU::TiltDirection::Lifted);
 	waitForLower = false;
