@@ -8,6 +8,11 @@ ClockLabelSmall::ClockLabelSmall(lv_obj_t* parent) : ClockLabel(parent){
 	updateTime(ts.getTime());
 }
 
-void ClockLabelSmall::updateUI(const char* clockText){
-	lv_label_set_text(clock, clockText);
+void ClockLabelSmall::updateUI(const char* clockText, const char* ps){
+	std::string str = clockText;
+	if(ps){
+		str += " ";
+		str += ps;
+	}
+	lv_label_set_text(clock, str.c_str());
 }

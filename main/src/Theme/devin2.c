@@ -56,7 +56,16 @@ static LV_ATTRIBUTE_LARGE_CONST const uint8_t glyph_bitmap[] = {
     0x74, 0x62, 0xf0, 0xc5, 0xc0,
 
     /* U+003A ":" */
-    0xf3, 0xc0
+    0xf3, 0xc0,
+
+	/* U+0041 "A" */
+	0x74, 0x63, 0xf8, 0xc6, 0x20,
+
+	/* U+004D "M" */
+	0x8e, 0xeb, 0x58, 0xc6, 0x20,
+
+	/* U+0050 "P" */
+	0xf4, 0x63, 0xe8, 0x42, 0x0,
 };
 
 
@@ -77,7 +86,10 @@ static const lv_font_fmt_txt_glyph_dsc_t glyph_dsc[] = {
     {.bitmap_index = 34, .adv_w = 96, .box_w = 5, .box_h = 7, .ofs_x = 0, .ofs_y = -3},
     {.bitmap_index = 39, .adv_w = 96, .box_w = 5, .box_h = 7, .ofs_x = 0, .ofs_y = -3},
     {.bitmap_index = 44, .adv_w = 96, .box_w = 5, .box_h = 7, .ofs_x = 0, .ofs_y = -3},
-    {.bitmap_index = 49, .adv_w = 64, .box_w = 2, .box_h = 5, .ofs_x = 1, .ofs_y = -3}
+	{.bitmap_index = 49, .adv_w = 64, .box_w = 2, .box_h = 5, .ofs_x = 1, .ofs_y = -3},
+	{.bitmap_index = 51, .adv_w = 96, .box_w = 5, .box_h = 7, .ofs_x = 0, .ofs_y = -3},
+	{.bitmap_index = 56, .adv_w = 96, .box_w = 5, .box_h = 7, .ofs_x = 0, .ofs_y = -3},
+	{.bitmap_index = 61, .adv_w = 96, .box_w = 5, .box_h = 7, .ofs_x = 0, .ofs_y = -3}
 };
 
 /*---------------------
@@ -96,7 +108,19 @@ static const lv_font_fmt_txt_cmap_t cmaps[] =
     {
         .range_start = 48, .range_length = 11, .glyph_id_start = 2,
         .unicode_list = NULL, .glyph_id_ofs_list = NULL, .list_length = 0, .type = LV_FONT_FMT_TXT_CMAP_FORMAT0_TINY
-    }
+    },
+	{
+			.range_start = 65, .range_length = 1, .glyph_id_start = 13,
+			.unicode_list = NULL, .glyph_id_ofs_list = NULL, .list_length = 0, .type = LV_FONT_FMT_TXT_CMAP_FORMAT0_TINY
+	},
+	{
+			.range_start = 77, .range_length = 1, .glyph_id_start = 14,
+			.unicode_list = NULL, .glyph_id_ofs_list = NULL, .list_length = 0, .type = LV_FONT_FMT_TXT_CMAP_FORMAT0_TINY
+	},
+	{
+			.range_start = 80, .range_length = 1, .glyph_id_start = 15,
+			.unicode_list = NULL, .glyph_id_ofs_list = NULL, .list_length = 0, .type = LV_FONT_FMT_TXT_CMAP_FORMAT0_TINY
+	}
 };
 
 
@@ -117,7 +141,7 @@ static lv_font_fmt_txt_dsc_t font_dsc = {
     .cmaps = cmaps,
     .kern_dsc = NULL,
     .kern_scale = 0,
-    .cmap_num = 2,
+    .cmap_num = 5,
     .bpp = 1,
     .kern_classes = 0,
     .bitmap_format = 0,

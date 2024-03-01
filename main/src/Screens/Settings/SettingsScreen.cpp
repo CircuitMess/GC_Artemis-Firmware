@@ -39,6 +39,14 @@ SettingsScreen::SettingsScreen() : settings(*(Settings*) Services.get(Service::S
 
 	auto startingSettings = settings.get();
 
+	timeFormatSwitch = new BoolElement(container, "24-hour format", [this](bool value){
+		auto s = settings.get();
+		s.timeFormat24h = value;
+		settings.set(s);
+		statusBar->set24hFormat(value);
+	}, startingSettings.timeFormat24h);
+	lv_group_add_obj(inputGroup, *timeFormatSwitch);
+
 	manualTime = new LabelElement(container, "Adjust date/time", [this](){
 		timePickerModal = new TimePickerModal(this, ts.getTime());
 	});
@@ -92,14 +100,6 @@ SettingsScreen::SettingsScreen() : settings(*(Settings*) Services.get(Service::S
 		settings.set(s);
 	}, startingSettings.screenRotate);
 	lv_group_add_obj(inputGroup, *rotationSwitch);
-
-	timeFormatSwitch = new BoolElement(container, "24-hour format", [this](bool value){
-		auto s = settings.get();
-		s.timeFormat24h = value;
-		settings.set(s);
-		statusBar->set24hFormat(value);
-	}, startingSettings.timeFormat24h);
-	lv_group_add_obj(inputGroup, *timeFormatSwitch);
 
 	saveAndExit = new LabelElement(container, "Save and Exit", [this](){
 		transition([](){ return std::make_unique<MainMenu>(); });

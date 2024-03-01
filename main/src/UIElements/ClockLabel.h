@@ -20,7 +20,7 @@ protected:
 	Time& ts;
 
 private:
-	virtual void updateUI(const char* clockText) = 0;
+	virtual void updateUI(const char* clockText, const char* ps) = 0;
 
 	EventQueue queue;
 

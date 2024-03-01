@@ -8,7 +8,7 @@ public:
 	explicit ClockLabelBig(lv_obj_t* parent);
 	~ClockLabelBig() override = default;
 private:
-	void updateUI(const char* clockText) override;
+	void updateUI(const char* clockText, const char* ps) override;
 
 
 	static constexpr const char* getPath(char c);

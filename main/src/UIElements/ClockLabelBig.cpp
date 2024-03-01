@@ -17,7 +17,7 @@ ClockLabelBig::ClockLabelBig(lv_obj_t* parent) : ClockLabel(parent){
 	updateTime(ts.getTime());
 }
 
-void ClockLabelBig::updateUI(const char* clockText){
+void ClockLabelBig::updateUI(const char* clockText, const char* ps){
 	for(uint8_t i = 0; i < NumIcons; i++){
 		lv_img_set_src(icons[i], getPath(clockText[i]));
 	}
