@@ -4,8 +4,7 @@ MenuItem::MenuItem(lv_obj_t* parent, const char* imagePath, const char* labelTex
 	lv_obj_set_flex_flow(*this, LV_FLEX_FLOW_COLUMN);
 	lv_obj_set_flex_align(*this, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
-	lv_obj_set_size(*this, lv_pct(100), 128);
-	lv_obj_set_style_pad_top(*this, 12, 0);
+	lv_obj_set_size(*this, lv_pct(100), 113); //screen height - statusBar height = 128 - 15 = 113
 
 	imageContainer = lv_obj_create(*this);
 	lv_obj_set_size(imageContainer, lv_pct(100), LV_SIZE_CONTENT);

@@ -24,9 +24,11 @@ MainMenu::MainMenu() : phone(*((Phone*) Services.get(Service::Phone))), queue(4)
 	lv_obj_set_style_bg_opa(bg, LV_OPA_COVER, 0);
 	lv_obj_set_style_bg_img_src(bg, "S:/menu/bg.bin", 0);
 
+	static constexpr auto statusBarHeight = 15;
 	container = lv_obj_create(*this);
-	lv_obj_set_style_pad_all(container, 1, 0);
-	lv_obj_set_size(container, 128, 128);
+	lv_obj_set_pos(container, 0, statusBarHeight);
+	lv_obj_set_style_pad_hor(container, 1, 0);
+	lv_obj_set_size(container, 128, lv_obj_get_height(*this) - statusBarHeight);
 	lv_obj_add_flag(container, LV_OBJ_FLAG_SCROLLABLE);
 	lv_obj_set_flex_flow(container, LV_FLEX_FLOW_COLUMN);
 	lv_obj_set_flex_align(container, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
