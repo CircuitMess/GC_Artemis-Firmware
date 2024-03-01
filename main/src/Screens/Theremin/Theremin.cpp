@@ -149,11 +149,6 @@ constexpr uint32_t Theremin::getToneDuration(uint8_t sequenceSize){
 }
 
 void Theremin::buildUI(){
-	lv_style_set_text_color(textStyleVertical, lv_color_make(255, 101, 0));
-	lv_style_set_text_color(textStyleHorizontal, lv_color_white());
-	lv_style_set_text_align(textStyleHorizontal, LV_TEXT_ALIGN_RIGHT);
-
-
 	bg = lv_obj_create(*this);
 	lv_obj_set_pos(bg, 0, 0);
 	lv_obj_set_size(bg, 128, 128);
@@ -177,63 +172,4 @@ void Theremin::buildUI(){
 	lv_obj_set_style_bg_img_src(sliderVertical, "S:/theremin/dotVertical.bin", LV_PART_KNOB);
 	lv_obj_set_style_pad_ver(sliderVertical, 2, LV_PART_MAIN);
 	lv_slider_set_range(sliderVertical, 0, SliderRange);
-
-
-	textVertical = lv_obj_create(bg);
-	lv_obj_set_layout(textVertical, LV_LAYOUT_FLEX);
-	lv_obj_set_flex_flow(textVertical, LV_FLEX_FLOW_ROW_WRAP);
-	lv_obj_set_flex_align(textVertical, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_START);
-	lv_obj_set_size(textVertical, 70, LV_SIZE_CONTENT);
-	lv_obj_set_pos(textVertical, VerticalTextX, VerticalTextY);
-	lv_obj_set_style_pad_gap(textVertical, 4, 0);
-	lv_obj_set_style_border_opa(textVertical, LV_OPA_COVER, 0);
-	lv_obj_set_style_border_color(textVertical, lv_color_make(255, 101, 0), 0);
-	lv_obj_set_style_border_width(textVertical, 1, 0);
-	lv_obj_set_style_pad_ver(textVertical, 3, 0);
-	lv_obj_set_style_pad_hor(textVertical, 4, 0);
-	auto label = lv_label_create(textVertical);
-	lv_label_set_text(label, "Tilt");
-	lv_obj_add_style(label, textStyleVertical, 0);
-	auto arrow = lv_img_create(textVertical);
-	lv_img_set_src(arrow, "S:/theremin/up.bin");
-	lv_obj_set_style_pad_left(arrow, 1, 0);
-	arrow = lv_img_create(textVertical);
-	lv_img_set_src(arrow, "S:/theremin/down.bin");
-	label = lv_label_create(textVertical);
-	lv_label_set_text(label, "to change");
-	lv_obj_add_style(label, textStyleVertical, 0);
-	label = lv_label_create(textVertical);
-	lv_label_set_text(label, "the number");
-	lv_obj_add_style(label, textStyleVertical, 0);
-	label = lv_label_create(textVertical);
-	lv_label_set_text(label, "of tones");
-	lv_obj_add_style(label, textStyleVertical, 0);
-
-
-	textHorizontal = lv_obj_create(bg);
-	lv_obj_set_layout(textHorizontal, LV_LAYOUT_FLEX);
-	lv_obj_set_flex_flow(textHorizontal, LV_FLEX_FLOW_ROW_WRAP);
-	lv_obj_set_flex_align(textHorizontal, LV_FLEX_ALIGN_END, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_START);
-	lv_obj_set_size(textHorizontal, 90, LV_SIZE_CONTENT);
-	lv_obj_set_pos(textHorizontal, HorizontalTextX, HorizontalTextY);
-	lv_obj_set_style_pad_gap(textHorizontal, 4, 0);
-	lv_obj_set_style_border_opa(textHorizontal, LV_OPA_COVER, 0);
-	lv_obj_set_style_border_color(textHorizontal, lv_color_white(), 0);
-	lv_obj_set_style_border_width(textHorizontal, 1, 0);
-	lv_obj_set_style_pad_ver(textHorizontal, 3, 0);
-	lv_obj_set_style_pad_hor(textHorizontal, 4, 0);
-	label = lv_label_create(textHorizontal);
-	lv_label_set_text(label, "Tilt");
-	lv_obj_add_style(label, textStyleHorizontal, 0);
-	arrow = lv_img_create(textHorizontal);
-	lv_img_set_src(arrow, "S:/theremin/left.bin");
-	lv_obj_set_style_pad_left(arrow, 1, 0);
-	arrow = lv_img_create(textHorizontal);
-	lv_img_set_src(arrow, "S:/theremin/right.bin");
-	label = lv_label_create(textHorizontal);
-	lv_label_set_text(label, "to change");
-	lv_obj_add_style(label, textStyleHorizontal, 0);
-	label = lv_label_create(textHorizontal);
-	lv_label_set_text(label, "base frequency");
-	lv_obj_add_style(label, textStyleHorizontal, 0);
 }

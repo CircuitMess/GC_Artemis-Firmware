@@ -24,7 +24,6 @@ private:
 	void loop() override;
 
 	lv_obj_t* bg;
-	lv_obj_t* textVertical, * textHorizontal;
 	lv_obj_t* sliderVertical, * sliderHorizontal;
 
 	static constexpr float AngleConstraint = 0.5f;
@@ -42,9 +41,6 @@ private:
 	static constexpr uint8_t HorizontalBarY = 111;
 	static constexpr uint8_t HorizontalTextX = 33;
 	static constexpr uint8_t HorizontalTextY = 69;
-
-	LVStyle textStyleVertical;
-	LVStyle textStyleHorizontal;
 
 	ChirpSystem& audio;
 	ArpeggioSequence sequence;
