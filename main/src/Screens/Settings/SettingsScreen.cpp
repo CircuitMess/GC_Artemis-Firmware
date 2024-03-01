@@ -86,10 +86,13 @@ SettingsScreen::SettingsScreen() : settings(*(Settings*) Services.get(Service::S
 	}, startingSettings.notificationSounds);
 	lv_group_add_obj(inputGroup, *motionSwitch);
 
-	rotationSwitch = new BoolElement(container, "Rotate screen", [this](bool value){
+	rotationSwitch = new BoolElement(container, "Flip screen", [this](bool value){
 		auto s = settings.get();
 		s.motionDetection = value;
 		settings.set(s);
+		lvgl->rotateScreen(value);
+		lv_obj_invalidate(*this);
+		InputLVGL::getInstance()->invertDirections(value);
 	}, startingSettings.screenRotate);
 	lv_group_add_obj(inputGroup, *rotationSwitch);
 
