@@ -41,13 +41,12 @@ JigHWTest::JigHWTest(){
 	test = this;
 
 	tests.push_back({ JigHWTest::RTCTest, "RTC", [](){} });
-	tests.push_back({ JigHWTest::Time1, "RTC kristal", [](){} });
-	tests.push_back({ JigHWTest::Time2, "RTC kristal", [](){} });
-	tests.push_back({ JigHWTest::IMUTest, "Ziroskop", [](){} });
+	tests.push_back({ JigHWTest::Time1, "RTC crystal", [](){} });
+	tests.push_back({ JigHWTest::Time2, "RTC crystal", [](){} });
+	tests.push_back({ JigHWTest::IMUTest, "Gyroscope", [](){} });
 	tests.push_back({ JigHWTest::SPIFFSTest, "SPIFFS", [](){} });
-	tests.push_back({ JigHWTest::BatteryCalib, "Batt kalib.", [](){} });
-	tests.push_back({ JigHWTest::BatteryCheck, "Batt provjera", [](){} });
-	//TODO - crystal test
+	tests.push_back({ JigHWTest::BatteryCalib, "Battery calibration", [](){} });
+	tests.push_back({ JigHWTest::BatteryCheck, "Battery check", [](){} });
 }
 
 bool JigHWTest::checkJig(){
@@ -84,8 +83,17 @@ void JigHWTest::start(){
 	esp_efuse_mac_get_default((uint8_t*) (&_chipmacid));
 	printf("\nTEST:begin:%llx\n", _chipmacid);
 
-	canvas->clear(0);
+	gpio_config_t cfg = {
+			.pin_bit_mask = ((uint64_t) 1) << PIN_BL,
+			.mode = GPIO_MODE_OUTPUT,
+			.pull_up_en = GPIO_PULLUP_DISABLE,
+			.pull_down_en = GPIO_PULLDOWN_DISABLE,
+			.intr_type = GPIO_INTR_DISABLE
+	};
+	gpio_config(&cfg);
 	gpio_set_level((gpio_num_t) PIN_BL, 0);
+
+	canvas->clear(0);
 	rgb();
 
 	canvas->clear(TFT_BLACK);
@@ -97,7 +105,7 @@ void JigHWTest::start(){
 	canvas->setTextSize(1);
 	canvas->setCursor(0, 6);
 
-	canvas->print("Clockstar test");
+	canvas->print("Artemis test");
 	canvas->setCursor(canvas->width() / 2, 16);
 	canvas->println();
 
@@ -134,15 +142,13 @@ void JigHWTest::start(){
 
 	printf("TEST:passall\n");
 
-//------------------------------------------------------
-
+	//------------------------------------------------------
 
 	canvas->print("\n\n");
 	canvas->setTextColor(TFT_GREEN);
 	canvas->print("All OK!");
 
 	AudioVisualTest();
-
 }
 
 void JigHWTest::rgb(){
@@ -154,7 +160,7 @@ void JigHWTest::rgb(){
 		canvas->setTextFont(0);
 		canvas->setTextSize(2);
 		canvas->print(names[i]);
-		vTaskDelay(350);
+		vTaskDelay(500);
 	}
 }
 
@@ -206,7 +212,6 @@ bool JigHWTest::BatteryCalib(){
 	}
 	reading /= numReadings;
 
-
 	uint32_t mapped = Battery::mapRawReading(reading);
 
 	int16_t offset = referenceVoltage - mapped;
@@ -222,8 +227,6 @@ bool JigHWTest::BatteryCalib(){
 
 	uint8_t offsetLow = offset & 0xff;
 	uint8_t offsetHigh = (offset >> 8) & 0xff;
-
-	// return true; //TODO - remove early return, burn to efuse
 
 	esp_efuse_batch_write_begin();
 	esp_efuse_write_field_blob((const esp_efuse_desc_t**) efuse_adc1_low, &offsetLow, 8);
@@ -261,7 +264,6 @@ bool JigHWTest::BatteryCheck(){
 }
 
 bool JigHWTest::SPIFFSTest(){
-
 	auto ret = esp_vfs_spiffs_register(&spiffsConfig);
 	if(ret != ESP_OK){
 		test->log("spiffs", false);
@@ -331,6 +333,85 @@ void JigHWTest::AudioVisualTest(){
 	};
 	ledc_channel_config(&ledc_channel);
 
+	ledc_timer = {
+			.speed_mode       = static_cast<ledc_mode_t>((LEDC_CHANNEL_2 / 8)),
+			.duty_resolution  = LEDC_TIMER_10_BIT,
+			.timer_num        = static_cast<ledc_timer_t>(((LEDC_CHANNEL_2 / 2) % 4)),
+			.freq_hz          = 5000,
+			.clk_cfg          = LEDC_AUTO_CLK,
+			.deconfigure      = false
+	};
+	ledc_timer_config(&ledc_timer);
+
+	ledc_channel = {
+			.gpio_num       = RGB_R,
+			.speed_mode     = static_cast<ledc_mode_t>((LEDC_CHANNEL_2 / 8)),
+			.channel        = LEDC_CHANNEL_2,
+			.intr_type      = LEDC_INTR_DISABLE,
+			.timer_sel      = static_cast<ledc_timer_t>(((LEDC_CHANNEL_2 / 2) % 4)),
+			.duty           = 0,
+			.hpoint         = 0,
+			.flags = { .output_invert = true }
+	};
+	ledc_channel_config(&ledc_channel);
+
+	ledc_timer = {
+			.speed_mode       = static_cast<ledc_mode_t>((LEDC_CHANNEL_3 / 8)),
+			.duty_resolution  = LEDC_TIMER_10_BIT,
+			.timer_num        = static_cast<ledc_timer_t>(((LEDC_CHANNEL_3 / 2) % 4)),
+			.freq_hz          = 5000,
+			.clk_cfg          = LEDC_AUTO_CLK,
+			.deconfigure      = false
+	};
+	ledc_timer_config(&ledc_timer);
+
+	ledc_channel = {
+			.gpio_num       = RGB_G,
+			.speed_mode     = static_cast<ledc_mode_t>((LEDC_CHANNEL_3 / 8)),
+			.channel        = LEDC_CHANNEL_3,
+			.intr_type      = LEDC_INTR_DISABLE,
+			.timer_sel      = static_cast<ledc_timer_t>(((LEDC_CHANNEL_3 / 2) % 4)),
+			.duty           = 0,
+			.hpoint         = 0,
+			.flags = { .output_invert = true }
+	};
+	ledc_channel_config(&ledc_channel);
+
+	ledc_timer = {
+			.speed_mode       = static_cast<ledc_mode_t>((LEDC_CHANNEL_4 / 8)),
+			.duty_resolution  = LEDC_TIMER_10_BIT,
+			.timer_num        = static_cast<ledc_timer_t>(((LEDC_CHANNEL_4 / 2) % 4)),
+			.freq_hz          = 5000,
+			.clk_cfg          = LEDC_AUTO_CLK,
+			.deconfigure      = false
+	};
+	ledc_timer_config(&ledc_timer);
+
+	ledc_channel = {
+			.gpio_num       = RGB_B,
+			.speed_mode     = static_cast<ledc_mode_t>((LEDC_CHANNEL_4 / 8)),
+			.channel        = LEDC_CHANNEL_4,
+			.intr_type      = LEDC_INTR_DISABLE,
+			.timer_sel      = static_cast<ledc_timer_t>(((LEDC_CHANNEL_4 / 2) % 4)),
+			.duty           = 0,
+			.hpoint         = 0,
+			.flags = { .output_invert = true }
+	};
+	ledc_channel_config(&ledc_channel);
+
+	static constexpr const int LEDs[] = { LED_1, LED_2, LED_3, LED_4, LED_5, LED_6 };
+
+	for(int LED : LEDs){
+		gpio_config_t cfg = {
+				.pin_bit_mask = ((uint64_t) 1) << LED,
+				.mode = GPIO_MODE_OUTPUT,
+				.pull_up_en = GPIO_PULLUP_DISABLE,
+				.pull_down_en = GPIO_PULLDOWN_DISABLE,
+				.intr_type = GPIO_INTR_DISABLE
+		};
+		gpio_config(&cfg);
+	}
+
 	new Input;
 	EventQueue queue(1);
 	Events::listen(Facility::Input, &queue);
@@ -350,14 +431,42 @@ void JigHWTest::AudioVisualTest(){
 			ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, (1 << (10 - 1)) - 1);
 			ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
 		}
+
+		ledc_set_duty(static_cast<ledc_mode_t>((LEDC_CHANNEL_2 / 8)), LEDC_CHANNEL_2, 1 << LEDC_TIMER_10_BIT);
+		ledc_update_duty(static_cast<ledc_mode_t>((LEDC_CHANNEL_2 / 8)), LEDC_CHANNEL_2);
+
+		ledc_set_duty(static_cast<ledc_mode_t>((LEDC_CHANNEL_3 / 8)), LEDC_CHANNEL_3, 1 << LEDC_TIMER_10_BIT);
+		ledc_update_duty(static_cast<ledc_mode_t>((LEDC_CHANNEL_3 / 8)), LEDC_CHANNEL_3);
+
+		ledc_set_duty(static_cast<ledc_mode_t>((LEDC_CHANNEL_4 / 8)), LEDC_CHANNEL_4, 1 << LEDC_TIMER_10_BIT);
+		ledc_update_duty(static_cast<ledc_mode_t>((LEDC_CHANNEL_4 / 8)), LEDC_CHANNEL_4);
+
+		for(int LED : LEDs){
+			gpio_set_level((gpio_num_t) LED, 1);
+		}
 		gpio_set_level(statusLed, 1);
+
 		vTaskDelay(500);
 
 		if(!mute){
 			ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 0);
 			ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
 		}
+
+		ledc_set_duty(static_cast<ledc_mode_t>((LEDC_CHANNEL_2 / 8)), LEDC_CHANNEL_2, 0);
+		ledc_update_duty(static_cast<ledc_mode_t>((LEDC_CHANNEL_2 / 8)), LEDC_CHANNEL_2);
+
+		ledc_set_duty(static_cast<ledc_mode_t>((LEDC_CHANNEL_3 / 8)), LEDC_CHANNEL_3, 0);
+		ledc_update_duty(static_cast<ledc_mode_t>((LEDC_CHANNEL_3 / 8)), LEDC_CHANNEL_3);
+
+		ledc_set_duty(static_cast<ledc_mode_t>((LEDC_CHANNEL_4 / 8)), LEDC_CHANNEL_4, 0);
+		ledc_update_duty(static_cast<ledc_mode_t>((LEDC_CHANNEL_4 / 8)), LEDC_CHANNEL_4);
+
+		for(int LED : LEDs){
+			gpio_set_level((gpio_num_t) LED, 0);
+		}
 		gpio_set_level(statusLed, 0);
+
 		vTaskDelay(500);
 	}
 }

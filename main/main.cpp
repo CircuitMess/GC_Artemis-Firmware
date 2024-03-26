@@ -46,29 +46,7 @@ void shutdown(){
 	sleepMan->shutdown();
 }
 
-static const int LEDs[] = { LED_1, LED_2, LED_3, LED_4, LED_5, LED_6 };
-
-void setLEDs(){
-	for(int i = 0; i < sizeof(LEDs)/sizeof(LEDs[0]); i++){
-		const gpio_config_t cfg = {
-				.pin_bit_mask = 1ULL << LEDs[i],
-				.mode = GPIO_MODE_OUTPUT
-		};
-		gpio_config(&cfg);
-		gpio_set_level((gpio_num_t) LEDs[i], 1);
-	}
-}
-
 void init(){
-	setLEDs();
-
-	if(JigHWTest::checkJig()){
-		printf("Jig\n");
-		auto test = new JigHWTest();
-		test->start();
-		vTaskDelete(nullptr);
-	}
-
 	gpio_install_isr_service(ESP_INTR_FLAG_LOWMED | ESP_INTR_FLAG_IRAM);
 
 	auto ret = nvs_flash_init();
@@ -80,6 +58,13 @@ void init(){
 
 	auto settings = new Settings();
 	Services.set(Service::Settings, settings);
+
+	if(JigHWTest::checkJig()){
+		printf("Jig\n");
+		auto test = new JigHWTest();
+		test->start();
+		vTaskDelete(nullptr);
+	}
 
 	auto blPwm = new PWM(PIN_BL, LEDC_CHANNEL_1, true);
 	blPwm->detach();
