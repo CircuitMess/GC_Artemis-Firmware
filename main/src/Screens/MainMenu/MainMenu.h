@@ -32,11 +32,12 @@ private:
 		const char* iconPath = nullptr;
 		const char* iconAltPath = nullptr;
 	};
-	ItemInfo ItemInfos[5] = {
+	ItemInfo ItemInfos[6] = {
 			{ "Find my phone",    "Ringing phone...",                     File::Menu::Theme1::Find,       File::Menu::Theme1::Find },
 			{ "Level",            nullptr,                                File::Menu::Theme1::Level,      nullptr },
 			{ "Theremin",         nullptr,                                File::Menu::Theme1::Theremin,   nullptr },
 			{ "Phone connection", ConnDesc[(int) Phone::PhoneType::None], File::Menu::Theme1::Connection, File::Menu::Theme1::Connection },
+			{ "Rover control",	  nullptr,                                File::Menu::Theme1::Rover,   	  nullptr },
 			{ "Settings",         nullptr,                                File::Menu::Theme1::Settings,   nullptr }
 	};
 	static constexpr uint8_t ItemCount = sizeof(ItemInfos) / sizeof(ItemInfos[0]);
