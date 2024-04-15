@@ -20,6 +20,9 @@ T map(T val, decltype(val) fromLow, decltype(val) fromHigh, decltype(val) toLow,
 uint64_t millis();
 uint64_t micros();
 
+void delayMicros(uint32_t micros);
+void delayMillis(uint32_t millis);
+
 void ramReport();
 
 void stackRep(const char* where = nullptr);
