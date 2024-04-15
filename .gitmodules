@@ -10,3 +10,9 @@
 [submodule "main/lib/glm"]
 	path = main/lib/glm
 	url = https://github.com/g-truc/glm.git
+[submodule "components/Perse-Common"]
+	path = components/Perse-Common
+	url = git@github.com:CircuitMess/Perse-Common.git
+[submodule "components/JPEGDEC"]
+	path = components/JPEGDEC
+	url = https://github.com/bitbank2/JPEGDEC.git
