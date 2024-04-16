@@ -54,6 +54,12 @@ public:
 	 */
 	void setTiltDirection(TiltDirection direction);
 
+	/**
+	 * Sets the watch wear position for tilt detection. Default is face-up.
+	 * @param wristPosition Face-up or face-down position
+	 */
+	void setWristPosition(WatchPosition wristPosition);
+
 	void enableTiltDetection(bool enable);
 
 	Sample getSample();
@@ -84,12 +90,6 @@ private:
 	 * !DELETED FUNCTION!
 	 */
 	void enableFIFO(bool enable);
-
-	/**
-	 * Sets the watch wear position for tilt detection. Default is face-up.
-	 * @param wristPosition Face-up or face-down position
-	 */
-	void setWristPosition(WatchPosition wristPosition);
 
 	static int32_t platform_write(void* hndl, uint8_t reg, const uint8_t* data, uint16_t len);
 	static int32_t platform_read(void* hndl, uint8_t reg, uint8_t* data, uint16_t len);
