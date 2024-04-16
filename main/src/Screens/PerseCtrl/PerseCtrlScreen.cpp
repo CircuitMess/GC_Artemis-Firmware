@@ -92,7 +92,7 @@ void PerseCtrlScreen::loop(){
 			printf("Pair success\n");
 			lv_obj_del(pairLabel);
 			paired = true;
-			comm.sendFeedQuality(1);
+			comm.sendFeedQuality(30);
 		}
 
 		printf("Deleting pair...\n");
