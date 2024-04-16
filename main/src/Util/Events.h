@@ -47,8 +47,15 @@ public:
 	bool get(Event& item, TickType_t timeout);
 	void reset();
 
+	void unblock();
+
 private:
 	QueueHandle_t queue;
+
+	struct InternalEvent {
+		Event evt;
+		bool killPill;
+	};
 
 	bool post(Facility facility, void* data);
 	friend Events;

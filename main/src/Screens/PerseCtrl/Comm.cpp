@@ -8,8 +8,11 @@ Comm::Comm(TCPClient& tcp) : Threaded("Comm", 4 * 1024), tcp(tcp), queue(10){
 }
 
 Comm::~Comm(){
+	printf("Comm dest\n");
 	Events::unlisten(&queue);
+	queue.unblock();
 	stop();
+	printf("Comm destroyed\n");
 }
 
 void Comm::sendDriveDir(DriveDir dir){
@@ -159,8 +162,9 @@ void Comm::loop(){
 
 	if(!tcp.isConnected() || !readOK){
 		::Event event{};
-		while(!queue.get(event, portMAX_DELAY));
-		free(event.data);
+		if(queue.get(event, 1)){
+			free(event.data);
+		}
 	}
 }
 

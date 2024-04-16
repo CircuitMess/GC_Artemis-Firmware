@@ -4,7 +4,6 @@
 #include "UDPListener.h"
 #include "DriveInfo.h"
 #include "Util/Threaded.h"
-#include <JPEGDEC.h>
 #include <semaphore>
 #include <atomic>
 
@@ -20,7 +19,7 @@ public:
 	void setPostProcCallback(std::function<void(const DriveInfo&, Color*)> callback);
 
 private:
-	JPEGDEC jpeg;
+	std::unique_ptr<class JPEGDEC> jpeg;
 	UDPListener udp;
 
 	RingBuffer rxBuf;

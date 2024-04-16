@@ -39,7 +39,7 @@ void Events::post(Facility facility, const void* data, size_t size){
 
 
 EventQueue::EventQueue(size_t count){
-	queue = xQueueCreate(count, sizeof(Event));
+	queue = xQueueCreate(count, sizeof(InternalEvent));
 }
 
 EventQueue::~EventQueue(){
@@ -48,13 +48,24 @@ EventQueue::~EventQueue(){
 }
 
 bool EventQueue::get(Event& event, TickType_t timeout){
-	return xQueueReceive(queue, &event, timeout) == pdTRUE;
+	InternalEvent internal{};
+
+	if(!xQueueReceive(queue, &internal, timeout)) return false;
+
+	if(internal.killPill) return false;
+
+	event = internal.evt;
+
+	return true;
 }
 
 bool EventQueue::post(Facility facility, void* data){
-	Event event = {
-			.facility = facility,
-			.data = data
+	InternalEvent event = {
+			.evt = {
+					.facility = facility,
+					.data = data
+			},
+			.killPill = false
 	};
 
 	return xQueueSend(queue, &event, 0) == pdTRUE;
@@ -66,4 +77,12 @@ void EventQueue::reset(){
 		get(evt, 0);
 		free(evt.data);
 	}
+}
+
+void EventQueue::unblock(){
+	InternalEvent event = {
+			.killPill = true
+	};
+
+	xQueueSend(queue, &event, 0);
 }

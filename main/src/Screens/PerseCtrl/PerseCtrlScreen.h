@@ -13,9 +13,12 @@ public:
 	PerseCtrlScreen();
 	~PerseCtrlScreen() override;
 
+	virtual void onStart() override;
+	virtual void onStop() override;
+
 private:
-	WiFiSTA wifi;
-	TCPClient tcp;
+	WiFiSTA& wifi;
+	TCPClient& tcp;
 	Feed feed;
 	Comm comm;
 	std::unique_ptr<PairService> pair;
@@ -37,13 +40,14 @@ private:
 	lv_obj_t* pairLabel;
 
 	bool paired = false;
+	bool cacheReturned = false;
 
 	uint8_t camPos = 50;
 	int8_t camDir = 0;
 
 	uint64_t sendTime = 0;
 	static constexpr uint32_t SendInterval = 50; // [ms]
-
+	static lv_color_t Color;
 };
 
 

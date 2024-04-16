@@ -14,6 +14,7 @@
 class WiFiSTA {
 public:
 	WiFiSTA();
+	~WiFiSTA();
 
 	struct Event {
 		enum { Connect, Disconnect, Probe } action;
@@ -44,8 +45,10 @@ private:
 	esp_event_handler_instance_t evtHandler;
 	void event(int32_t id, void* data);
 
+	esp_netif_t* netif = nullptr;
+
 	State state = Disconnected;
-	std::binary_semaphore initSem{ 0 };
+	inline static std::binary_semaphore initSem{ 0 };
 
 	std::string cachedSSID;
 	bool attemptedCachedSSID = false;
@@ -58,6 +61,8 @@ private:
 	static esp_netif_t* createNetif();
 
 	static constexpr uint16_t ScanListSize = 24;
+
+	inline static bool eventLoopCreated = false;
 
 	static wifi_ap_record_t* findNetwork(wifi_ap_record_t* ap_info, uint32_t numRecords);
 };

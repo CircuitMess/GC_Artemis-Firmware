@@ -2,10 +2,11 @@
 #include "Util/stdafx.h"
 #include <esp_log.h>
 #include <mutex>
+#include <JPEGDEC.h>
 
 static const char* tag = "Feed";
 
-Feed::Feed() : rxBuf(RxBufSize), dataAvailable(0), readTask([this](){ readLoop(); }, "FeedRead", 4096, 5, 0),
+Feed::Feed() : jpeg(std::make_unique<JPEGDEC>()), rxBuf(RxBufSize), dataAvailable(0), readTask([this](){ readLoop(); }, "FeedRead", 4096, 5, 0),
 			   decodeTask([this](){ decodeLoop(); }, "FeedDecode", 4096, 5, 0){
 
 	readBuf.resize(ReadBufSize);
@@ -99,7 +100,7 @@ void Feed::decodeLoop(){
 	freeImgs[freeImg] = false;
 	auto imgBuf = frameImgs[freeImg].data();
 
-	jpeg.openRAM((uint8_t*) (frame->frame.data), frame->frame.size, [](JPEGDRAW* data) -> int{
+	jpeg->openRAM((uint8_t*) (frame->frame.data), frame->frame.size, [](JPEGDRAW* data) -> int{
 		for(int y = data->y, iy = 0; y < data->y + data->iHeight; y++, iy++){
 			size_t offset = y * 160 + data->x;
 			size_t ioffset = iy * data->iWidth;
@@ -108,11 +109,11 @@ void Feed::decodeLoop(){
 		return 1;
 	});
 
-	jpeg.setUserPointer(imgBuf);
-	jpeg.setPixelType(RGB565_BIG_ENDIAN);
+	jpeg->setUserPointer(imgBuf);
+	jpeg->setPixelType(RGB565_BIG_ENDIAN);
 
-	if(jpeg.decode(0, 0, 0) == 0){
-		ESP_LOGE(tag, "decode error: %d", jpeg.getLastError());
+	if(jpeg->decode(0, 0, 0) == 0){
+		ESP_LOGE(tag, "decode error: %d", jpeg->getLastError());
 		freeImgs[freeImg] = true;
 		return;
 	}

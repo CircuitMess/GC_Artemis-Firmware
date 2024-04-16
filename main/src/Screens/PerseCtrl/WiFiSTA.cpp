@@ -22,7 +22,11 @@ static std::string mac2str(uint8_t ar[]){
 }
 
 WiFiSTA::WiFiSTA() : hysteresis({0, 20, 40, 60, 80}, 1){
-	ESP_ERROR_CHECK(esp_event_loop_create_default());
+	if(!eventLoopCreated){
+		ESP_ERROR_CHECK(esp_event_loop_create_default());
+		eventLoopCreated = true;
+	}
+
 	esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, [](void* arg, esp_event_base_t base, int32_t id, void* data){
 		if(base != WIFI_EVENT) return;
 		auto wifi = static_cast<WiFiSTA*>(arg);
@@ -30,7 +34,7 @@ WiFiSTA::WiFiSTA() : hysteresis({0, 20, 40, 60, 80}, 1){
 	}, this, &evtHandler);
 
 	ESP_ERROR_CHECK(esp_netif_init());
-	createNetif();
+	netif = createNetif();
 
 	wifi_init_config_t cfg_wifi = WIFI_INIT_CONFIG_DEFAULT();
 	esp_wifi_init(&cfg_wifi);
@@ -41,12 +45,26 @@ WiFiSTA::WiFiSTA() : hysteresis({0, 20, 40, 60, 80}, 1){
 	initSem.acquire();
 }
 
+WiFiSTA::~WiFiSTA(){
+	esp_wifi_scan_stop();
+	esp_wifi_disconnect();
+	esp_wifi_stop();
+
+	esp_netif_deinit();
+
+	if(netif != nullptr){
+		esp_netif_destroy(netif);
+	}
+
+	esp_event_handler_instance_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, &evtHandler);
+}
+
 bool WiFiSTA::hasCachedSSID() const{
 	return !cachedSSID.empty() && !attemptedCachedSSID;
 }
 
 void WiFiSTA::event(int32_t id, void* data){
-	ESP_LOGD(TAG, "Evt %ld", id);
+	ESP_LOGE(TAG, "Evt %ld", id);
 
 	if(id == WIFI_EVENT_STA_START){
 		initSem.release();
@@ -207,10 +225,7 @@ void WiFiSTA::connect(){
 	state = Scanning;
 	const wifi_scan_config_t ScanConfig = {
 			.channel = 1,
-			.scan_type = WIFI_SCAN_TYPE_PASSIVE,
-			.scan_time = {
-					.passive = 1500
-			}
+			.scan_type = WIFI_SCAN_TYPE_PASSIVE
 	};
 	esp_wifi_scan_start(&ScanConfig, false);
 }

@@ -1,4 +1,5 @@
 #include "PerseCtrlScreen.h"
+#include "Services/SleepMan.h"
 #include "Devices/Input.h"
 #include "Screens/MainMenu/MainMenu.h"
 #include "Devices/IMU.h"
@@ -9,7 +10,9 @@
 #include "gtx/vector_angle.hpp"
 #include "LV_Interface/FSLVGL.h"
 
-PerseCtrlScreen::PerseCtrlScreen() : comm(tcp), evts(6){
+lv_color_t PerseCtrlScreen::Color = lv_color_make(255, 101, 0);
+
+PerseCtrlScreen::PerseCtrlScreen() : wifi(*(WiFiSTA*) Services.get(Service::WiFi)), tcp(*(TCPClient*) Services.get(Service::TCP)), comm(tcp), evts(6){
 	FSLVGL::unloadCache();
 
 	lv_obj_set_style_bg_color(*this, lv_color_black(), 0);
@@ -28,7 +31,7 @@ PerseCtrlScreen::PerseCtrlScreen() : comm(tcp), evts(6){
 
 	pairLabel = lv_label_create(*this);
 	lv_obj_set_size(pairLabel, 128, 12);
-	lv_obj_set_style_text_color(pairLabel, lv_color_make(0, 220, 0), 0);
+	lv_obj_set_style_text_color(pairLabel, Color, 0);
 	lv_obj_set_style_text_align(pairLabel, LV_TEXT_ALIGN_CENTER, 0);
 	lv_label_set_text(pairLabel, "Pairing...");
 	lv_obj_set_pos(pairLabel, 0, 60);
@@ -39,10 +42,26 @@ PerseCtrlScreen::PerseCtrlScreen() : comm(tcp), evts(6){
 }
 
 PerseCtrlScreen::~PerseCtrlScreen(){
+	if(auto settings = (Settings*) Services.get(Service::Settings)){
+		if(!cacheReturned){
+			FSLVGL::loadCache(settings->get().themeData.theme);
+		}
+	}
+
 	pair.reset();
 	tcp.disconnect();
 	free(feedBuf);
 	Events::unlisten(&evts);
+}
+
+void PerseCtrlScreen::onStart(){
+	auto sleep = (SleepMan*) Services.get(Service::Sleep);
+	sleep->enAutoSleep(false);
+}
+
+void PerseCtrlScreen::onStop(){
+	auto sleep = (SleepMan*) Services.get(Service::Sleep);
+	sleep->enAutoSleep(true);
 }
 
 void PerseCtrlScreen::loop(){
@@ -57,7 +76,7 @@ void PerseCtrlScreen::loop(){
 
 				lv_obj_t* loading = lv_label_create(*this);
 				lv_obj_set_size(loading, 128, 12);
-				lv_obj_set_style_text_color(loading, lv_color_make(0, 220, 0), 0);
+				lv_obj_set_style_text_color(loading, Color, 0);
 				lv_obj_set_style_text_align(loading, LV_TEXT_ALIGN_CENTER, 0);
 				lv_obj_center(loading);
 				lv_label_set_text(loading, "Loading...");
@@ -68,6 +87,7 @@ void PerseCtrlScreen::loop(){
 
 				auto settings = (Settings*) Services.get(Service::Settings);
 				if(settings){
+					cacheReturned = true;
 					FSLVGL::loadCache(settings->get().themeData.theme);
 				}
 
@@ -102,10 +122,9 @@ void PerseCtrlScreen::loop(){
 
 	if(!paired) return;
 
-	feed.nextFrame([this](const DriveInfo& info, const Color* buf){
+	feed.nextFrame([this](const DriveInfo& info, const ::Color* buf){
 		memcpy(feedBuf, buf, 160*120*2);
 		lv_obj_invalidate(feedImg);
-		// printf("Frame\n");
 	});
 
 	if(sendTime == 0){
@@ -131,8 +150,6 @@ void PerseCtrlScreen::loop(){
 
 	const auto len = std::clamp(glm::length(dir), 0.0f, 1.0f);
 
-	// printf("Dir: [%.2f %.2f], len: %.2f\n", dir.x, dir.y, len);
-
 	if(len < 0.2){
 		comm.sendDriveDir({ 0, 0.0f });
 		return;
@@ -153,4 +170,3 @@ void PerseCtrlScreen::loop(){
 
 	comm.sendDriveDir({ numer, len });
 }
-
