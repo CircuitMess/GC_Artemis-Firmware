@@ -13,11 +13,13 @@
 class StatusCenter : public Threaded {
 public:
 	StatusCenter();
+	~StatusCenter();
 
 	void blockAudio(bool block);
 
 	void updateLED();
 	void blink();
+	void circularBlink();
 	void beep();
 	void shutdown();
 

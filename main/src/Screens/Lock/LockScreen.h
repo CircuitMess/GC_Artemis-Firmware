@@ -10,7 +10,10 @@
 #include "Slider.h"
 #include "Devices/Input.h"
 #include "UIElements/ClockLabelBig.h"
+#include "LockSkin.h"
+#include "Filepaths.hpp"
 
+// TODO: functionality of this should be separated from UI and this should control UI, which can be different at times but needs same API for interacting with the user through different skins
 class LockScreen : public LVScreen {
 public:
 	LockScreen();
@@ -33,49 +36,26 @@ private:
 	 * `-- item
 	 */
 
-	lv_obj_t* main;
+	LockSkin* skin = nullptr;
 
-	lv_obj_t* mainTop;
+	/*lv_obj_t* mainTop;
 
 	lv_obj_t* mainMid;
-	ClockLabelBig* clock;
 	lv_obj_t* icons;
 
-	Slider* locker;
 	lv_obj_t* playing;
 	lv_obj_t* lock;
 
-	lv_obj_t* rest;
-
-	StatusBar* status;
+	lv_obj_t* rest;*/
 
 	Time& ts;
 	Phone& phone;
 	EventQueue queue;
 
-	static constexpr uint8_t MaxNotifs = 20;
-	std::unordered_map<uint32_t, Item*> notifs;
-
-	struct NotifIcon {
-		uint32_t count;
-		lv_obj_t* icon;
-	};
-	std::unordered_map<const char*, NotifIcon> notifIcons;
-	static constexpr uint8_t MaxIconsCount = MaxNotifs;
-	static constexpr const char* EtcIconPath = "S:/icon/etc.bin";
-
 	void onStarting() override;
 	void onStart() override;
 	void onStop() override;
 	void prepare();
-
-	void updateNotifs();
-	void notifAdd(const Notif& notif);
-	void notifRem(uint32_t id);
-	void notifsClear();
-
-	void addNotifIcon(const char* path);
-	void removeNotifIcon(const char* path);
 
 	void loop() override;
 	void processEvt(const Phone::Event& evt);

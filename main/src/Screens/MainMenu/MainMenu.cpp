@@ -7,10 +7,19 @@
 #include "Screens/Settings/SettingsScreen.h"
 #include "Util/stdafx.h"
 #include "LV_Interface/InputLVGL.h"
+#include "Screens/Lander/LunarLander.h"
 
 uint8_t  MainMenu::lastIndex = UINT8_MAX;
 
 MainMenu::MainMenu() : phone(*((Phone*) Services.get(Service::Phone))), queue(4){
+	Settings* settings = (Settings*) Services.get(Service::Settings);
+	if(settings == nullptr){
+		return;
+	}
+
+	const auto theme = settings->get().themeData.theme;
+	setupItemPaths(theme);
+
 	lv_img_cache_set_size(8);
 
 	lv_obj_set_size(*this, 128, LV_SIZE_CONTENT);
@@ -22,11 +31,13 @@ MainMenu::MainMenu() : phone(*((Phone*) Services.get(Service::Phone))), queue(4)
 	lv_obj_set_pos(bg, 0, 0);
 	lv_obj_set_style_bg_color(bg, lv_color_black(), 0);
 	lv_obj_set_style_bg_opa(bg, LV_OPA_COVER, 0);
-	lv_obj_set_style_bg_img_src(bg, "S:/menu/bg.bin", 0);
+	lv_obj_set_style_bg_img_src(bg, THEMED_FILE(Menu, Background, theme), 0);
 
+	static constexpr auto statusBarHeight = 15;
 	container = lv_obj_create(*this);
-	lv_obj_set_style_pad_all(container, 1, 0);
-	lv_obj_set_size(container, 128, 128);
+	lv_obj_set_pos(container, 0, statusBarHeight + (theme == Theme::Theme9 ? 5 : 0));
+	lv_obj_set_style_pad_hor(container, 1, 0);
+	lv_obj_set_size(container, 128, lv_obj_get_height(*this) - statusBarHeight - (theme == Theme::Theme9 ? 5 : 0));
 	lv_obj_add_flag(container, LV_OBJ_FLAG_SCROLLABLE);
 	lv_obj_set_flex_flow(container, LV_FLEX_FLOW_COLUMN);
 	lv_obj_set_flex_align(container, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
@@ -92,6 +103,17 @@ MainMenu::~MainMenu(){
 	lv_img_cache_set_size(LV_IMG_CACHE_DEF_SIZE);
 }
 
+void MainMenu::setupItemPaths(Theme theme){
+	ItemInfos[0].iconPath = THEMED_FILE(Menu, Find, theme);
+	ItemInfos[0].iconAltPath = THEMED_FILE(Menu, Find, theme);
+	ItemInfos[1].iconPath = THEMED_FILE(Menu, Lunar, theme);
+	ItemInfos[2].iconPath = THEMED_FILE(Menu, Level, theme);
+	ItemInfos[3].iconPath = THEMED_FILE(Menu, Theremin, theme);
+	ItemInfos[4].iconPath = THEMED_FILE(Menu, Connection, theme);
+	ItemInfos[4].iconAltPath = THEMED_FILE(Menu, Connection, theme);
+	ItemInfos[5].iconPath = THEMED_FILE(Menu, Settings, theme);
+}
+
 void MainMenu::resetMenuIndex(){
 	lastIndex = UINT8_MAX;
 }
@@ -155,6 +177,7 @@ void MainMenu::onClick(){
 
 	std::function<void()> launcher[] = {
 			[](){ },
+			[this](){ transition([](){ return std::make_unique<LunarLander>(); }); },
 			[this](){ transition([](){ return std::make_unique<Level>(); }); },
 			[this](){ transition([](){ return std::make_unique<Theremin>(); }); },
 			[](){ },
@@ -196,10 +219,10 @@ void MainMenu::handleInput(Input::Data& event){
 }
 
 void MainMenu::setConnAlts(){
-	auto connEl = (MenuItemAlt*) items[3];
+	auto connEl = (MenuItemAlt*) items[4];
 
 	const auto connAlt = phone.getPhoneType() == Phone::PhoneType::None
-						 ? ItemInfos[3].iconAltPath : ItemInfos[3].iconPath;
+						 ? ItemInfos[4].iconAltPath : ItemInfos[4].iconPath;
 	connEl->setAltParams(connAlt, ConnDesc[(int) phone.getPhoneType()]);
 }
 

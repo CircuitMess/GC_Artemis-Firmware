@@ -2,6 +2,7 @@
 #define ARTEMIS_FIRMWARE_INTROSCREEN_H
 
 #include "LV_Interface/LVScreen.h"
+#include "Filepaths.hpp"
 
 class IntroScreen : public LVScreen {
 public:
@@ -18,7 +19,7 @@ private:
 	};
 
 	static constexpr const char* ImagePaths[3] = {
-			"S:/intro/geek.bin", "S:/intro/cm.bin", "S:/intro/space.bin"
+			File::Intro::GeekClub, File::Intro::CircuitMess, File::Intro::Space
 	};
 
 	static constexpr uint32_t ScrollTime = 500;

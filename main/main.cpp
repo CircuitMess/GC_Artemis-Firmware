@@ -1,5 +1,7 @@
 #include <driver/gpio.h>
 #include <nvs_flash.h>
+#include <bootloader_random.h>
+#include <esp_random.h>
 #include "Settings/Settings.h"
 #include "Pins.hpp"
 #include "Periph/I2C.h"
@@ -29,6 +31,8 @@
 #include "JigHWTest/JigHWTest.h"
 #include "Util/Notes.h"
 #include "Screens/Intro/IntroScreen.h"
+#include "Filepaths.hpp"
+#include "Screens/Lander/LunarLander.h"
 
 LVGL* lvgl;
 BacklightBrightness* bl;
@@ -69,7 +73,7 @@ void init(){
 		vTaskDelete(nullptr);
 	}
 
-	gpio_install_isr_service(ESP_INTR_FLAG_LOWMED | ESP_INTR_FLAG_SHARED | ESP_INTR_FLAG_IRAM);
+	gpio_install_isr_service(ESP_INTR_FLAG_LOWMED | ESP_INTR_FLAG_IRAM);
 
 	auto ret = nvs_flash_init();
 	if(ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND){
@@ -127,25 +131,33 @@ void init(){
 	server->start();
 	Services.set(Service::Phone, phone);
 
-	FSLVGL::loadCache();
+	srand(esp_random());
+
+	FSLVGL::loadCache(settings->get().themeData.theme);
 
 	// Load start screen here
 	lvgl->startScreen([](){ return std::make_unique<IntroScreen>(); });
-
-	if(settings->get().notificationSounds){
-		audio->play({
-							Chirp{ .startFreq = NOTE_E4, .endFreq = NOTE_GS4, .duration = 100 },
-							Chirp{ .startFreq = 0, .endFreq = 0, .duration = 200 },
-							Chirp{ .startFreq = NOTE_GS4, .endFreq = NOTE_B4, .duration = 100 },
-							Chirp{ .startFreq = 0, .endFreq = 0, .duration = 200 },
-							Chirp{ .startFreq = NOTE_B4, .endFreq = NOTE_E5, .duration = 100 }
-					});
-	}
 
 	// Start UI thread after initialization
 	lvgl->start();
 
 	bl->fadeIn();
+
+	if(settings->get().notificationSounds){
+		audio->play({
+							Chirp{ .startFreq = 250, .endFreq = 250, .duration = 500 },
+							Chirp{ .startFreq = 0, .endFreq = 0, .duration = 200 },
+							Chirp{ .startFreq = 500, .endFreq = 500, .duration = 500 },
+							Chirp{ .startFreq = 0, .endFreq = 0, .duration = 200 },
+							Chirp{ .startFreq = 1000, .endFreq = 1000, .duration = 500 }
+					});
+
+		vTaskDelay(2500);
+
+		audio->play({
+							Chirp{ .startFreq = 125, .endFreq = 125, .duration = 1000 }
+					});
+	}
 
 	// Start Battery scanning after everything else, otherwise Critical
 	// Battery event might come while initialization is still in progress

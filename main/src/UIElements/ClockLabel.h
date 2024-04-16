@@ -12,18 +12,22 @@ public:
 
 	void loop();
 
+	void set24hFormat(bool format);
+
 protected:
 	void updateTime(const tm& time);
 
 	Time& ts;
 
 private:
-	virtual void updateUI(const char* clockText) = 0;
+	virtual void updateUI(const char* clockText, const char* ps) = 0;
 
 	EventQueue queue;
 
 	static constexpr uint32_t TimeUpdateInterval = 200;
 	uint64_t lastTimeUpdate = 0;
+
+	bool format24h = true;
 };
 
 

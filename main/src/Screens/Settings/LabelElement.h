@@ -7,7 +7,9 @@
 
 class LabelElement : public LVObject {
 public:
-	explicit LabelElement(lv_obj_t* parent, const char* name, std::function<void()> cb);
+	explicit LabelElement(lv_obj_t* parent, const char* name, std::function<void()> cb, bool reverseColorScheme = false, lv_align_t textAlign = LV_ALIGN_DEFAULT);
+
+	virtual void updateVisuals() override;
 
 private:
 	lv_obj_t* label;
@@ -20,7 +22,7 @@ private:
 
 	std::function<void()> cb;
 	static constexpr uint8_t Height = 23;
-
+	bool reverseColor;
 };
 
 

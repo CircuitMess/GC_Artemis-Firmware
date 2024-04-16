@@ -9,6 +9,8 @@
 #include "Notifs/Phone.h"
 #include "Devices/Input.h"
 #include "MenuItemAlt.h"
+#include "Filepaths.hpp"
+#include "Settings/Settings.h"
 
 class MainMenu : public LVScreen {
 public:
@@ -30,14 +32,16 @@ private:
 		const char* iconPath = nullptr;
 		const char* iconAltPath = nullptr;
 	};
-	static constexpr ItemInfo ItemInfos[] = {
-			{ "Find my phone",    "Ringing phone...",                     "S:/menu/find.bin",       "S:/menu/find.bin" },
-			{ "Level",            nullptr,                                "S:/menu/level.bin",      nullptr },
-			{ "Theremin",         nullptr,                                "S:/menu/theremin.bin",   nullptr },
-			{ "Phone connection", ConnDesc[(int) Phone::PhoneType::None], "S:/menu/connection.bin", "S:/menu/connection.bin" },
-			{ "Settings",         nullptr,                                "S:/menu/settings.bin",   nullptr }
+	ItemInfo ItemInfos[6] = {
+			{ "Find my phone",    "Ringing phone...",                     File::Menu::Theme1::Find,       File::Menu::Theme1::Find },
+			{ "Lunar lander",	  nullptr,                  			  File::Menu::Theme1::Lunar, 	  nullptr },
+			{ "Level",            nullptr,                                File::Menu::Theme1::Level,      nullptr },
+			{ "Theremin",         nullptr,                                File::Menu::Theme1::Theremin,   nullptr },
+			{ "Phone connection", ConnDesc[(int) Phone::PhoneType::None], File::Menu::Theme1::Connection, File::Menu::Theme1::Connection },
+			{ "Settings",         nullptr,                                File::Menu::Theme1::Settings,   nullptr }
 	};
 	static constexpr uint8_t ItemCount = sizeof(ItemInfos) / sizeof(ItemInfos[0]);
+	void setupItemPaths(Theme theme);
 
 	void setConnAlts();
 

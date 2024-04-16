@@ -36,6 +36,6 @@ struct Notif {
 	} category;
 };
 
-const char* iconPath(const Notif& notif);
+const char* iconPath(const Notif& notif, bool smallIcon = false);
 
 #endif //CLOCKSTAR_FIRMWARE_NOTIF_H

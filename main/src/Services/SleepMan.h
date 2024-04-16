@@ -10,7 +10,8 @@
 
 class SleepMan {
 public:
-	SleepMan(LVGL& lvgl);
+	explicit SleepMan(LVGL& lvgl);
+	~SleepMan();
 	void loop();
 
 	void enAltLock(bool altLock);

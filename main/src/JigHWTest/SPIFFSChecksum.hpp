@@ -1,5 +1,6 @@
 #ifndef BATMOBILE_FIRMWARE_SPIFFSCHECKSUM_H
 #define BATMOBILE_FIRMWARE_SPIFFSCHECKSUM_H
+// TODO: update this, add missing files, change so it uses Filepaths.hpp
 struct {
 	const char* name;
 	uint32_t sum;

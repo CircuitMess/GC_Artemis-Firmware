@@ -21,6 +21,10 @@ SleepMan::SleepMan(LVGL& lvgl) : events(12), lvgl(lvgl),
 	actTime = millis();
 }
 
+SleepMan::~SleepMan(){
+	Events::unlisten(&events);
+}
+
 void SleepMan::goSleep(){
 	auto battery = (Battery*) Services.get(Service::Battery);
 	if(!battery || battery->isShutdown()) return;
@@ -29,10 +33,14 @@ void SleepMan::goSleep(){
 
 	lvgl.stopScreen();
 
-	if(waitForLower){
-		imu.setTiltDirection(IMU::TiltDirection::Lowered);
-	}else{
-		imu.setTiltDirection(IMU::TiltDirection::Lifted);
+	if(settings.get().motionDetection){
+		imu.init();
+
+		if(waitForLower){
+			imu.setTiltDirection(IMU::TiltDirection::Lowered);
+		}else{
+			imu.setTiltDirection(IMU::TiltDirection::Lifted);
+		}
 	}
 
 	inSleep = true;
@@ -56,15 +64,18 @@ void SleepMan::goSleep(){
 	});
 	nsBlocked = inSleep = false;
 
-	if(buttonWakeWhileLowered){
-		imu.setTiltDirection(IMU::TiltDirection::Lifted);
-		waitForLift = true;
-	}else{
-		imu.setTiltDirection(IMU::TiltDirection::Lowered);
-		waitForLift = false;
-	}
-	ESP_LOGD(tag, "wakeup! waitForLower: %d, waitForLift: %d", waitForLower, waitForLift);
+	if(settings.get().motionDetection){
+		imu.init();
 
+		if(buttonWakeWhileLowered){
+			imu.setTiltDirection(IMU::TiltDirection::Lifted);
+			waitForLift = true;
+		}else{
+			imu.setTiltDirection(IMU::TiltDirection::Lowered);
+			waitForLift = false;
+		}
+		ESP_LOGD(tag, "wakeup! waitForLower: %d, waitForLift: %d", waitForLower, waitForLift);
+	}
 
 	wakeTime = actTime = millis();
 	events.reset();

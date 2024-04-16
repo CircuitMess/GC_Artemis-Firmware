@@ -25,3 +25,7 @@ LVObject::operator lv_obj_t*(){
 	return obj;
 }
 
+void LVObject::updateVisuals(){
+
+}
+

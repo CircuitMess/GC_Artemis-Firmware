@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include <memory>
 #include "Util/RamFile.h"
+#include "Settings/Settings.h"
 
 class FSLVGL {
 public:
@@ -21,7 +22,8 @@ public:
 	static void addToCache(const char* path, bool use32bAligned = false);
 	static void removeFromCache(const char* path);
 
-	static void loadCache();
+	static void loadCache(Theme theme);
+	static void unloadCache();
 
 private:
 	lv_fs_drv_t drv;                   /*Needs to be static or global*/
@@ -31,6 +33,7 @@ private:
 	struct FileResource {
 		RamFile* ramFile;
 		mutable bool deleteFlag;
+		mutable size_t openCount = 0;
 
 		bool operator==(const FileResource& other) const{
 			return other.ramFile == ramFile;

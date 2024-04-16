@@ -7,7 +7,7 @@
 
 class TimePickerModal : public LVModal {
 public:
-	TimePickerModal(LVScreen* parent, tm time);
+	TimePickerModal(LVScreen* parent, tm time, const std::function<void()>& onSaved = nullptr);
 
 private:
 	void buildStyles();
@@ -20,7 +20,7 @@ private:
 
 	tm time;
 
-	lv_obj_t* hour, * minute, * second, * day, * month, * year;
+	lv_obj_t* hour, * minute, * second, * day, * month, * year, * meridiem;
 	lv_obj_t* timeCont;
 	lv_obj_t* dateCont;
 	LabelElement* saveButton;
@@ -29,7 +29,10 @@ private:
 	LVStyle focusedStyle;
 	LVStyle labelStyle;
 
+	std::function<void()> onSaved;
+
 	const bool startingInputInversion;
+	const bool timeFormat24h;
 
 	lv_anim_t blinkAnim;
 	static void animFunc(void* var, int32_t val);
@@ -37,7 +40,8 @@ private:
 
 	static constexpr lv_style_selector_t SelDefault = LV_PART_MAIN | LV_STATE_DEFAULT;
 	static constexpr lv_style_selector_t SelFocus = LV_PART_MAIN | LV_STATE_FOCUSED;
-	static constexpr const char* MonthsNames = "January\nFebruary\nMarch\nApril\nMay\nJune\nJuly\nAugust\nSeptember\nOctober\nNovember\nDecember";
+	static constexpr const char* MonthsNames = "JAN\nFEB\nMAR\nAPR\nMAY\nJUN\nJUL\nAUG\nSEP\nOCT\nNOV\nDEC";
+	static constexpr const char* MeridiemNames = "AM\nPM";
 };
 
 

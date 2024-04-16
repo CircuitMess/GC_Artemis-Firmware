@@ -10,6 +10,8 @@ public:
 
 	operator lv_obj_t*();
 
+	virtual void updateVisuals();
+
 protected:
 	lv_obj_t* obj = nullptr;
 
