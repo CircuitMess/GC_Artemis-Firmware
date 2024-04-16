@@ -7,8 +7,11 @@
 #include "geometric.hpp"
 #include "trigonometric.hpp"
 #include "gtx/vector_angle.hpp"
+#include "LV_Interface/FSLVGL.h"
 
 PerseCtrlScreen::PerseCtrlScreen() : comm(tcp), evts(6){
+	FSLVGL::unloadCache();
+
 	lv_obj_set_style_bg_color(*this, lv_color_black(), 0);
 	lv_obj_set_style_bg_opa(*this, LV_OPA_COVER, 0);
 
@@ -49,6 +52,25 @@ void PerseCtrlScreen::loop(){
 			auto eventData = (Input::Data*) evt.data;
 			if(eventData->btn == Input::Alt && eventData->action == Input::Data::Press){
 				free(evt.data);
+
+				lv_obj_clean(*this);
+
+				lv_obj_t* loading = lv_label_create(*this);
+				lv_obj_set_size(loading, 128, 12);
+				lv_obj_set_style_text_color(loading, lv_color_make(0, 220, 0), 0);
+				lv_obj_set_style_text_align(loading, LV_TEXT_ALIGN_CENTER, 0);
+				lv_obj_center(loading);
+				lv_label_set_text(loading, "Loading...");
+
+				lv_obj_invalidate(*this);
+				vTaskDelay(LV_DISP_DEF_REFR_PERIOD);
+				lv_timer_handler();
+
+				auto settings = (Settings*) Services.get(Service::Settings);
+				if(settings){
+					FSLVGL::loadCache(settings->get().themeData.theme);
+				}
+
 				transition([](){ return std::make_unique<MainMenu>(); });
 				return;
 			}else if((eventData->btn == Input::Up || eventData->btn == Input::Down) && eventData->action == Input::Data::Release){
