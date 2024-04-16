@@ -8,6 +8,7 @@
 #include "Screens/Settings/SettingsScreen.h"
 #include "Util/stdafx.h"
 #include "LV_Interface/InputLVGL.h"
+#include "Screens/Lander/LunarLander.h"
 
 uint8_t  MainMenu::lastIndex = UINT8_MAX;
 
@@ -106,12 +107,13 @@ MainMenu::~MainMenu(){
 void MainMenu::setupItemPaths(Theme theme){
 	ItemInfos[0].iconPath = THEMED_FILE(Menu, Find, theme);
 	ItemInfos[0].iconAltPath = THEMED_FILE(Menu, Find, theme);
-	ItemInfos[1].iconPath = THEMED_FILE(Menu, Level, theme);
-	ItemInfos[2].iconPath = THEMED_FILE(Menu, Theremin, theme);
-	ItemInfos[3].iconPath = THEMED_FILE(Menu, Connection, theme);
-	ItemInfos[3].iconAltPath = THEMED_FILE(Menu, Connection, theme);
-	ItemInfos[4].iconPath = THEMED_FILE(Menu, Rover, theme);
-	ItemInfos[5].iconPath = THEMED_FILE(Menu, Settings, theme);
+	ItemInfos[1].iconPath = THEMED_FILE(Menu, Lunar, theme);
+	ItemInfos[2].iconPath = THEMED_FILE(Menu, Level, theme);
+	ItemInfos[3].iconPath = THEMED_FILE(Menu, Theremin, theme);
+	ItemInfos[4].iconPath = THEMED_FILE(Menu, Connection, theme);
+	ItemInfos[4].iconAltPath = THEMED_FILE(Menu, Connection, theme);
+	ItemInfos[5].iconPath = THEMED_FILE(Menu, Rover, theme);
+	ItemInfos[6].iconPath = THEMED_FILE(Menu, Settings, theme);
 }
 
 void MainMenu::resetMenuIndex(){
@@ -177,6 +179,7 @@ void MainMenu::onClick(){
 
 	std::function<void()> launcher[] = {
 			[](){ },
+			[this](){ transition([](){ return std::make_unique<LunarLander>(); }); },
 			[this](){ transition([](){ return std::make_unique<Level>(); }); },
 			[this](){ transition([](){ return std::make_unique<Theremin>(); }); },
 			[](){ },
@@ -219,10 +222,10 @@ void MainMenu::handleInput(Input::Data& event){
 }
 
 void MainMenu::setConnAlts(){
-	auto connEl = (MenuItemAlt*) items[3];
+	auto connEl = (MenuItemAlt*) items[4];
 
 	const auto connAlt = phone.getPhoneType() == Phone::PhoneType::None
-						 ? ItemInfos[3].iconAltPath : ItemInfos[3].iconPath;
+						 ? ItemInfos[4].iconAltPath : ItemInfos[4].iconPath;
 	connEl->setAltParams(connAlt, ConnDesc[(int) phone.getPhoneType()]);
 }
 

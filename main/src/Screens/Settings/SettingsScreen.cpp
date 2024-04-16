@@ -14,7 +14,6 @@
 #include "Filepaths.hpp"
 #include "LV_Interface/InputLVGL.h"
 #include "LV_Interface/FSLVGL.h"
-#include "LoadingModal.h"
 
 SettingsScreen::SettingsScreen() : settings(*(Settings*) Services.get(Service::Settings)), backlight(*(BacklightBrightness*) Services.get(Service::Backlight)),
 								   audio(*(ChirpSystem*) Services.get(Service::Audio)), imu(*(IMU*) Services.get(Service::IMU)),

@@ -1,5 +1,7 @@
 #include <driver/gpio.h>
 #include <nvs_flash.h>
+#include <bootloader_random.h>
+#include <esp_random.h>
 #include "Settings/Settings.h"
 #include "Pins.hpp"
 #include "Periph/I2C.h"
@@ -30,6 +32,7 @@
 #include "Util/Notes.h"
 #include "Screens/Intro/IntroScreen.h"
 #include "Filepaths.hpp"
+#include "Screens/Lander/LunarLander.h"
 
 LVGL* lvgl;
 BacklightBrightness* bl;
@@ -119,6 +122,10 @@ void init(){
 	auto rtc = new RTC(*i2c);
 	auto time = new Time(*rtc);
 	Services.set(Service::Time, time); // Time service is required as soon as Phone is up
+
+	bootloader_random_enable();
+	srand(esp_random());
+	bootloader_random_disable();
 
 	auto bt = new Bluetooth();
 	auto gap = new BLE::GAP();
