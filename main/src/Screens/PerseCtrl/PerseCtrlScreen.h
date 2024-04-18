@@ -18,9 +18,9 @@ public:
 
 private:
 	WiFiSTA& wifi;
-	TCPClient& tcp;
+	std::unique_ptr<TCPClient> tcp;
 	Feed feed;
-	Comm comm;
+	std::unique_ptr<Comm> comm;
 	std::unique_ptr<PairService> pair;
 
 	uint8_t* feedBuf;

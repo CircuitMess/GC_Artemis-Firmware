@@ -12,15 +12,18 @@
 
 lv_color_t PerseCtrlScreen::Color = lv_color_make(255, 101, 0);
 
-PerseCtrlScreen::PerseCtrlScreen() : wifi(*(WiFiSTA*) Services.get(Service::WiFi)), tcp(*(TCPClient*) Services.get(Service::TCP)), comm(tcp), evts(6){
+PerseCtrlScreen::PerseCtrlScreen() : wifi(*(WiFiSTA*) Services.get(Service::WiFi)), evts(6){
 	wifi.start();
+
+	tcp = std::make_unique<TCPClient>();
+	comm = std::make_unique<Comm>(*tcp);
 
 	FSLVGL::unloadCache();
 
 	lv_obj_set_style_bg_color(*this, lv_color_black(), 0);
 	lv_obj_set_style_bg_opa(*this, LV_OPA_COVER, 0);
 
-	pair = std::make_unique<PairService>(wifi, tcp);
+	pair = std::make_unique<PairService>(wifi, *tcp);
 
 	feedBuf = (uint8_t*) heap_caps_malloc(160*120*2, MALLOC_CAP_SPIRAM);
 	memset(feedBuf, 0, 160*120*2);
@@ -51,7 +54,11 @@ PerseCtrlScreen::~PerseCtrlScreen(){
 	}
 
 	pair.reset();
-	tcp.disconnect();
+
+	if(tcp){
+		tcp->disconnect();
+	}
+
 	wifi.stop();
 	free(feedBuf);
 	Events::unlisten(&evts);
@@ -115,7 +122,10 @@ void PerseCtrlScreen::loop(){
 			printf("Pair success\n");
 			lv_obj_del(pairLabel);
 			paired = true;
-			comm.sendFeedQuality(30);
+
+			if(comm){
+				comm->sendFeedQuality(30);
+			}
 		}
 
 		printf("Deleting pair...\n");
@@ -141,7 +151,10 @@ void PerseCtrlScreen::loop(){
 
 	if(camDir != 0){
 		camPos = std::clamp(camPos + camDir, 0, 100);
-		comm.sendCameraRotation(camPos);
+
+		if(comm){
+			comm->sendCameraRotation(camPos);
+		}
 	}
 
 	auto imu = (IMU*) Services.get(Service::IMU);
@@ -154,7 +167,10 @@ void PerseCtrlScreen::loop(){
 	const auto len = std::clamp(glm::length(dir), 0.0f, 1.0f);
 
 	if(len < 0.2){
-		comm.sendDriveDir({ 0, 0.0f });
+		if(comm){
+			comm->sendDriveDir({ 0, 0.0f });
+		}
+
 		return;
 	}
 
@@ -171,5 +187,7 @@ void PerseCtrlScreen::loop(){
 	}
 	const uint8_t numer = std::floor(calcAngle / circParts);
 
-	comm.sendDriveDir({ numer, len });
+	if(comm){
+		comm->sendDriveDir({ numer, len });
+	}
 }

@@ -136,9 +136,6 @@ void init(){
 	WiFiSTA* wifi = new WiFiSTA();
 	Services.set(Service::WiFi, wifi);
 
-	TCPClient* tcp = new TCPClient();
-	Services.set(Service::TCP, tcp);
-
 	srand(esp_random());
 
 	FSLVGL::loadCache(settings->get().themeData.theme);
