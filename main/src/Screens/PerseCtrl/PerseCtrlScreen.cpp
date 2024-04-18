@@ -23,8 +23,6 @@ PerseCtrlScreen::PerseCtrlScreen() : wifi(*(WiFiSTA*) Services.get(Service::WiFi
 	lv_obj_set_style_bg_color(*this, lv_color_black(), 0);
 	lv_obj_set_style_bg_opa(*this, LV_OPA_COVER, 0);
 
-	pair = std::make_unique<PairService>(wifi, *tcp);
-
 	feedBuf = (uint8_t*) heap_caps_malloc(160*120*2, MALLOC_CAP_SPIRAM);
 	memset(feedBuf, 0, 160*120*2);
 	imgDsc.data_size = 160*120*2;
@@ -35,13 +33,14 @@ PerseCtrlScreen::PerseCtrlScreen() : wifi(*(WiFiSTA*) Services.get(Service::WiFi
 	lv_img_set_src(feedImg, &imgDsc);
 
 	pairLabel = lv_label_create(*this);
-	lv_obj_set_size(pairLabel, 128, 12);
+	lv_obj_set_size(pairLabel, 128, 20);
 	lv_obj_set_style_text_color(pairLabel, Color, 0);
 	lv_obj_set_style_text_align(pairLabel, LV_TEXT_ALIGN_CENTER, 0);
-	lv_label_set_text(pairLabel, "Pairing...");
+	lv_label_set_text(pairLabel, "Hold select to pair");
 	lv_obj_set_pos(pairLabel, 0, 60);
 
 	Events::listen(Facility::Input, &evts);
+	Events::listen(Facility::TCP, &evts);
 
 	heapRep();
 }
@@ -78,7 +77,15 @@ void PerseCtrlScreen::loop(){
 	for(Event evt{}; evts.get(evt, 0); ){
 		if(evt.facility == Facility::Input){
 			auto eventData = (Input::Data*) evt.data;
-			if(eventData->btn == Input::Alt && eventData->action == Input::Data::Press){
+			if(eventData->btn == Input::Select && eventData->action == Input::Data::Press){
+				pair = std::make_unique<PairService>(wifi, *tcp);
+			}else if(eventData->btn == Input::Select && eventData->action == Input::Data::Release){
+				if(pair){
+					lv_label_set_text(pairLabel, "Hold select to pair");
+				}
+
+				pair.reset();
+			}else if(eventData->btn == Input::Alt && eventData->action == Input::Data::Press){
 				free(evt.data);
 
 				lv_obj_clean(*this);
@@ -110,26 +117,37 @@ void PerseCtrlScreen::loop(){
 				camDir = -5;
 			}
 		}
+		else if(evt.facility == Facility::TCP){
+			auto eventData = (TCPClient::Event*) evt.data;
+
+			if(eventData->status == TCPClient::Event::Status::Disconnected){
+				paired = false;
+				memset(feedBuf, 0, 160*120*2);
+				lv_obj_invalidate(feedImg);
+				lv_label_set_text(pairLabel, "Disconnected\nHold select to pair");
+			}
+		}
 		free(evt.data);
 	}
 
-	if(pair && pair->getState() != PairService::State::Pairing){
-		if(pair->getState() == PairService::State::Fail){
-			lv_label_set_text(pairLabel, "Pairing failed");
-			printf("Pair failed\n");
+	if(pair){
+		if(pair->getState() == PairService::State::Pairing){
+			lv_label_set_text(pairLabel, "Pairing...");
 		}else{
-			printf("Pair success\n");
-			lv_obj_del(pairLabel);
-			paired = true;
+			if(pair->getState() == PairService::State::Fail){
+				paired = false;
+				lv_label_set_text(pairLabel, "Pairing failed\nHold select to pair");
+			}else{
+				lv_label_set_text(pairLabel, "");
+				paired = true;
 
-			if(comm){
-				comm->sendFeedQuality(30);
+				if(comm){
+					comm->sendFeedQuality(30);
+				}
 			}
-		}
 
-		printf("Deleting pair...\n");
-		pair.reset();
-		printf("Done\n");
+			pair.reset();
+		}
 	}
 
 	if(!paired) return;
@@ -184,9 +202,9 @@ void PerseCtrlScreen::loop(){
 	if(calcAngle >= 360){
 		calcAngle -= 360.0f;
 	}
-	const uint8_t numer = std::floor(calcAngle / circParts);
+	const uint8_t number = std::floor(calcAngle / circParts);
 
 	if(comm){
-		comm->sendDriveDir({ numer, len });
+		comm->sendDriveDir({ number, len });
 	}
 }

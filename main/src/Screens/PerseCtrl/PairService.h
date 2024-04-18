@@ -22,7 +22,7 @@ public:
 	};
 
 private:
-	inline static constexpr const uint8_t ConnectionAttempts = 3;
+	inline static constexpr const uint8_t ConnectionAttempts = 10;
 	inline static constexpr const uint32_t AbortTimeout = 2000;
 
 	WiFiSTA& wifi;
