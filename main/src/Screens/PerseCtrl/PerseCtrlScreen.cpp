@@ -13,6 +13,8 @@
 lv_color_t PerseCtrlScreen::Color = lv_color_make(255, 101, 0);
 
 PerseCtrlScreen::PerseCtrlScreen() : wifi(*(WiFiSTA*) Services.get(Service::WiFi)), tcp(*(TCPClient*) Services.get(Service::TCP)), comm(tcp), evts(6){
+	wifi.start();
+
 	FSLVGL::unloadCache();
 
 	lv_obj_set_style_bg_color(*this, lv_color_black(), 0);
@@ -50,6 +52,7 @@ PerseCtrlScreen::~PerseCtrlScreen(){
 
 	pair.reset();
 	tcp.disconnect();
+	wifi.stop();
 	free(feedBuf);
 	Events::unlisten(&evts);
 }

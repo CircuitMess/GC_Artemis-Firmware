@@ -34,6 +34,9 @@ public:
 	void connect();
 	void disconnect();
 
+	void start();
+	void stop();
+
 	enum State { Connected, Connecting, Disconnected, Scanning, ConnAbort };
 	State getState();
 
@@ -48,7 +51,7 @@ private:
 	esp_netif_t* netif = nullptr;
 
 	State state = Disconnected;
-	inline static std::binary_semaphore initSem{ 0 };
+	std::binary_semaphore initSem{ 0 };
 
 	std::string cachedSSID;
 	bool attemptedCachedSSID = false;

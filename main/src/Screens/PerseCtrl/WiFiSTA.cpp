@@ -40,9 +40,6 @@ WiFiSTA::WiFiSTA() : hysteresis({0, 20, 40, 60, 80}, 1){
 	esp_wifi_init(&cfg_wifi);
 
 	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-	ESP_ERROR_CHECK(esp_wifi_start());
-
-	initSem.acquire();
 }
 
 WiFiSTA::~WiFiSTA(){
@@ -278,6 +275,16 @@ void WiFiSTA::disconnect(){
 		case ConnAbort:
 			break;
 	}
+}
+
+void WiFiSTA::start() {
+	ESP_ERROR_CHECK(esp_wifi_start());
+
+	initSem.acquire();
+}
+
+void WiFiSTA::stop() {
+	ESP_ERROR_CHECK(esp_wifi_stop());
 }
 
 wifi_ap_record_t* WiFiSTA::findNetwork(wifi_ap_record_t* ap_info, uint32_t numRecords){
