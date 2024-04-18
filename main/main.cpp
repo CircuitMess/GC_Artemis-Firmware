@@ -125,10 +125,6 @@ void init(){
 	auto time = new Time(*rtc);
 	Services.set(Service::Time, time); // Time service is required as soon as Phone is up
 
-	bootloader_random_enable();
-	srand(esp_random());
-	bootloader_random_disable();
-
 	auto bt = new Bluetooth();
 	auto gap = new BLE::GAP();
 	auto client = new BLE::Client(gap);
@@ -142,6 +138,8 @@ void init(){
 
 	TCPClient* tcp = new TCPClient();
 	Services.set(Service::TCP, tcp);
+
+	srand(esp_random());
 
 	FSLVGL::loadCache(settings->get().themeData.theme);
 

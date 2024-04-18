@@ -25,12 +25,10 @@ LunarLander::LunarLander() : evts(6){
 	canvas = lv_canvas_create(*this);
 	lv_obj_set_pos(canvas, 0, 0);
 	lv_obj_set_size(canvas, 128, 128);
+	lv_obj_add_flag(canvas, LV_OBJ_FLAG_FLOATING);
 
 	canvData.resize(LV_CANVAS_BUF_SIZE_TRUE_COLOR(128, 128));
 	lv_canvas_set_buffer(canvas, canvData.data(), 128, 128, LV_IMG_CF_TRUE_COLOR);
-	lv_canvas_set_palette(canvas, 0, lv_color_black());
-	lv_canvas_set_palette(canvas, 1, Color);
-	lv_canvas_set_palette(canvas, 2, lv_color_white());
 
 	view = glm::identity<glm::mat3>();
 
@@ -319,7 +317,8 @@ void LunarLander::buildTerrain(){
 }
 
 void LunarLander::drawTerrain(){
-	static const auto movePoint = [this](glm::vec2 point){
+	const auto view = this->view;
+	static const auto movePoint = [&view](glm::vec2 point){
 		const glm::vec3 full(point, 1);
 		glm::vec3 moved = view * full;
 		moved = glm::round(moved / moved.z);

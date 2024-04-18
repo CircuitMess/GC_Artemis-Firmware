@@ -72,6 +72,11 @@ void SettingsScreen::onStop(){
 	imu.enableTiltDetection(motionSwitch->getValue());
 	lvgl->rotateScreen(rotationSwitch->getValue());
 	InputLVGL::getInstance()->invertDirections(rotationSwitch->getValue());
+	if(rotationSwitch->getValue()){
+		imu.setWristPosition(IMU::WatchPosition::FaceUp);
+	}else{
+		imu.setWristPosition(IMU::WatchPosition::FaceDown);
+	}
 	//TODO - apply sleep time
 
 	Events::unlisten(&queue);
