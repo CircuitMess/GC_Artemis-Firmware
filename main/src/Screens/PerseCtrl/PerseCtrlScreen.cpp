@@ -75,8 +75,7 @@ void PerseCtrlScreen::onStop(){
 }
 
 void PerseCtrlScreen::loop(){
-	Event evt{};
-	if(evts.get(evt, 0)){
+	for(Event evt{}; evts.get(evt, 0); ){
 		if(evt.facility == Facility::Input){
 			auto eventData = (Input::Data*) evt.data;
 			if(eventData->btn == Input::Alt && eventData->action == Input::Data::Press){
