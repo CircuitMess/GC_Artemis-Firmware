@@ -1,6 +1,13 @@
 #include "MenuItem.h"
+#include "Settings/Settings.h"
+#include "Util/Services.h"
 
 MenuItem::MenuItem(lv_obj_t* parent, const char* imagePath, const char* labelText) : LVObject(parent){
+	Settings* settings = (Settings*) Services.get(Service::Settings);
+	if(settings == nullptr){
+		return;
+	}
+
 	lv_obj_set_flex_flow(*this, LV_FLEX_FLOW_COLUMN);
 	lv_obj_set_flex_align(*this, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
@@ -9,8 +16,8 @@ MenuItem::MenuItem(lv_obj_t* parent, const char* imagePath, const char* labelTex
 	imageContainer = lv_obj_create(*this);
 	lv_obj_set_size(imageContainer, lv_pct(100), LV_SIZE_CONTENT);
 	lv_obj_set_style_pad_ver(imageContainer, 6, 0);
-	lv_obj_set_style_border_opa(imageContainer, LV_OPA_COVER, 0);
-	lv_obj_set_style_border_color(imageContainer, lv_color_make(255, 101, 0), 0);
+	lv_obj_set_style_border_opa(imageContainer, settings->get().themeData.opacity, 0);
+	lv_obj_set_style_border_color(imageContainer, settings->get().themeData.primaryColor, 0);
 	lv_obj_set_style_border_width(imageContainer, 1, 0);
 	lv_obj_set_style_border_side(imageContainer, LV_BORDER_SIDE_TOP, 0);
 
@@ -25,9 +32,9 @@ MenuItem::MenuItem(lv_obj_t* parent, const char* imagePath, const char* labelTex
 	lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
 	lv_obj_set_width(label, lv_pct(100));
 	lv_obj_set_style_pad_ver(label, 3, 0);
-	lv_obj_set_style_bg_opa(label, LV_OPA_COVER, 0);
-	lv_obj_set_style_bg_color(label, lv_color_make(255, 101, 0), 0);
-	lv_obj_set_style_text_color(label, lv_color_black(), 0);
+	lv_obj_set_style_bg_opa(label, settings->get().themeData.opacity, 0);
+	lv_obj_set_style_bg_color(label, settings->get().themeData.primaryColor, 0);
+	lv_obj_set_style_text_color(label, settings->get().themeData.secondaryColor, 0);
 
 
 	lv_obj_add_event_cb(*this, [](lv_event_t* e){

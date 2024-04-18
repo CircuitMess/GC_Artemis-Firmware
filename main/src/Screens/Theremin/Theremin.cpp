@@ -6,7 +6,7 @@
 #include "Screens/MainMenu/MainMenu.h"
 #include "Services/StatusCenter.h"
 #include "Services/SleepMan.h"
-
+#include "Filepaths.hpp"
 
 Theremin::Theremin() : audio(*(ChirpSystem*) Services.get(Service::Audio)), sem(xSemaphoreCreateBinary()),
 					   timer(getToneDuration(sequence.getSize()), timerCB, sem),
@@ -152,7 +152,7 @@ void Theremin::buildUI(){
 	bg = lv_obj_create(*this);
 	lv_obj_set_pos(bg, 0, 0);
 	lv_obj_set_size(bg, 128, 128);
-	lv_obj_set_style_bg_img_src(bg, "S:/theremin/bg.bin", 0);
+	lv_obj_set_style_bg_img_src(bg, File::Theremin::Background, 0);
 	lv_obj_set_style_bg_img_tiled(bg, true, 0);
 
 
@@ -160,7 +160,7 @@ void Theremin::buildUI(){
 	lv_obj_set_pos(sliderHorizontal, HorizontalBarX, HorizontalBarY);
 	lv_obj_set_style_opa(sliderHorizontal, LV_OPA_TRANSP, LV_PART_MAIN | LV_PART_INDICATOR);
 	lv_obj_set_size(sliderHorizontal, SliderLength, SliderWidth);
-	lv_obj_set_style_bg_img_src(sliderHorizontal, "S:/theremin/dotHorizontal.bin", LV_PART_KNOB);
+	lv_obj_set_style_bg_img_src(sliderHorizontal, File::Theremin::DotHorizontal, LV_PART_KNOB);
 	lv_obj_set_style_pad_hor(sliderHorizontal, 2, LV_PART_MAIN);
 	lv_slider_set_range(sliderHorizontal, 0, SliderRange);
 
@@ -169,7 +169,7 @@ void Theremin::buildUI(){
 	lv_obj_set_pos(sliderVertical, VerticalBarX, VerticalBarY);
 	lv_obj_set_style_opa(sliderVertical, LV_OPA_TRANSP, LV_PART_MAIN | LV_PART_INDICATOR);
 	lv_obj_set_size(sliderVertical, SliderWidth, SliderLength);
-	lv_obj_set_style_bg_img_src(sliderVertical, "S:/theremin/dotVertical.bin", LV_PART_KNOB);
+	lv_obj_set_style_bg_img_src(sliderVertical, File::Theremin::DotVertical, LV_PART_KNOB);
 	lv_obj_set_style_pad_ver(sliderVertical, 2, LV_PART_MAIN);
 	lv_slider_set_range(sliderVertical, 0, SliderRange);
 }

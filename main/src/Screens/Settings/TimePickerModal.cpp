@@ -6,7 +6,7 @@
 #include <Util/Services.h>
 #include <valarray>
 
-TimePickerModal::TimePickerModal(LVScreen* parent, tm time) : LVModal(parent), time(time),
+TimePickerModal::TimePickerModal(LVScreen* parent, tm time, const std::function<void()>& onSaved) : LVModal(parent), time(time), onSaved(onSaved),
 															  startingInputInversion(InputLVGL::getInstance()->getInvertDirections()),
 															  timeFormat24h(((Settings*) Services.get(Service::Settings))->get().timeFormat24h){
 	buildStyles();
@@ -15,23 +15,33 @@ TimePickerModal::TimePickerModal(LVScreen* parent, tm time) : LVModal(parent), t
 }
 
 void TimePickerModal::buildStyles(){
+	auto* settings = (Settings*) Services.get(Service::Settings);
+	if(settings == nullptr){
+		return;
+	}
+
 	lv_style_set_border_width(defaultStyle, 1);
 	lv_style_set_border_opa(defaultStyle, 0);
 	lv_style_set_pad_all(defaultStyle, 1);
 	lv_style_set_bg_opa(defaultStyle, 0);
 
 	lv_style_set_border_width(focusedStyle, 1);
-	lv_style_set_border_color(focusedStyle, lv_color_white());
+	lv_style_set_border_color(focusedStyle, settings->get().themeData.primaryColor);
 	lv_style_set_border_opa(focusedStyle, LV_OPA_COVER);
 
 	lv_style_set_text_font(labelStyle, &devin);
-	lv_style_set_text_color(labelStyle, lv_color_white());
+	lv_style_set_text_color(labelStyle, settings->get().themeData.highlightColor);
 	lv_style_set_text_opa(labelStyle, LV_OPA_COVER);
 	lv_style_set_opa(labelStyle, LV_OPA_COVER);
 	lv_style_set_text_align(labelStyle, LV_TEXT_ALIGN_CENTER);
 }
 
 void TimePickerModal::buildUI(){
+	auto* settings = (Settings*) Services.get(Service::Settings);
+	if(settings == nullptr){
+		return;
+	}
+
 	lv_obj_set_layout(*this, LV_LAYOUT_FLEX);
 	lv_obj_set_flex_align(*this, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 	lv_obj_set_flex_flow(*this, LV_FLEX_FLOW_COLUMN);
@@ -45,7 +55,7 @@ void TimePickerModal::buildUI(){
 	lv_obj_set_layout(dateCont, LV_LAYOUT_FLEX);
 	lv_obj_set_flex_align(dateCont, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 	lv_obj_set_flex_flow(dateCont, LV_FLEX_FLOW_ROW);
-	lv_obj_set_style_border_color(timeCont, lv_palette_main(LV_PALETTE_RED), 0);
+	lv_obj_set_style_pad_left(dateCont, 1, 0);
 
 	if(timeFormat24h){
 		hour = createPicker(timeCont, time.tm_hour, 0, 23);
@@ -71,9 +81,9 @@ void TimePickerModal::buildUI(){
 		lv_obj_add_style(meridiem, focusedStyle, LV_PART_MAIN | LV_STATE_FOCUSED);
 		lv_obj_add_style(meridiem, labelStyle, LV_PART_MAIN);
 		lv_obj_set_style_pad_hor(meridiem, 1, LV_PART_SELECTED);
-		lv_obj_set_style_bg_color(meridiem, lv_palette_main(LV_PALETTE_INDIGO), LV_PART_SELECTED | LV_STATE_DEFAULT);
+		lv_obj_set_style_bg_color(meridiem, settings->get().themeData.backgroundColor, LV_PART_SELECTED | LV_STATE_DEFAULT);
 		lv_obj_set_style_bg_opa(meridiem, LV_OPA_COVER, LV_PART_SELECTED | LV_STATE_DEFAULT);
-		lv_obj_set_style_bg_color(meridiem, lv_palette_main(LV_PALETTE_LIGHT_BLUE), LV_PART_MAIN | LV_STATE_DEFAULT);
+		lv_obj_set_style_bg_color(meridiem, settings->get().themeData.backgroundColor, LV_PART_MAIN | LV_STATE_DEFAULT);
 		lv_obj_set_style_bg_opa(meridiem, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
 		lv_obj_set_style_radius(meridiem, 3, LV_PART_MAIN | LV_STATE_DEFAULT);
 		lv_obj_set_style_anim_time(meridiem, 250, LV_PART_MAIN);
@@ -107,10 +117,6 @@ void TimePickerModal::buildUI(){
 	lv_obj_add_style(month, focusedStyle, LV_PART_MAIN | LV_STATE_FOCUSED);
 	lv_obj_add_style(month, labelStyle, LV_PART_MAIN);
 	lv_obj_set_style_pad_hor(month, 1, LV_PART_SELECTED);
-	lv_obj_set_style_bg_color(month, lv_palette_main(LV_PALETTE_INDIGO), LV_PART_SELECTED | LV_STATE_DEFAULT);
-	lv_obj_set_style_bg_opa(month, LV_OPA_COVER, LV_PART_SELECTED | LV_STATE_DEFAULT);
-	lv_obj_set_style_bg_color(month, lv_palette_main(LV_PALETTE_LIGHT_BLUE), LV_PART_MAIN | LV_STATE_DEFAULT);
-	lv_obj_set_style_bg_opa(month, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_set_style_radius(month, 3, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_set_style_anim_time(month, 250, LV_PART_MAIN);
 	lv_obj_set_style_text_line_space(month, 2, LV_PART_MAIN);
@@ -130,8 +136,7 @@ void TimePickerModal::buildUI(){
 		}
 	}, LV_EVENT_FOCUSED, this);
 
-
-	year = createPicker(*this, time.tm_year + 1900, 1900, 9999);
+	year = createPicker(dateCont, time.tm_year + 1900, 1900, 9999);
 
 	lv_obj_add_event_cb(month, [](lv_event_t* e){
 		auto modal = (TimePickerModal*) e->user_data;
@@ -143,14 +148,20 @@ void TimePickerModal::buildUI(){
 		modal->setDateLimits();
 	}, LV_EVENT_VALUE_CHANGED, this);
 
-	lv_obj_set_size(timeCont, lv_pct(100), LV_SIZE_CONTENT);
-	lv_obj_set_size(dateCont, lv_pct(100), LV_SIZE_CONTENT);
-
+	lv_obj_set_size(timeCont, lv_pct(108), LV_SIZE_CONTENT);
+	lv_obj_set_size(dateCont, lv_pct(108), LV_SIZE_CONTENT);
 
 	saveButton = new LabelElement(*this, "Save", [this](){
 		saveTime();
-		delete this;
-	});
+
+		if(onSaved){
+			onSaved();
+		}
+	}, true, LV_ALIGN_CENTER);
+
+	lv_obj_set_width(*saveButton, 32);
+	lv_obj_set_align(*saveButton, LV_ALIGN_CENTER);
+
 	lv_group_add_obj(inputGroup, *saveButton);
 }
 

@@ -5,6 +5,8 @@
 #include <esp_sleep.h>
 #include "Screens/MainMenu/MainMenu.h"
 
+static const char* tag = "SleepMan";
+
 SleepMan::SleepMan(LVGL& lvgl) : events(12), lvgl(lvgl),
 								 imu(*((IMU*) Services.get(Service::IMU))),
 								 bl(*((BacklightBrightness*) Services.get(Service::Backlight))),
@@ -19,6 +21,10 @@ SleepMan::SleepMan(LVGL& lvgl) : events(12), lvgl(lvgl),
 	actTime = millis();
 }
 
+SleepMan::~SleepMan(){
+	Events::unlisten(&events);
+}
+
 void SleepMan::goSleep(){
 	auto battery = (Battery*) Services.get(Service::Battery);
 	if(!battery || battery->isShutdown()) return;
@@ -29,25 +35,51 @@ void SleepMan::goSleep(){
 
 	if(settings.get().motionDetection){
 		imu.init();
-		imu.setTiltDirection(IMU::TiltDirection::Lifted);
+
+		if(waitForLower){
+			imu.setTiltDirection(IMU::TiltDirection::Lowered);
+		}else{
+			imu.setTiltDirection(IMU::TiltDirection::Lifted);
+		}
 	}
 
 	inSleep = true;
-	sleep.sleep([this](){
+
+	bool buttonWakeWhileLowered = false;
+	sleep.sleep([this, &buttonWakeWhileLowered](){
+
+		if(checkIMUTilt(IMU::TiltDirection::Lowered)){
+			buttonWakeWhileLowered = true;
+			waitForLower = false;
+			ESP_LOGI(tag, "button wake while lowered!");
+
+		}else{
+			buttonWakeWhileLowered = false;
+		}
+
 		if(!nsBlocked){
 			lvgl.startScreen([](){ return std::make_unique<LockScreen>(); });
 		}
 		lv_timer_handler();
 	});
 	nsBlocked = inSleep = false;
-	
+
 	if(settings.get().motionDetection){
 		imu.init();
-		imu.setTiltDirection(IMU::TiltDirection::Lowered);
+
+		if(buttonWakeWhileLowered){
+			imu.setTiltDirection(IMU::TiltDirection::Lifted);
+			waitForLift = true;
+		}else{
+			imu.setTiltDirection(IMU::TiltDirection::Lowered);
+			waitForLift = false;
+		}
+		ESP_LOGD(tag, "wakeup! waitForLower: %d, waitForLift: %d", waitForLower, waitForLift);
 	}
 
 	wakeTime = actTime = millis();
 	events.reset();
+	waitForLower = false;
 }
 
 void SleepMan::wake(bool blockLock){
@@ -99,6 +131,13 @@ void SleepMan::checkAutoSleep(){
 
 	if((millis() - actTime) / 1000 < sleepSeconds) return;
 
+	if(checkIMUTilt(IMU::TiltDirection::Lifted)){
+		waitForLower = true;
+		waitForLift = false;
+		ESP_LOGI(tag, "auto sleep while lifted!\n");
+		ESP_LOGD(tag, "sleep! waitForLower: %d, waitForLift: %d", waitForLower, waitForLift);
+
+	}
 	goSleep();
 }
 
@@ -111,11 +150,22 @@ void SleepMan::handleInput(const Input::Data& evt){
 		if(millis() - wakeTime < WakeCooldown) return;
 		altPress = millis();
 	}else if(millis() - altPress < AltHoldTime){
+		if(checkIMUTilt(IMU::TiltDirection::Lifted)){
+			waitForLower = true;
+			waitForLift = false;
+			ESP_LOGI(tag, "button sleep while lifted!\n");
+			ESP_LOGD(tag, "sleep! waitForLower: %d, waitForLift: %d", waitForLower, waitForLift);
+		}
 		goSleep();
 	}
 }
 
 void SleepMan::handleMotion(const IMU::Event& evt){
+	if(evt.action == IMU::Event::WristTilt && evt.wristTiltDir == IMU::TiltDirection::Lifted && waitForLift){
+		waitForLift = false;
+		imu.setTiltDirection(IMU::TiltDirection::Lowered);
+	}
+
 	if(!autoSleep) return;
 
 	const bool wristSleep = settings.get().motionDetection;
@@ -131,4 +181,26 @@ void SleepMan::enAltLock(bool altLock){
 
 void SleepMan::enAutoSleep(bool autoSleep){
 	SleepMan::autoSleep = autoSleep;
+}
+
+void SleepMan::imuSignal(){
+	if(!waitForLower){
+		wake();
+		return;
+	}
+
+	imu.setTiltDirection(IMU::TiltDirection::Lifted);
+	waitForLower = false;
+}
+
+bool SleepMan::checkIMUTilt(IMU::TiltDirection direction) const{
+	static constexpr float LiftThreshold = 8 * 0.0015625;
+	const auto rotation = settings.get().screenRotate;
+	const auto sample = imu.getSample();
+
+	if((direction == IMU::TiltDirection::Lowered) ^ rotation){
+		return sample.accelY >= LiftThreshold;
+	}else{
+		return sample.accelY <= -LiftThreshold;
+	}
 }

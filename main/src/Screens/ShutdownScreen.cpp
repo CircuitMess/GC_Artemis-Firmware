@@ -1,6 +1,7 @@
 #include "ShutdownScreen.h"
 #include "Theme/theme.h"
 #include "Util/stdafx.h"
+#include "Filepaths.hpp"
 
 ShutdownScreen::ShutdownScreen(){
 	bg = lv_obj_create(*this);
@@ -9,7 +10,7 @@ ShutdownScreen::ShutdownScreen(){
 	lv_obj_set_pos(bg, 0, 0);
 	lv_obj_set_style_bg_color(bg, lv_color_black(), 0);
 	lv_obj_set_style_bg_opa(bg, LV_OPA_COVER, 0);
-	lv_obj_set_style_bg_img_src(bg, "S:/bg.bin", 0);
+	lv_obj_set_style_bg_img_src(bg, File::Background, 0);
 
 
 	lv_obj_set_size(*this, 128, 128);
@@ -23,7 +24,7 @@ ShutdownScreen::ShutdownScreen(){
 	lv_obj_set_style_text_color(label, lv_color_white(), 0);
 
 	img = lv_img_create(*this);
-	lv_img_set_src(img, "S:/icons/bigLowBattery.bin");
+	lv_img_set_src(img, File::Menu::Theme1::BigLowBattery);
 	lv_obj_center(img);
 }
 

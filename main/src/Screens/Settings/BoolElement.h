@@ -13,6 +13,8 @@ public:
 	void setValue(bool value);
 	[[nodiscard]] bool getValue() const;
 
+	virtual void updateVisuals() override;
+
 private:
 	lv_obj_t* label;
 	lv_obj_t* switchElement;

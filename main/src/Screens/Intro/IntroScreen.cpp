@@ -2,11 +2,14 @@
 #include "Util/stdafx.h"
 #include "Screens/Lock/LockScreen.h"
 #include "LV_Interface/FSLVGL.h"
+#include "Filepaths.hpp"
+#include "Services/StatusCenter.h"
+#include "Util/Services.h"
 
 IntroScreen::IntroScreen(){
 	bg = lv_obj_create(*this);
 	lv_obj_set_style_bg_img_opa(bg, LV_OPA_COVER, 0);
-	lv_obj_set_style_bg_img_src(bg, "S:/intro/orangeBg.bin", 0);
+	lv_obj_set_style_bg_img_src(bg, File::Intro::OrangeBackground, 0);
 	lv_obj_move_background(bg);
 	lv_obj_add_flag(bg, LV_OBJ_FLAG_FLOATING);
 
@@ -33,6 +36,10 @@ IntroScreen::~IntroScreen(){
 }
 
 void IntroScreen::onStart(){
+	if(StatusCenter* status = (StatusCenter*) Services.get(Service::Status)){
+		status->circularBlink();
+	}
+
 	animTime = millis();
 	lv_anim_init(&anim);
 	lv_anim_set_exec_cb(&anim, animFuncScroll);
@@ -42,6 +49,10 @@ void IntroScreen::onStart(){
 }
 
 void IntroScreen::onStop(){
+	if(StatusCenter* status = (StatusCenter*) Services.get(Service::Status)){
+		status->circularBlink();
+	}
+
 	lv_anim_del(*this, nullptr);
 }
 
@@ -75,11 +86,11 @@ void IntroScreen::gotoPhase2(){
 	lv_obj_set_size(phase2, 128, 128);
 	lv_obj_set_pos(phase2, 0, 0);
 
-	lv_obj_set_style_bg_img_src(phase2, "S:/intro/blackBg.bin", 0);
+	lv_obj_set_style_bg_img_src(phase2, File::Intro::BlackBackground, 0);
 	lv_obj_set_style_bg_img_opa(phase2, LV_OPA_COVER, 0);
 
 	auto img = lv_img_create(phase2);
-	lv_img_set_src(img, "S:/intro/artemis.bin");
+	lv_img_set_src(img, File::Intro::Artemis);
 	lv_obj_center(img);
 
 	lv_obj_set_style_opa(phase2, 0, 0);

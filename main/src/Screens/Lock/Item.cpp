@@ -1,11 +1,17 @@
 #include "Item.h"
 #include <regex>
-
-LVStyle Item::standard;
-LVStyle Item::focused;
-bool Item::styleInited = false;
+#include "Filepaths.hpp"
+#include "Settings/Settings.h"
+#include "Util/Services.h"
 
 Item::Item(lv_obj_t* parent, std::function<void()> dismiss) : LVSelectable(parent), onDismiss(dismiss){
+	Settings* settings = (Settings*) Services.get(Service::Settings);
+	if(settings == nullptr){
+		return;
+	}
+
+	const ThemeStruct themeData = settings->get().themeData;
+
 	initStyle();
 
 	lv_obj_set_size(*this, lv_pct(100), LV_SIZE_CONTENT);
@@ -32,7 +38,7 @@ Item::Item(lv_obj_t* parent, std::function<void()> dismiss) : LVSelectable(paren
 	lv_obj_set_size(label, lv_pct(100), LabelHeight);
 	lv_obj_set_style_pad_left(label, 4, 0);
 	lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL);
-	lv_obj_set_style_text_color(label, lv_color_make(244, 126, 27), 0);
+	lv_obj_set_style_text_color(label, themeData.highlightColor, 0);
 
 	bot = lv_obj_create(*this);
 	lv_obj_set_size(bot, lv_pct(100), LV_SIZE_CONTENT);
@@ -41,6 +47,7 @@ Item::Item(lv_obj_t* parent, std::function<void()> dismiss) : LVSelectable(paren
 	lv_obj_set_size(body, lv_pct(100), LabelHeight);
 	lv_obj_set_style_max_height(body, 34, 0);
 	lv_obj_set_style_pad_hor(body, 2, 0);
+	lv_obj_set_style_text_color(body, themeData.highlightColor, 0);
 	lv_label_set_long_mode(body, LV_LABEL_LONG_DOT);
 
 	lv_obj_add_event_cb(*this, [](lv_event_t* evt){
@@ -77,7 +84,7 @@ Item::Item(lv_obj_t* parent, std::function<void()> dismiss) : LVSelectable(paren
 }
 
 void Item::update(const Notif& notif){
-	iPath = ::iconPath(notif);
+	iPath = ::iconPath(notif, true);
 	lv_img_set_src(icon, iPath);
 
 	lv_label_set_text(label, notif.title.c_str());
@@ -95,16 +102,23 @@ const char* Item::iconPath(){
 void Item::createControls(){
 	if(ctrl) return;
 
+	Settings* settings = (Settings*) Services.get(Service::Settings);
+	if(settings == nullptr){
+		return;
+	}
+
+	const ThemeStruct themeData = settings->get().themeData;
+
 	ctrl = lv_obj_create(*this);
 	lv_obj_set_size(ctrl, lv_pct(100), LV_SIZE_CONTENT);
-	lv_obj_set_style_bg_color(ctrl, lv_color_black(), 0);
-	lv_obj_set_style_bg_opa(ctrl, LV_OPA_30, 0);
+	lv_obj_set_style_bg_color(ctrl, themeData.backgroundColor, 0);
+	lv_obj_set_style_bg_opa(ctrl, LV_OPA_50, 0);
 	lv_obj_get_style_flex_flow(ctrl, LV_FLEX_FLOW_ROW);
 	lv_obj_set_flex_align(ctrl, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 	lv_obj_set_style_radius(ctrl, 3, 0);
 
-	del = new CtrlItem(ctrl, "S:/icon/trash.bin", "S:/icon/trash_sel.bin");
-	canc = new CtrlItem(ctrl, "S:/icon/back.bin", "S:/icon/back_sel.bin");
+	del = new CtrlItem(ctrl, File::Icons::Theme1::Trash, File::Icons::Theme1::TrashSel);
+	canc = new CtrlItem(ctrl, File::Icons::Theme1::Back, File::Icons::Theme1::BackSel);
 
 	lv_obj_add_event_cb(*canc, [](lv_event_t* evt){
 		auto item = static_cast<Item*>(evt->user_data);
@@ -135,8 +149,12 @@ void Item::delControls(){
 }
 
 void Item::initStyle(){
-	if(styleInited) return;
-	styleInited = true;
+	Settings* settings = (Settings*) Services.get(Service::Settings);
+	if(settings == nullptr){
+		return;
+	}
+
+	const ThemeStruct themeData = settings->get().themeData;
 
 	lv_style_set_radius(standard, 3);
 	lv_style_set_pad_top(standard, 2);
@@ -145,11 +163,11 @@ void Item::initStyle(){
 	lv_style_set_pad_gap(standard, 4);
 
 	lv_style_set_border_width(standard, 1);
-	lv_style_set_border_color(standard, lv_color_white());
-	lv_style_set_border_opa(standard, 40);
+	lv_style_set_border_color(standard, themeData.primaryColor);
+	lv_style_set_border_opa(standard, 100);
 
-	lv_style_set_bg_color(focused, lv_color_white());
-	lv_style_set_bg_opa(focused, 40);
+	lv_style_set_bg_color(focused, themeData.primaryColor);
+	lv_style_set_bg_opa(focused, 100);
 	lv_style_set_border_opa(focused, LV_OPA_0);
 
 	lv_style_set_radius(focused, 3);
@@ -159,6 +177,6 @@ void Item::initStyle(){
 	lv_style_set_pad_gap(focused, 4);
 
 	lv_style_set_border_width(focused, 1);
-	lv_style_set_border_color(focused, lv_color_white());
-	lv_style_set_border_opa(focused, 40);
+	lv_style_set_border_color(focused, themeData.primaryColor);
+	lv_style_set_border_opa(focused, 100);
 }

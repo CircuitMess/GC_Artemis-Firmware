@@ -12,6 +12,8 @@ public:
 	void setValue(uint8_t value); //0-100
 	[[nodiscard]] uint8_t getValue() const; //0-100
 
+	virtual void updateVisuals() override;
+
 private:
 	lv_obj_t* label;
 	lv_obj_t* slider;

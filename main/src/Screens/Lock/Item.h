@@ -16,11 +16,10 @@ public:
 	const char* iconPath();
 
 private:
-	static LVStyle standard;
-	static LVStyle focused;
+	LVStyle standard;
+	LVStyle focused;
 
-	static bool styleInited;
-	static void initStyle();
+	void initStyle();
 
 	const char* iPath = nullptr;
 

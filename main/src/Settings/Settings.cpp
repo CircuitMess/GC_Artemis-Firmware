@@ -19,7 +19,7 @@ void Settings::set(SettingsStruct& settings){
 }
 
 void Settings::store(){
-	esp_err_t err = nvs_set_blob(handle, BlobName, &settingsStruct, sizeof(SettingsStruct));
+	esp_err_t err = nvs_set_blob(handle, BlobName, &settingsStruct, sizeof(SettingsStruct) - sizeof(ThemeStruct) + sizeof(Theme));
 
 	if(err != ESP_OK){
 		ESP_LOGW(TAG, "NVS settings store error: %d", err);
@@ -33,8 +33,10 @@ void Settings::store(){
 }
 
 void Settings::load(){
-	size_t out_size = sizeof(SettingsStruct);
+	size_t out_size = sizeof(SettingsStruct) - sizeof(ThemeStruct) + sizeof(Theme);
+
 	auto err = nvs_get_blob(handle, BlobName, &settingsStruct, &out_size);
+
 	if(err != ESP_OK){
 		ESP_LOGI(TAG, "Settings not found, writing defaults");
 		store();
@@ -43,4 +45,6 @@ void Settings::load(){
 			ESP_LOGE(TAG, "Couldn't access NVS settings: %d", err);
 		}
 	}
+
+	settingsStruct.themeData = createTheme(settingsStruct.themeData.theme);
 }

@@ -29,6 +29,10 @@ InputLVGL::InputLVGL() : Threaded("InputLVGL", 1024), queue(QueueSize){
 	start();
 }
 
+InputLVGL::~InputLVGL(){
+	Events::unlisten(&queue);
+}
+
 void InputLVGL::read(lv_indev_drv_t* drv, lv_indev_data_t* data){
 	if(keyMap.count(lastKey) == 0) return;
 	data->key = keyMap.at(lastKey);

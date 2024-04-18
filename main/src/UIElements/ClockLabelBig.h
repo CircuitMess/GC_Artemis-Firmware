@@ -2,24 +2,23 @@
 #define CLOCKSTAR_FIRMWARE_CLOCKLABELBIG_H
 
 #include "ClockLabel.h"
+#include "Filepaths.hpp"
 
 class ClockLabelBig : public ClockLabel {
 public:
-	explicit ClockLabelBig(lv_obj_t* parent);
+	explicit ClockLabelBig(lv_obj_t* parent, bool vertical = false, int16_t verticalPad = 0);
 	~ClockLabelBig() override = default;
 private:
 	void updateUI(const char* clockText, const char* ps) override;
 
+	static const char* getPath(char c);
 
-	static constexpr const char* getPath(char c);
-
-	static constexpr uint8_t NumIcons = 5;
-	lv_obj_t* icons[NumIcons]{};
-
-	static constexpr const char* IconPaths[12] = {
-			"S:/clockIcons/0.bin", "S:/clockIcons/1.bin", "S:/clockIcons/2.bin", "S:/clockIcons/3.bin", "S:/clockIcons/4.bin", "S:/clockIcons/5.bin",
-			"S:/clockIcons/6.bin", "S:/clockIcons/7.bin", "S:/clockIcons/8.bin", "S:/clockIcons/9.bin", "S:/clockIcons/colon.bin", "S:/clockIcons/space.bin"
-	};
+	lv_obj_t* hourIcons[2]{};
+	lv_obj_t* minuteIcons[2]{};
+	lv_obj_t* colonIcon = nullptr;
+	lv_obj_t* hours;
+	lv_obj_t* minutes;
+	bool vertical;
 };
 
 

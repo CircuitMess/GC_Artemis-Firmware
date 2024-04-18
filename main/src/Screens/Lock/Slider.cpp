@@ -1,13 +1,29 @@
 #include <cmath>
 #include "Slider.h"
 #include "Util/stdafx.h"
+#include "Filepaths.hpp"
+#include "Settings/Settings.h"
+#include "Util/Services.h"
 
-Slider::Slider(lv_obj_t* parent) : LVObject(parent){
+Slider::Slider(lv_obj_t* parent, SliderConfig config) : LVObject(parent), config(config){
+	auto* settings = (Settings*) Services.get(Service::Settings);
+	if(settings == nullptr){
+		return;
+	}
+
+	const Theme theme = settings->get().themeData.theme;
+
 	lv_obj_set_size(*this, 128, 16);
 
 	icon = lv_img_create(*this);
-	lv_img_set_src(icon, "S:/icon/lock_closed.bin");
-	lv_obj_set_pos(icon, 6, LockY);
+	lv_img_set_src(icon, THEMED_FILE(Icons, LockClosed, theme));
+
+	if(config.start > config.end){
+		lv_img_t* img = (lv_img_t*) icon;
+		lv_obj_set_pos(icon, config.start - img->w, config.y);
+	}else{
+		lv_obj_set_pos(icon, config.start, config.y);
+	}
 }
 
 bool Slider::started(){
@@ -23,29 +39,61 @@ void Slider::loop(){
 	if(startTime == 0 && activityTime == 0) return;
 
 	if(startTime != 0){
-		lv_obj_set_pos(icon, 6 + std::round(128.0f * t()), LockY);
+		if(config.start > config.end){
+			lv_img_t* img = (lv_img_t*) icon;
+			lv_obj_set_pos(icon, std::max((int16_t) (config.start - img->w - std::round((config.start - config.end) * t())), config.end), config.y);
+		}else{
+			lv_obj_set_pos(icon, std::min((int16_t) (config.start + std::round((config.end - config.start) * t())), config.end), config.y);
+		}
+
 		return;
 	}
 
 	if(millis() - activityTime >= InactivityTimeout){
 		hide();
+		if(config.start > config.end){
+			lv_img_t* img = (lv_img_t*) icon;
+			lv_obj_set_pos(icon, config.start - img->w, config.y);
+		}else{
+			lv_obj_set_pos(icon, config.start, config.y);
+		}
 	}
 }
 
 void Slider::start(){
+	auto* settings = (Settings*) Services.get(Service::Settings);
+	if(settings == nullptr){
+		return;
+	}
+
+	const Theme theme = settings->get().themeData.theme;
+
 	if(startTime != 0) return;
 
 	startTime = millis();
 	lv_obj_clear_flag(icon, LV_OBJ_FLAG_HIDDEN);
-	lv_img_set_src(icon, "S:/icon/lock_open.bin");
+	lv_img_set_src(icon, THEMED_FILE(Icons, LockOpen, theme));
 }
 
 void Slider::stop(){
 	if(startTime == 0) return;
 
+	auto* settings = (Settings*) Services.get(Service::Settings);
+	if(settings == nullptr){
+		return;
+	}
+
+	const Theme theme = settings->get().themeData.theme;
+
 	startTime = 0;
-	lv_img_set_src(icon, "S:/icon/lock_closed.bin");
-	lv_obj_set_pos(icon, 6, LockY);
+	lv_img_set_src(icon, THEMED_FILE(Icons, LockClosed, theme));
+
+	if(config.start > config.end){
+		lv_img_t* img = (lv_img_t*) icon;
+		lv_obj_set_pos(icon, config.start - img->w, config.y);
+	}else{
+		lv_obj_set_pos(icon, config.start, config.y);
+	}
 
 	activity();
 }
@@ -57,5 +105,10 @@ void Slider::activity(){
 
 void Slider::hide(){
 	activityTime = 0;
+
+	if(config.neverHide){
+		return;
+	}
+
 	lv_obj_add_flag(icon, LV_OBJ_FLAG_HIDDEN);
 }

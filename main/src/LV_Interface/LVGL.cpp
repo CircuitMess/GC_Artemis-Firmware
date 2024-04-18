@@ -5,7 +5,7 @@
 #include "Util/Services.h"
 #include "Services/SleepMan.h"
 
-LVGL::LVGL(Display& display) : Threaded("LVGL", 4 * 1024, 6, 1), display(display){
+LVGL::LVGL(Display& display) : Threaded("LVGL", 8 * 1024, 6, 1), display(display){
 	lv_init();
 	lv_disp_draw_buf_init(&lvDrawBuf, drawBuffer, nullptr, sizeof(drawBuffer) / 2);
 
