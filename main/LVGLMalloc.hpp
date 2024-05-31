@@ -1,0 +1,9 @@
+#ifndef ARTEMIS_FIRMWARE_LVGLMALLOC_HPP
+#define ARTEMIS_FIRMWARE_LVGLMALLOC_HPP
+
+#include "esp_heap_caps.h"
+
+#undef LV_MEM_CUSTOM_ALLOC
+#define LV_MEM_CUSTOM_ALLOC(size) heap_caps_malloc((size), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT)
+
+#endif //ARTEMIS_FIRMWARE_LVGLMALLOC_HPP
