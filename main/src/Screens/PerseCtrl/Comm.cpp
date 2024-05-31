@@ -2,17 +2,17 @@
 #include <RoverStateUtil.h>
 #include "Util/Services.h"
 
-Comm::Comm(TCPClient& tcp) : Threaded("Comm", 4 * 1024), tcp(tcp), queue(10){
+Comm::Comm(TCPClient& tcp) : Threaded("Comm", 3 * 1024), tcp(tcp), queue(10){
 	Events::listen(Facility::TCP, &queue);
 	start();
 }
 
 Comm::~Comm(){
-	printf("Comm dest\n");
+//	printf("Comm dest\n");
 	Events::unlisten(&queue);
 	queue.unblock();
 	stop();
-	printf("Comm destroyed\n");
+//	printf("Comm destroyed\n");
 }
 
 void Comm::sendDriveDir(DriveDir dir){

@@ -3,7 +3,7 @@
 #include "Util/stdafx.h"
 
 PairService::PairService(WiFiSTA& wifi, TCPClient& tcp) : wifi(wifi), tcp(tcp),
-														  thread([this](){ loop(); }, "PairService", 4 * 1024), queue(10){
+														  thread([this](){ loop(); }, "PairService", 2 * 1024), queue(10){
 
 	Events::listen(Facility::WiFiSTA, &queue);
 	thread.start();
