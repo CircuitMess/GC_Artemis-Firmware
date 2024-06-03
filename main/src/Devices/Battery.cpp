@@ -6,28 +6,36 @@
 #include <cmath>
 #include <driver/gpio.h>
 
+static const char* TAG = "Battery";
+
 #define MAX_READ 2505 // 4.2V
 #define MIN_READ 2120 // 3.6V
 
 Battery::Battery() : Threaded("Battery", 3 * 1024, 5), adc((gpio_num_t) PIN_BATT, 0.05, MIN_READ, MAX_READ, getVoltOffset()),
 					 hysteresis({ 0, 4, 15, 30, 70, 100 }, 3),
-					 chargeHyst(2000, false), sem(xSemaphoreCreateBinary()), timer(ShortMeasureIntverval, isr, sem){
+					 chargeHyst(2000, ChargingState::Unplugged), sem(xSemaphoreCreateBinary()), timer(ShortMeasureIntverval, isr, sem){
 
 	gpio_config_t cfg_gpio = {};
 	cfg_gpio.mode = GPIO_MODE_INPUT;
 	cfg_gpio.pull_down_en = GPIO_PULLDOWN_DISABLE;
 	cfg_gpio.pull_up_en = GPIO_PULLUP_DISABLE;
-	cfg_gpio.pin_bit_mask = 1ULL << PIN_CHARGE;
+	cfg_gpio.pin_bit_mask = 1ULL << PIN_USB;
 	cfg_gpio.intr_type = GPIO_INTR_POSEDGE;
 	ESP_ERROR_CHECK(gpio_config(&cfg_gpio));
+
+	cfg_gpio.intr_type = GPIO_INTR_DISABLE;
+	cfg_gpio.pin_bit_mask = 1ULL << PIN_CHRGIN;
+	gpio_config(&cfg_gpio);
+	cfg_gpio.pin_bit_mask = 1ULL << PIN_CHRGOUT;
+	gpio_config(&cfg_gpio);
 
 	checkCharging(true);
 	sample(true); // this will initiate shutdown if battery is critical
 }
 
 Battery::~Battery(){
-	gpio_set_intr_type((gpio_num_t) PIN_CHARGE, GPIO_INTR_DISABLE);
-	gpio_isr_handler_remove((gpio_num_t) PIN_CHARGE);
+	gpio_set_intr_type((gpio_num_t) PIN_USB, GPIO_INTR_DISABLE);
+	gpio_isr_handler_remove((gpio_num_t) PIN_USB);
 
 	timer.stop();
 	stop(0);
@@ -41,7 +49,7 @@ Battery::~Battery(){
 void Battery::begin(){
 	start();
 	startTimer();
-	gpio_isr_handler_add((gpio_num_t) PIN_CHARGE, isr, sem);
+	gpio_isr_handler_add((gpio_num_t) PIN_USB, isr, sem);
 }
 
 uint16_t Battery::mapRawReading(uint16_t reading){
@@ -58,28 +66,34 @@ int16_t Battery::getVoltOffset(){
 void Battery::checkCharging(bool fresh){
 	if(shutdown) return;
 
-	auto chrg = gpio_get_level((gpio_num_t) PIN_CHARGE) == 1; // TODO: Schmitt. ~2.4V when charging, 0V when not
-	if(fresh){
-		chargeHyst.reset(chrg);
+	auto plugin = gpio_get_level((gpio_num_t) PIN_USB) == 1;
+	bool chrg = gpio_get_level((gpio_num_t) PIN_CHRGIN) == 0;
+
+	ESP_LOGD(TAG, "plugged in: %d, charging: %d", plugin, chrg);
+
+	ChargingState newState;
+	if(!plugin){
+		newState = ChargingState::Unplugged;
 	}else{
-		chargeHyst.update(chrg);
+		newState = chrg ? ChargingState::Charging : ChargingState::Full;
 	}
 
-	if(isCharging()){
-		if(!wasCharging){
-			wasCharging = true;
-			Events::post(Facility::Battery, Battery::Event{ .action = Event::Charging, .chargeStatus = true });
-		}
-	}else if(wasCharging){
-		wasCharging = false;
+	if(fresh){
+		chargeHyst.reset(newState);
+	}else{
+		chargeHyst.update(newState);
+	}
+
+	if(chargeHyst.get() != lastCharging){
+		lastCharging = chargeHyst.get();
 		sample(true);
-		Events::post(Facility::Battery, Battery::Event{ .action = Event::Charging, .chargeStatus = false });
+		Events::post(Facility::Battery, Battery::Event{ .action = Event::Charging, .chargeStatus = lastCharging });
 	}
 }
 
 void Battery::sample(bool fresh){
 	if(shutdown) return;
-	if(isCharging()) return;
+	if(getChargingState() != ChargingState::Unplugged) return;
 
 	auto oldLevel = getLevel();
 
@@ -123,7 +137,7 @@ void Battery::startTimer(){
 	timer.stop();
 	if(shutdown) return;
 
-	if(isCharging() || !sleep){
+	if((getChargingState() != ChargingState::Unplugged) || !sleep){
 		timer.setPeriod(ShortMeasureIntverval);
 	}else{
 		timer.setPeriod(LongMeasureIntverval);
@@ -154,7 +168,7 @@ Battery::Level Battery::getLevel() const{
 	return (Level) hysteresis.get();
 }
 
-bool Battery::isCharging() const{
+Battery::ChargingState Battery::getChargingState() const{
 	return chargeHyst.get();
 }
 

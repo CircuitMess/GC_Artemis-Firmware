@@ -69,7 +69,9 @@ void StatusCenter::processPhone(const Phone::Event& evt){
 
 void StatusCenter::processBatt(const Battery::Event& evt){
 	if(evt.action == Battery::Event::Charging){
-		if(evt.chargeStatus){
+		if(evt.chargeStatus == Battery::ChargingState::Full){
+			battState = Full;
+		}else if(evt.chargeStatus == Battery::ChargingState::Charging){
 			battState = Charging;
 		}
 	}else{
@@ -90,7 +92,7 @@ void StatusCenter::processBatt(const Battery::Event& evt){
 }
 
 void StatusCenter::updateLED(){
-	if(settings.get().ledEnable == false){
+	if(!settings.get().ledEnable){
 		led->clear();
 		for(const std::shared_ptr<DigitalLEDController>& singleLed : singleLeds){
 			singleLed->clear();
@@ -101,7 +103,9 @@ void StatusCenter::updateLED(){
 	if(battState == Empty){
 		led->blinkContinuous({ 255, 0, 0 }, -1, 100, 3000);
 	}else if(battState == Charging){
-		led->breathe({ 100, 250, 0 }, { 150, 150, 0 }, 6000);
+		led->breathe({ 100, 10, 0 }, { 150, 50, 0 }, 3000);
+	}else if(battState == Full){
+		led->breathe({ 0, 50, 0 }, { 0, 150, 0 }, 3000);
 	}else if(battState == Ok){
 		led->clear();
 	}

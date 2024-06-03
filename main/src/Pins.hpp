@@ -18,7 +18,9 @@
 #define PIN_BL 37
 #define PIN_BUZZ 11
 #define PIN_BATT 6
-#define PIN_CHARGE 47
+#define PIN_USB 47
+#define PIN_CHRGIN 1
+#define PIN_CHRGOUT 2
 #define PIN_PWDN 42
 
 #define I2C_SDA 35
