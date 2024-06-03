@@ -24,6 +24,7 @@ private:
 	LVStyle switchStyle;
 	LVStyle switchCheckedStyle;
 	LVStyle switchKnobStyle;
+	LVStyle switchKnobCheckedStyle;
 
 	static lv_style_transition_dsc_t Transition;
 	constexpr static const lv_style_prop_t TransProps[] = {

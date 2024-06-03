@@ -29,7 +29,7 @@ RamFile::RamFile(const char* path, bool use32bAligned) : filePath(path){
 		}
 	}
 
-	data = (uint8_t*) heap_caps_malloc(allocSize, MALLOC_CAP_INTERNAL | (use32bAligned ? MALLOC_CAP_32BIT : MALLOC_CAP_8BIT));
+	data = (uint8_t*) heap_caps_malloc(allocSize, MALLOC_CAP_SPIRAM | (use32bAligned ? MALLOC_CAP_32BIT : MALLOC_CAP_8BIT));
 	if(data == nullptr){
 		fileSize = 0;
 		ESP_LOGE(TAG, "Couldn't allocate memory for %s. Need %zu B, largest block: %zu B", path, allocSize,

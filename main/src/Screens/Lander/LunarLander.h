@@ -21,6 +21,7 @@ private:
 
 	void buildTerrain();
 	void drawTerrain();
+	glm::vec2 movePoint(glm::vec2 point) const;
 	void loop() override;
 
 	std::vector<glm::vec2> terrainPoints;
@@ -38,6 +39,8 @@ private:
 	void startFireAnim();
 	void stopFireAnim();
 	float fuel = 100;
+
+	uint64_t blinkTime = 0;
 
 	uint32_t score = 0;
 	static constexpr float calculateBonusMultiplier(float angle, float shuttlePlatformOffset, float speed,
@@ -102,6 +105,8 @@ private:
 	static constexpr uint64_t MinTimeBonusThreshold = 60000; //60s
 
 	static constexpr uint32_t FireAnimationTime = 200; //[ms], time between fire images switching when playing animation
+
+	static constexpr uint64_t BlinkInterval = 100;
 
 };
 

@@ -26,6 +26,7 @@ SleepMan::~SleepMan(){
 }
 
 void SleepMan::goSleep(){
+	// TODO add control mechanism that will turn this service on or off
 	auto battery = (Battery*) Services.get(Service::Battery);
 	if(!battery || battery->isShutdown()) return;
 

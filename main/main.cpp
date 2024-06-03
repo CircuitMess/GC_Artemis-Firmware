@@ -33,6 +33,8 @@
 #include "Screens/Intro/IntroScreen.h"
 #include "Filepaths.hpp"
 #include "Screens/Lander/LunarLander.h"
+#include "Screens/PerseCtrl/WiFiSTA.h"
+#include "Screens/PerseCtrl/TCPClient.h"
 
 LVGL* lvgl;
 BacklightBrightness* bl;
@@ -115,6 +117,9 @@ void init(){
 	auto phone = new Phone(server, client);
 	server->start();
 	Services.set(Service::Phone, phone);
+
+	WiFiSTA* wifi = new WiFiSTA();
+	Services.set(Service::WiFi, wifi);
 
 	srand(esp_random());
 

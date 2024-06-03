@@ -10,6 +10,7 @@
 #include "PausedPopup.h"
 #include "Services/ChirpSystem.h"
 #include "Util/Notes.h"
+#include "Services/StatusCenter.h"
 #include <cmath>
 #include <gtx/rotate_vector.hpp>
 #include <gtx/closest_point.hpp>
@@ -99,6 +100,11 @@ void LunarLander::loop(){
 				fire = data->action == Input::Data::Press;
 				if(fire){
 					startFireAnim();
+
+					if(auto* status = (StatusCenter*) Services.get(Service::Status)){
+						status->blinkRand();
+						blinkTime = now;
+					}
 				}else{
 					stopFireAnim();
 				}
@@ -140,6 +146,14 @@ void LunarLander::loop(){
 		const auto fireDir = glm::rotate(glm::vec2{ 0, -1 }, (float) M_PI * angle / 180);
 		speed += fireDir * dt * 5.0f;
 		fuel = std::clamp(fuel - 15.0f * dt, 0.0f, 100.0f);
+
+		if(now - blinkTime > BlinkInterval){
+			blinkTime = now;
+
+			if(auto* status = (StatusCenter*) Services.get(Service::Status)){
+				status->blinkRand();
+			}
+		}
 	}
 
 	pos += speed * dt;
@@ -256,6 +270,10 @@ void LunarLander::checkCollision(){
 		}
 	}
 
+	if(auto* status = (StatusCenter*) Services.get(Service::Status)){
+		status->blinkAllTwice();
+	}
+
 	vTaskDelay(2000);
 
 	resetLevel();
@@ -317,14 +335,6 @@ void LunarLander::buildTerrain(){
 }
 
 void LunarLander::drawTerrain(){
-	const auto view = this->view;
-	static const auto movePoint = [&view](glm::vec2 point){
-		const glm::vec3 full(point, 1);
-		glm::vec3 moved = view * full;
-		moved = glm::round(moved / moved.z);
-		return glm::vec2(moved);
-	};
-
 	std::vector<lv_point_t> terrain;
 	terrain.reserve(terrainPoints.size());
 	for(const auto& point: terrainPoints){
@@ -356,6 +366,13 @@ void LunarLander::drawTerrain(){
 		points[0].x++;
 		lv_canvas_draw_line(canvas, points, 2, &draw);
 	}
+}
+
+glm::vec2 LunarLander::movePoint(glm::vec2 point) const{
+	const glm::vec3 full(point, 1);
+	glm::vec3 moved = view * full;
+	moved = glm::round(moved / moved.z);
+	return glm::vec2(moved);
 }
 
 void LunarLander::setShuttlePos(){
@@ -618,6 +635,25 @@ void LunarLander::resetLevel(){
 void LunarLander::crashed(){
 	lv_obj_del(shuttle);
 	gameOver = true;
+
+	if(Settings* settings = (Settings*) Services.get(Service::Settings)){
+		if(settings->get().notificationSounds){
+			if(ChirpSystem* audio = (ChirpSystem*) Services.get(Service::Audio)){
+				audio->play({ Chirp{ .startFreq = NOTE_C4, .endFreq = NOTE_C4, .duration = 400 },
+							  Chirp{ .startFreq = 0, .endFreq = 0, .duration = 100 },
+							  Chirp{ .startFreq = NOTE_B3, .endFreq = NOTE_B3, .duration = 400 },
+							  Chirp{ .startFreq = 0, .endFreq = 0, .duration = 100 },
+							  Chirp{ .startFreq = NOTE_AS3, .endFreq = NOTE_AS3, .duration = 400 },
+							  Chirp{ .startFreq = 0, .endFreq = 0, .duration = 100 },
+							  Chirp{ .startFreq = NOTE_A3, .endFreq = NOTE_A3, .duration = 400 }
+							});
+			}
+		}
+	}
+
+	if(auto* status = (StatusCenter*) Services.get(Service::Status)){
+		status->blinkAll();
+	}
 
 	delete modal;
 	modal = new GameOverPopup(this, [this](){

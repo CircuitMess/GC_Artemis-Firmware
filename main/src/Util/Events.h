@@ -8,7 +8,7 @@
 #include <unordered_set>
 #include <mutex>
 
-enum class Facility { Input, Motion, Phone, Time, Battery, Sleep };
+enum class Facility { Input, Motion, Phone, Time, Battery, Sleep, TCP, Comm, WiFiSTA };
 
 struct Event {
 	Facility facility;
@@ -47,8 +47,15 @@ public:
 	bool get(Event& item, TickType_t timeout);
 	void reset();
 
+	void unblock();
+
 private:
 	QueueHandle_t queue;
+
+	struct InternalEvent {
+		Event evt;
+		bool killPill;
+	};
 
 	bool post(Facility facility, void* data);
 	friend Events;

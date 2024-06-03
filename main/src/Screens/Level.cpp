@@ -101,7 +101,14 @@ void Level::onStart(){
 
 void Level::onStarting(){
 	const IMU::Sample reading = imu->getSample();
-	const PitchRoll pitchRoll = { -reading.accelY, -reading.accelX };
+	PitchRoll pitchRoll = { -reading.accelY, -reading.accelX };
+
+	if(Settings* settings = (Settings*) Services.get(Service::Settings)){
+		if(settings->get().screenRotate){
+			pitchRoll = { reading.accelY, reading.accelX };
+		}
+	}
+
 	pitchFilter.reset(pitchRoll.pitch);
 	rollFilter.reset(pitchRoll.roll);
 	setOrientation(pitchRoll.pitch, pitchRoll.roll);
@@ -109,7 +116,16 @@ void Level::onStarting(){
 
 void Level::readerFunc(){
 	const IMU::Sample reading = imu->getSample();
-	PitchRoll pitchRoll = { pitchFilter.update(-reading.accelY), rollFilter.update(-reading.accelX) };
+	PitchRoll pitchRoll = {};
+
+	if(Settings* settings = (Settings*) Services.get(Service::Settings)){
+		if(settings->get().screenRotate){
+			pitchRoll = { pitchFilter.update(reading.accelY), rollFilter.update(reading.accelX) };
+		}else{
+			pitchRoll = { pitchFilter.update(-reading.accelY), rollFilter.update(-reading.accelX) };
+		}
+	}
+
 	data.post(pitchRoll);
 
 	vTaskDelay(ReaderDelay);

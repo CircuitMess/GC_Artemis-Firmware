@@ -61,7 +61,14 @@ void Theremin::onStart(){
 	audio.setPersistentAttach(true);
 
 	const IMU::Sample reading = imu->getSample();
-	const PitchRoll pitchRoll = { -(float) reading.accelY, -(float) reading.accelX };
+	PitchRoll pitchRoll = { -(float) reading.accelY, -(float) reading.accelX };
+
+	if(Settings* settings = (Settings*) Services.get(Service::Settings)){
+		if(settings->get().screenRotate){
+			pitchRoll = { (float) reading.accelY, (float) reading.accelX };
+		}
+	}
+
 	pitchFilter.reset(pitchRoll.pitch);
 	rollFilter.reset(pitchRoll.roll);
 	setOrientation(pitchRoll.pitch, pitchRoll.roll);
@@ -94,7 +101,6 @@ void Theremin::onStop(){
 }
 
 void Theremin::loop(){
-
 	Event evt{};
 	if(queue.get(evt, 0)){
 		if(evt.facility == Facility::Input){
@@ -109,7 +115,16 @@ void Theremin::loop(){
 	}
 
 	const IMU::Sample reading = imu->getSample();
-	const PitchRoll pitchRoll = { (float) pitchFilter.update(-reading.accelY), (float) rollFilter.update(-reading.accelX) };
+	PitchRoll pitchRoll = {};
+
+	if(Settings* settings = (Settings*) Services.get(Service::Settings)){
+		if(settings->get().screenRotate){
+			pitchRoll = { (float) pitchFilter.update(reading.accelY), (float) rollFilter.update(reading.accelX) };
+		}else{
+			pitchRoll = { (float) pitchFilter.update(-reading.accelY), (float) rollFilter.update(-reading.accelX) };
+		}
+	}
+
 	setOrientation(pitchRoll.pitch, pitchRoll.roll);
 }
 
@@ -139,6 +154,11 @@ void Theremin::audioThreadFunc(){
 						 { 0,    0,    toneDuration }};
 
 	audio.play(sound);
+
+	if(auto* status = (StatusCenter*) Services.get(Service::Status)){
+		status->blinkAll();
+	}
+
 	timer.start();
 
 	sequenceIndex = sequenceIndex + 1;

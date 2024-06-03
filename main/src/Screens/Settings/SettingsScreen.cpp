@@ -49,6 +49,10 @@ void SettingsScreen::loop(){
 
 			FSLVGL::unloadCache();
 			FSLVGL::loadCache(settings.get().themeData.theme);
+		}else{
+			lv_obj_invalidate(*this);
+			vTaskDelay(LV_DISP_DEF_REFR_PERIOD);
+			lv_timer_handler();
 		}
 
 		transition([](){ return std::make_unique<MainMenu>(); });

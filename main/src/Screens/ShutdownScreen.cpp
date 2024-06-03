@@ -10,8 +10,6 @@ ShutdownScreen::ShutdownScreen(){
 	lv_obj_set_pos(bg, 0, 0);
 	lv_obj_set_style_bg_color(bg, lv_color_black(), 0);
 	lv_obj_set_style_bg_opa(bg, LV_OPA_COVER, 0);
-	lv_obj_set_style_bg_img_src(bg, File::Background, 0);
-
 
 	lv_obj_set_size(*this, 128, 128);
 	lv_obj_set_style_pad_bottom(*this, 16, 0);
@@ -21,7 +19,7 @@ ShutdownScreen::ShutdownScreen(){
 	lv_label_set_text(label, "Low battery!\nShutting down.");
 	lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
 	lv_obj_set_style_text_font(label, &devin, 0);
-	lv_obj_set_style_text_color(label, lv_color_white(), 0);
+	lv_obj_set_style_text_color(label, lv_color_make(255, 101, 0), 0);
 
 	img = lv_img_create(*this);
 	lv_img_set_src(img, File::Menu::Theme1::BigLowBattery);

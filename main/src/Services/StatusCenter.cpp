@@ -92,6 +92,9 @@ void StatusCenter::processBatt(const Battery::Event& evt){
 void StatusCenter::updateLED(){
 	if(settings.get().ledEnable == false){
 		led->clear();
+		for(const std::shared_ptr<DigitalLEDController>& singleLed : singleLeds){
+			singleLed->clear();
+		}
 		return;
 	}
 
@@ -109,6 +112,8 @@ void StatusCenter::blockAudio(bool block){
 }
 
 void StatusCenter::blink(){
+	if(settings.get().ledEnable == false) return;
+
 	led->blinkTwice({ 0, 0, 255 });
 
 	for(const std::shared_ptr<DigitalLEDController>& singleLed : singleLeds){
@@ -117,6 +122,8 @@ void StatusCenter::blink(){
 }
 
 void StatusCenter::circularBlink(){
+	if(settings.get().ledEnable == false) return;
+
 	for(const std::shared_ptr<DigitalLEDController>& singleLed : singleLeds){
 		singleLed->blinkTwice(0xFF, 100, 300);
 		vTaskDelay(50);
@@ -142,4 +149,59 @@ void StatusCenter::shutdown(){
 		singleLed->clear();
 	}
 	led->clear();
+}
+
+void StatusCenter::blinkUp(){
+	if(settings.get().ledEnable == false) return;
+
+	auto* settings = (Settings*) Services.get(Service::Settings);
+	if(settings->get().screenRotate){
+		singleLeds[4]->blink(0xff);
+		singleLeds[5]->blink(0xff);
+	}else{
+		singleLeds[0]->blink(0xff);
+		singleLeds[1]->blink(0xff);
+	}
+}
+
+void StatusCenter::blinkDown(){
+	if(settings.get().ledEnable == false) return;
+
+	auto* settings = (Settings*) Services.get(Service::Settings);
+	if(settings->get().screenRotate){
+		singleLeds[0]->blink(0xff);
+		singleLeds[1]->blink(0xff);
+	}else{
+		singleLeds[4]->blink(0xff);
+		singleLeds[5]->blink(0xff);
+	}
+}
+
+void StatusCenter::blinkRand(){
+	if(settings.get().ledEnable == false) return;
+
+	std::unordered_set<int> leds;
+	while(leds.size() < 2){
+		leds.insert(rand()%6);
+	}
+
+	for(int led : leds){
+		singleLeds[led]->blink(0xff);
+	}
+}
+
+void StatusCenter::blinkAll(){
+	if(settings.get().ledEnable == false) return;
+
+	for(const auto& singleLed : singleLeds){
+		singleLed->blink(0xff);
+	}
+}
+
+void StatusCenter::blinkAllTwice(){
+	if(settings.get().ledEnable == false) return;
+
+	for(const auto& singleLed : singleLeds){
+		singleLed->blinkTwice(0xff);
+	}
 }

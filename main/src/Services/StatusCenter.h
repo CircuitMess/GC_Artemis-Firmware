@@ -23,6 +23,12 @@ public:
 	void beep();
 	void shutdown();
 
+	void blinkUp();
+	void blinkDown();
+	void blinkRand();
+	void blinkAll();
+	void blinkAllTwice();
+
 private:
 	EventQueue events;
 
