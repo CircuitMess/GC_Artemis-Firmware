@@ -36,6 +36,7 @@ void SleepMan::goSleep(){
 
 	if(settings.get().motionDetection){
 		imu.init();
+		delayMillis(10);
 
 		if(waitForLower){
 			imu.setTiltDirection(IMU::TiltDirection::Lowered);
@@ -67,6 +68,7 @@ void SleepMan::goSleep(){
 
 	if(settings.get().motionDetection){
 		imu.init();
+		delayMillis(10);
 
 		if(buttonWakeWhileLowered){
 			imu.setTiltDirection(IMU::TiltDirection::Lifted);
