@@ -310,9 +310,9 @@ void LunarLander::buildTerrain(){
 			x += 10;
 			dir = 1 + rand() % 4;
 			lastFlat = x;
-		}else if(y >= 127){
-			terrainPoints.emplace_back(x, 127);
-			y = 127;
+		}else if(y >= 125){
+			terrainPoints.emplace_back(x, 125);
+			y = 125;
 			x += MaxFlatWidth;
 			dir = -(1 + rand() % 4);
 			lastFlat = x;

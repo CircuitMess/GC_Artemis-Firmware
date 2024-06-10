@@ -40,6 +40,7 @@ private:
 	lv_obj_t* pairLabel;
 
 	bool paired = false;
+	bool headlights = false;
 	bool cacheReturned = false;
 
 	uint8_t camPos = 50;
