@@ -33,7 +33,7 @@ bool IMU::init(){
 	//  The software reset here doesn't seem to cut it: INT2 is staying high if
 	//  it was high before the reset
 	lsm6ds3tr_c_reset_set(&ctx, 1);
-	vTaskDelay(50);
+	delayMillis(50);
 
 	uint8_t id;
 	lsm6ds3tr_c_device_id_get(&ctx, &id);

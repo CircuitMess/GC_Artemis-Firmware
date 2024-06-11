@@ -27,7 +27,12 @@ void SettingsScreen::loop(){
 		if(evt.facility == Facility::Input){
 			auto eventData = (Input::Data*) evt.data;
 			if(eventData->btn == Input::Alt && eventData->action == Input::Data::Press){
-				shouldTransition = true;
+				if(timePickerModal != nullptr){
+					delete timePickerModal;
+					timePickerModal = nullptr;
+				}else{
+					shouldTransition = true;
+				}
 			}
 		}
 
@@ -37,30 +42,18 @@ void SettingsScreen::loop(){
 	statusBar->loop();
 
 	if(shouldTransition){
-		delete timePickerModal;
-		timePickerModal = nullptr;
-
-		if(oldTheme != settings.get().themeData.theme){
-			lv_obj_add_flag(container, LV_OBJ_FLAG_HIDDEN);
-			lv_obj_clear_flag(*loadingText, LV_OBJ_FLAG_HIDDEN);
-			lv_obj_invalidate(*this);
-			vTaskDelay(LV_DISP_DEF_REFR_PERIOD);
-			lv_timer_handler();
-
-			FSLVGL::unloadCache();
-			FSLVGL::loadCache(settings.get().themeData.theme);
-		}else{
-			lv_obj_invalidate(*this);
-			vTaskDelay(LV_DISP_DEF_REFR_PERIOD);
-			lv_timer_handler();
-		}
-
 		transition([](){ return std::make_unique<MainMenu>(); });
 		return;
 	}
 }
 
 void SettingsScreen::onStop(){
+
+	if(timePickerModal != nullptr){
+		delete timePickerModal;
+		timePickerModal = nullptr;
+	}
+
 	auto savedSettings = settings.get();
 	savedSettings.notificationSounds = audioSwitch->getValue();
 	savedSettings.screenBrightness = brightnessSlider->getValue();
@@ -88,6 +81,22 @@ void SettingsScreen::onStop(){
 	auto status = (StatusCenter*) Services.get(Service::Status);
 	status->blockAudio(false);
 	status->updateLED();
+
+	if(oldTheme != settings.get().themeData.theme){
+		lv_obj_add_flag(container, LV_OBJ_FLAG_HIDDEN);
+		lv_obj_clear_flag(*loadingText, LV_OBJ_FLAG_HIDDEN);
+		lv_obj_invalidate(*this);
+		vTaskDelay(LV_DISP_DEF_REFR_PERIOD);
+		lv_timer_handler();
+
+		FSLVGL::unloadCache();
+		FSLVGL::loadCache(settings.get().themeData.theme);
+	}else{
+
+		lv_obj_invalidate(*this);
+		vTaskDelay(LV_DISP_DEF_REFR_PERIOD);
+		lv_timer_handler();
+	}
 }
 
 void SettingsScreen::onStarting(){
@@ -223,20 +232,20 @@ void SettingsScreen::buildUI(){
 	lv_group_add_obj(inputGroup, *themePicker);
 
 	dateFormatPicker = new PickerElement(container, "Date format", (uint16_t) startingSettings.dateFormat,
-									"D.M.Y\nM.D.Y",
-									[this](uint16_t selected){
-										SettingsStruct sett = settings.get();
-										sett.dateFormat = (DateFormat) selected;
-										settings.set(sett);
-									});
+										 "D.M.Y\nM.D.Y",
+										 [this](uint16_t selected){
+											 SettingsStruct sett = settings.get();
+											 sett.dateFormat = (DateFormat) selected;
+											 settings.set(sett);
+										 });
 	lv_group_add_obj(inputGroup, *dateFormatPicker);
 
 	manualTime = new LabelElement(container, "Adjust time/date", [this](){
-		timePickerModal = new TimePickerModal(this, ts.getTime(), [this]() {
+		timePickerModal = new TimePickerModal(this, ts.getTime(), [this](){
 			delete timePickerModal;
 			timePickerModal = nullptr;
 		});
-	}, false,  LV_ALIGN_LEFT_MID);
+	}, false, LV_ALIGN_LEFT_MID);
 	lv_group_add_obj(inputGroup, *manualTime);
 
 	audioSwitch = new BoolElement(container, "Sound", [](bool value){

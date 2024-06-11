@@ -79,8 +79,13 @@ void PerseCtrlScreen::loop(){
 		if(evt.facility == Facility::Input){
 			auto eventData = (Input::Data*) evt.data;
 			if(eventData->btn == Input::Select && eventData->action == Input::Data::Press){
-				pair = std::make_unique<PairService>(wifi, *tcp);
-			}else if(eventData->btn == Input::Select && eventData->action == Input::Data::Release){
+				if(paired){
+					headlights = !headlights;
+					comm->sendHeadlights(headlights ? HeadlightsMode::On : HeadlightsMode::Off);
+				}else{
+					pair = std::make_unique<PairService>(wifi, *tcp);
+				}
+			}else if(eventData->btn == Input::Select && eventData->action == Input::Data::Release && !paired){
 				if(pair){
 					lv_label_set_text(pairLabel, "Push and hold wheel to pair");
 				}
