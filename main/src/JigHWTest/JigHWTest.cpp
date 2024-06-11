@@ -204,10 +204,10 @@ bool JigHWTest::BatteryCalib(){
 	uint32_t reading = 0;
 
 	adc1_config_width(ADC_WIDTH_BIT_12);
-	adc1_config_channel_atten(ADC1_CHANNEL_1, ADC_ATTEN_DB_6);
+	adc1_config_channel_atten(ADC1_CHANNEL_5, ADC_ATTEN_DB_11);
 
 	for(int i = 0; i < numReadings; i++){
-		reading += adc1_get_raw(ADC1_CHANNEL_1);
+		reading += adc1_get_raw(ADC1_CHANNEL_5);
 		vTaskDelay(readDelay / portTICK_PERIOD_MS);
 	}
 	reading /= numReadings;
@@ -239,14 +239,14 @@ bool JigHWTest::BatteryCalib(){
 
 bool JigHWTest::BatteryCheck(){
 	adc1_config_width(ADC_WIDTH_BIT_12);
-	adc1_config_channel_atten(ADC1_CHANNEL_1, ADC_ATTEN_DB_6);
+	adc1_config_channel_atten(ADC1_CHANNEL_5, ADC_ATTEN_DB_11);
 
 	constexpr uint16_t numReadings = 50;
 	constexpr uint16_t readDelay = 10;
 	uint32_t reading = 0;
 
 	for(int i = 0; i < numReadings; i++){
-		reading += adc1_get_raw(ADC1_CHANNEL_1);
+		reading += adc1_get_raw(ADC1_CHANNEL_5);
 		vTaskDelay(readDelay / portTICK_PERIOD_MS);
 	}
 	reading /= numReadings;
