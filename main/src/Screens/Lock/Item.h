@@ -13,7 +13,7 @@ public:
 	Item(lv_obj_t* parent, std::function<void()> dismiss);
 
 	void update(const Notif& notif);
-	const char* iconPath();
+	NotifIcon getNotifIcon();
 
 private:
 	LVStyle standard;
@@ -21,7 +21,7 @@ private:
 
 	void initStyle();
 
-	const char* iPath = nullptr;
+	NotifIcon notifIcon;
 
 	lv_obj_t* top;
 	lv_obj_t* icon;

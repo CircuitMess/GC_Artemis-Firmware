@@ -38,8 +38,8 @@ private:
 	std::unordered_map<uint32_t, Item*> notifs;
 
 private:
-	void addNotifIcon(const char* path);
-	void removeNotifIcon(const char* path);
+	void addNotifIcon(NotifIcon icon);
+	void removeNotifIcon(NotifIcon icon);
 	void updateNotifs();
 	void buildUI();
 	void setDateLabel();

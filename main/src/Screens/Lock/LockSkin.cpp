@@ -108,14 +108,14 @@ void LockSkin::notifAdd(const Notif& notif){
 
 		notifs.insert(std::make_pair(notif.uid, item));
 
-		addNotifIcon(iconPath(notif));
+		addNotifIcon(notifIcon(notif));
 	}
 
 	auto el = notifs[notif.uid];
 
 	if(isModify){
-		removeNotifIcon(el->iconPath());
-		addNotifIcon(iconPath(notif));
+		removeNotifIcon(el->getNotifIcon());
+		addNotifIcon(notifIcon(notif));
 	}
 	el->update(notif);
 }
@@ -125,7 +125,7 @@ void LockSkin::notifRem(uint32_t id){
 	if(it == notifs.end()) return;
 	auto& el = it->second;
 
-	removeNotifIcon(el->iconPath());
+	removeNotifIcon(el->getNotifIcon());
 	lv_group_focus_next(inputGroup);
 
 	lv_obj_del(*el);
@@ -143,16 +143,16 @@ void LockSkin::notifsClear(){
 	icons->clear();
 }
 
-void LockSkin::addNotifIcon(const char* path){
-	if(path == nullptr || icons == nullptr) return;
+void LockSkin::addNotifIcon(NotifIcon icon){
+	if(icons == nullptr) return;
 
-	icons->add(path);
+	icons->add(icon);
 }
 
-void LockSkin::removeNotifIcon(const char* path){
-	if(path == nullptr || icons == nullptr) return;
+void LockSkin::removeNotifIcon(NotifIcon icon){
+	if(icons == nullptr) return;
 
-	icons->remove(path);
+	icons->remove(icon);
 }
 
 void LockSkin::updateNotifs(){
