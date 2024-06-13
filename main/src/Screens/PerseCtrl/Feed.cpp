@@ -6,7 +6,7 @@
 
 static const char* tag = "Feed";
 
-Feed::Feed() : jpeg(std::make_unique<JPEGDEC>()), rxBuf(RxBufSize), dataAvailable(0), readTask([this](){ readLoop(); }, "FeedRead", 4096, 5, 0),
+Feed::Feed() : jpeg(std::make_unique<JPEGDEC>()), rxBuf(RxBufSize), dataAvailable(0), readTask([this](){ readLoop(); }, "FeedRead", 2048, 5, 0),
 			   decodeTask([this](){ decodeLoop(); }, "FeedDecode", 4096, 5, 0){
 
 	readBuf = (uint8_t*) heap_caps_malloc(ReadBufSize, MALLOC_CAP_SPIRAM);
