@@ -28,8 +28,8 @@ LunarLander::LunarLander() : evts(6){
 	lv_obj_set_size(canvas, 128, 128);
 	lv_obj_add_flag(canvas, LV_OBJ_FLAG_FLOATING);
 
-	canvData.resize(LV_CANVAS_BUF_SIZE_TRUE_COLOR(128, 128));
-	lv_canvas_set_buffer(canvas, canvData.data(), 128, 128, LV_IMG_CF_TRUE_COLOR);
+	canvData = (uint8_t*) heap_caps_malloc(LV_CANVAS_BUF_SIZE_TRUE_COLOR(128, 128), MALLOC_CAP_SPIRAM);
+	lv_canvas_set_buffer(canvas, canvData, 128, 128, LV_IMG_CF_TRUE_COLOR);
 
 	view = glm::identity<glm::mat3>();
 
@@ -54,6 +54,7 @@ LunarLander::LunarLander() : evts(6){
 
 LunarLander::~LunarLander(){
 	Events::unlisten(&evts);
+	free(canvData);
 }
 
 void LunarLander::onStop(){

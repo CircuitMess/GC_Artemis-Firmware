@@ -16,7 +16,7 @@ public:
 private:
 	virtual void onStop() override;
 
-	std::vector<uint8_t> canvData;
+	uint8_t* canvData;
 	lv_obj_t* canvas;
 
 	void buildTerrain();
