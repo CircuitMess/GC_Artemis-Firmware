@@ -30,7 +30,7 @@ private:
 	std::binary_semaphore dataAvailable;
 
 	ThreadedClosure readTask;
-	std::vector<uint8_t> readBuf;
+	uint8_t* readBuf;
 	static constexpr size_t ReadBufSize = 4096;
 	void readLoop();
 
@@ -39,7 +39,7 @@ private:
 	bool findFrame();
 
 	bool freeImgs[3] = { true, true, true };
-	std::vector<Color> frameImgs[3];
+	Color* frameImgs[3];
 
 	std::mutex readyFrameMut;
 	struct {

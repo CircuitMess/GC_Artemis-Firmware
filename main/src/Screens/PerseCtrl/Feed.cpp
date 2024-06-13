@@ -9,9 +9,9 @@ static const char* tag = "Feed";
 Feed::Feed() : jpeg(std::make_unique<JPEGDEC>()), rxBuf(RxBufSize), dataAvailable(0), readTask([this](){ readLoop(); }, "FeedRead", 4096, 5, 0),
 			   decodeTask([this](){ decodeLoop(); }, "FeedDecode", 4096, 5, 0){
 
-	readBuf.resize(ReadBufSize);
+	readBuf = (uint8_t*) heap_caps_malloc(ReadBufSize, MALLOC_CAP_SPIRAM);
 	for(int i = 0; i < 3; i++){
-		frameImgs[i].resize(160 * 120);
+		frameImgs[i] = (Color*) heap_caps_malloc(sizeof(Color) * 160 * 120, MALLOC_CAP_SPIRAM);
 	}
 
 	readTask.start();
@@ -25,6 +25,11 @@ Feed::~Feed(){
 	while(decodeTask.running()){
 		delayMillis(1);
 	}
+
+	for(int i = 0; i < 3; i++){
+		free(frameImgs[i]);
+	}
+	free(readBuf);
 }
 
 void Feed::setPostProcCallback(std::function<void(const DriveInfo&, Color*)> callback){
@@ -44,7 +49,7 @@ bool Feed::nextFrame(std::function<void(const DriveInfo& info, const Color* img)
 	if(frameIndex == -1) return false;
 
 	volatile const DriveInfo info = readyFrame.info;
-	volatile const Color* img = frameImgs[frameIndex].data();
+	volatile const Color* img = frameImgs[frameIndex];
 
 	readyFrame.imgIndex = -1;
 	lock.unlock();
@@ -57,14 +62,14 @@ bool Feed::nextFrame(std::function<void(const DriveInfo& info, const Color* img)
 }
 
 void Feed::readLoop(){
-	int bytes = udp.read(readBuf.data(), readBuf.size());
+	int bytes = udp.read(readBuf, ReadBufSize);
 	if(bytes <= 0){
 		delayMillis(10);
 		return;
 	}
 
 	std::lock_guard lock(rxMut);
-	rxBuf.write(readBuf.data(), bytes);
+	rxBuf.write(readBuf, bytes);
 	dataAvailable.release();
 }
 
@@ -103,7 +108,7 @@ void Feed::decodeLoop(){
 	if(freeImg == -1) return;
 
 	freeImgs[freeImg] = false;
-	auto imgBuf = frameImgs[freeImg].data();
+	auto imgBuf = frameImgs[freeImg];
 
 	jpeg->openRAM((uint8_t*) (frame->frame.data), frame->frame.size, [](JPEGDRAW* data) -> int{
 		for(int y = data->y, iy = 0; y < data->y + data->iHeight; y++, iy++){
