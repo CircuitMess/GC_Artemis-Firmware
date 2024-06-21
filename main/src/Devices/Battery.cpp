@@ -5,13 +5,17 @@
 #include <Util/stdafx.h>
 #include <cmath>
 #include <driver/gpio.h>
+#include <glm.hpp>
 
 static const char* TAG = "Battery";
 
-#define MAX_READ 2505 // 4.2V
-#define MIN_READ 2120 // 3.6V
+#define MAX_READ 4200 // 4.2V
+#define MIN_READ 3600 // 3.6V
+#define FACTOR2 (-0.0000282927f)
+#define FACTOR1 1.78289f
+#define FACTOR0 (-6.23883f)
 
-Battery::Battery() : Threaded("Battery", 3 * 1024, 5), adc((gpio_num_t) PIN_BATT, 0.05, MIN_READ, MAX_READ, getVoltOffset()),
+Battery::Battery() : Threaded("Battery", 3 * 1024, 5), adc((gpio_num_t) PIN_BATT, 0.05, MIN_READ, MAX_READ, (float) getVoltOffset() + FACTOR0, FACTOR1, FACTOR2),
 					 hysteresis({ 0, 4, 15, 30, 70, 100 }, 3),
 					 chargeHyst(2000, ChargingState::Unplugged), sem(xSemaphoreCreateBinary()), timer(ShortMeasureIntverval, isr, sem){
 
@@ -53,7 +57,7 @@ void Battery::begin(){
 }
 
 uint16_t Battery::mapRawReading(uint16_t reading){
-	return std::round(map((double) reading, MIN_READ, MAX_READ, 3600, 4200));
+	return std::round(FACTOR0 + (float) reading * FACTOR1 + glm::pow((float) reading, 2.0f) * FACTOR2);
 }
 
 int16_t Battery::getVoltOffset(){

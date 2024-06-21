@@ -6,7 +6,7 @@
 class ADC {
 public:
 	// Specifying min and max maps value to [-100, +100]
-	ADC(gpio_num_t pin, float ema_a = 1, int min = 0, int max = 0, int readingOffset = 0);
+	ADC(gpio_num_t pin, float ema_a = 1, int min = 0, int max = 0, int readingOffset = 0, float factor1 = 1.0f, float factor2 = 0.0f);
 
 	// Take a sample and get current value
 	float sample();
@@ -24,9 +24,9 @@ private:
 	float ema_a;
 	const float min, max;
 	const float offset;
+	const float factor1, factor2;
 
-	float val = -1;
-
+	float value = -1;
 };
 
 

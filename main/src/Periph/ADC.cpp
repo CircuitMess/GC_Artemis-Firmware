@@ -2,10 +2,11 @@
 #include <driver/adc.h>
 #include <esp_log.h>
 #include <algorithm>
+#include <glm.hpp>
 
 static const char* TAG = "ADC";
 
-ADC::ADC(gpio_num_t pin, float ema_a, int min, int max, int readingOffset) : pin(pin), ema_a(ema_a), min(min), max(max), offset(readingOffset){
+ADC::ADC(gpio_num_t pin, float ema_a, int min, int max, int readingOffset, float factor1, float factor2) : pin(pin), ema_a(ema_a), min(min), max(max), offset(readingOffset), factor1(factor1), factor2(factor2){
 	if(pin != GPIO_NUM_6){
 		ESP_LOGE(TAG, "Only GPIO 36 is supported for ADC");
 		valid = false;
@@ -25,7 +26,7 @@ void ADC::setEmaA(float emaA){
 }
 
 void ADC::resetEma(){
-	val = -1;
+	value = -1;
 	sample();
 }
 
@@ -39,10 +40,10 @@ float ADC::sample(){
 		reading = adc1_get_raw(ADC1_CHANNEL_5);
 	}
 
-	if(val == -1 || ema_a == 1){
-		val = reading;
+	if(value == -1 || ema_a == 1){
+		value = reading;
 	}else{
-		val = val * (1.0f - ema_a) + ema_a * reading;
+		value = value * (1.0f - ema_a) + ema_a * reading;
 	}
 
 	return getVal();
@@ -53,19 +54,21 @@ float ADC::getVal() const{
 		return 0;
 	}
 
+	const float adjusted = offset + value * factor1 + glm::pow(value, 2.0f) * factor2;
+
 	if(max == 0 && min == 0){
-		return val + offset;
+		return adjusted;
 	}
 
-	float min = this->min;
-	float max = this->max;
-	bool inverted = min > max;
+	float minimum = this->min;
+	float maximum = this->max;
+	bool inverted = minimum > maximum;
 	if(inverted){
-		std::swap(min, max);
+		std::swap(minimum, maximum);
 	}
 
-	float val = std::clamp(this->val + offset, min, max);
-	val = (val - min) / (max - min);
+	float val = std::clamp(adjusted, minimum, maximum);
+	val = (val - minimum) / (maximum - minimum);
 	val = std::clamp(val*100.0f, 0.0f, 100.0f);
 
 	if(inverted){
