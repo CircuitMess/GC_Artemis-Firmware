@@ -75,7 +75,12 @@ void Battery::checkCharging(bool fresh){
 	if(!plugin){
 		newState = ChargingState::Unplugged;
 	}else{
-		newState = chrg ? ChargingState::Charging : ChargingState::Full;
+		//Prevent transition from Full to Charging while plugged during current spikes.
+		if(chargeHyst.get() == ChargingState::Full){
+			newState = ChargingState::Full;
+		}else{
+			newState = chrg ? ChargingState::Charging : ChargingState::Full;
+		}
 	}
 
 	if(fresh){
