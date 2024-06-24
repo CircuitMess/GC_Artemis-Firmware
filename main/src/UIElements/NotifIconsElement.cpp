@@ -9,31 +9,23 @@ void NotifIconsElement::clear(){
 	lv_obj_clean(*this);
 }
 
-void NotifIconsElement::add(const char* path){
-	if(path == nullptr){
-		return;
-	}
-
-	if(notifIcons.count(path)){
-		notifIcons[path].count++;
+void NotifIconsElement::add(NotifIcon icon){
+	if(notifIcons.count(icon)){
+		notifIcons[icon].count++;
 		return;
 	}
 
 	if(notifIcons.size() >= maxIconsCount) return;
 
-	lv_obj_t* icon = lv_img_create(*this);
-	lv_img_set_src(icon, path);
+	lv_obj_t* img = lv_img_create(*this);
+	lv_img_set_src(img, iconPath(icon));
 
-	NotifIcon notifIcon = { 1, icon };
-	notifIcons.insert({ path, notifIcon });
+	NotifIconCount notifIcon = { 1, img };
+	notifIcons.insert({ icon, notifIcon });
 }
 
-void NotifIconsElement::remove(const char* path){
-	if(path == nullptr){
-		return;
-	}
-
-	auto pair = notifIcons.find(path);
+void NotifIconsElement::remove(NotifIcon icon){
+	auto pair = notifIcons.find(icon);
 	if(pair == notifIcons.end()) return;
 
 	pair->second.count -= 1;

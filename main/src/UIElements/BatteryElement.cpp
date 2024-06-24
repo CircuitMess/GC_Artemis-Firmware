@@ -8,7 +8,7 @@ BatteryElement::BatteryElement(lv_obj_t* parent) : LVObject(parent), battery(*(B
 
 	Events::listen(Facility::Battery, &queue);
 
-	if(battery.isCharging()){
+	if(battery.getChargingState() != Battery::ChargingState::Unplugged){
 		set(BatteryElement::Charging);
 		return;
 	}
@@ -34,8 +34,10 @@ void BatteryElement::loop(){
 			auto* battEvent = (Battery::Event*) event.data;
 
 			if(battEvent->action == Battery::Event::Charging){
-				if(battEvent->chargeStatus){
+				if(battEvent->chargeStatus == Battery::ChargingState::Charging){
 					set(BatteryElement::Charging);
+				}else if(battEvent->chargeStatus == Battery::ChargingState::Full){
+					set(BatteryElement::Full);
 				}
 				free(event.data);
 				return;

@@ -40,7 +40,7 @@ private:
 
 	bool audioBlocked = false;
 	bool hasNotifs = false;
-	enum { Ok, Empty, Charging } battState = Ok;
+	enum { Ok, Empty, Charging, Full } battState = Ok;
 
 	void loop() override;
 

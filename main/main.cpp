@@ -150,18 +150,14 @@ void init(){
 
 	if(settings->get().notificationSounds){
 		audio->play({
-							Chirp{ .startFreq = 250, .endFreq = 250, .duration = 500 },
-							Chirp{ .startFreq = 0, .endFreq = 0, .duration = 200 },
-							Chirp{ .startFreq = 500, .endFreq = 500, .duration = 500 },
-							Chirp{ .startFreq = 0, .endFreq = 0, .duration = 200 },
-							Chirp{ .startFreq = 1000, .endFreq = 1000, .duration = 500 }
+							Chirp{ .startFreq = 250, .endFreq = 250, .duration = 100 },
+							Chirp{ .startFreq = 0, .endFreq = 0, .duration = 100 },
+							Chirp{ .startFreq = 250, .endFreq = 250, .duration = 100 },
+							Chirp{ .startFreq = 0, .endFreq = 0, .duration = 250 },
+							Chirp{ .startFreq = 500, .endFreq = 500, .duration = 200 }
 					});
 
 		vTaskDelay(2500);
-
-		audio->play({
-							Chirp{ .startFreq = 125, .endFreq = 125, .duration = 1000 }
-					});
 	}
 
 	// Start Battery scanning after everything else, otherwise Critical

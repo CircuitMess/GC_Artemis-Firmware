@@ -18,19 +18,19 @@ public:
 	void begin();
 
 	enum Level { Critical = 0, VeryLow, Low, Mid, Full, COUNT };
-
+	enum class ChargingState : uint8_t { Unplugged, Charging, Full };
 	void setSleep(bool sleep);
 
 	uint8_t getPerc() const;
 	Level getLevel() const;
-	bool isCharging() const;
+	ChargingState getChargingState() const;
 
 	struct Event {
 		enum {
 			Charging, LevelChange
 		} action;
 		union {
-			bool chargeStatus;
+			ChargingState chargeStatus;
 			Level level;
 		};
 	};
@@ -50,8 +50,8 @@ private:
 
 	std::mutex mut;
 
-	TimeHysteresis<bool> chargeHyst;
-	bool wasCharging = false;
+	TimeHysteresis<ChargingState> chargeHyst;
+	ChargingState lastCharging = ChargingState::Unplugged;
 	bool sleep = false;
 
 	std::atomic_bool abortFlag = false;
@@ -74,4 +74,4 @@ private:
 
 };
 
-#endif //CLOCKSTAR_LIBRARY_SERVICE_H
+#endif //CLOCKSTAR_LIBRARY_BATTERY_H

@@ -36,6 +36,32 @@ struct Notif {
 	} category;
 };
 
-const char* iconPath(const Notif& notif, bool smallIcon = false);
+enum class NotifIcon : uint8_t {
+	//Apps
+	Messenger,
+	WhatsApp,
+	Messages,
+	Instagram,
+	Snapchat,
+	TikTok,
+
+	//Categories
+	Other,
+	IncomingCall,
+	MissedCall,
+	Voicemail,
+	Social,
+	Schedule,
+	Email,
+	News,
+	HealthAndFitness,
+	BusinessAndFinance,
+	Location,
+	Entertainment,
+	OutgoingCall
+};
+
+NotifIcon notifIcon(const Notif& notif);
+const char* iconPath(NotifIcon icon, bool smallIcon = false);
 
 #endif //CLOCKSTAR_FIRMWARE_NOTIF_H
