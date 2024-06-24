@@ -412,25 +412,10 @@ void JigHWTest::AudioVisualTest(){
 		gpio_config(&cfg);
 	}
 
-	new Input;
-	EventQueue queue(1);
-	Events::listen(Facility::Input, &queue);
-	bool mute = false;
 
 	for(;;){
-		Event evt;
-		if(queue.get(evt, 0)){
-			auto data = (Input::Data*) evt.data;
-			if(data->action == Input::Data::Press && data->btn == Input::Alt){
-				mute = true;
-			}
-			free(evt.data);
-		}
-
-		if(!mute){
-			ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, (1 << (10 - 1)) - 1);
-			ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
-		}
+		ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, (1 << (10 - 1)) - 1);
+		ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
 
 		ledc_set_duty(static_cast<ledc_mode_t>((LEDC_CHANNEL_2 / 8)), LEDC_CHANNEL_2, 1 << LEDC_TIMER_10_BIT);
 		ledc_update_duty(static_cast<ledc_mode_t>((LEDC_CHANNEL_2 / 8)), LEDC_CHANNEL_2);
@@ -448,10 +433,8 @@ void JigHWTest::AudioVisualTest(){
 
 		vTaskDelay(500);
 
-		if(!mute){
-			ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 0);
-			ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
-		}
+		ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 0);
+		ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
 
 		ledc_set_duty(static_cast<ledc_mode_t>((LEDC_CHANNEL_2 / 8)), LEDC_CHANNEL_2, 0);
 		ledc_update_duty(static_cast<ledc_mode_t>((LEDC_CHANNEL_2 / 8)), LEDC_CHANNEL_2);
