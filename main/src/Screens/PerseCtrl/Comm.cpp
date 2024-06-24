@@ -8,11 +8,9 @@ Comm::Comm(TCPClient& tcp) : Threaded("Comm", 3 * 1024), tcp(tcp), queue(10){
 }
 
 Comm::~Comm(){
-//	printf("Comm dest\n");
 	Events::unlisten(&queue);
 	queue.unblock();
 	stop();
-//	printf("Comm destroyed\n");
 }
 
 void Comm::sendDriveDir(DriveDir dir){
