@@ -13,7 +13,7 @@ static const char* TAG = "Battery";
 
 Battery::Battery() : Threaded("Battery", 3 * 1024, 5), adc((gpio_num_t) PIN_BATT, 0.05, MIN_READ, MAX_READ, getVoltOffset()),
 					 hysteresis({ 0, 4, 15, 30, 70, 100 }, 3),
-					 chargeHyst(2000, ChargingState::Unplugged), sem(xSemaphoreCreateBinary()), timer(ShortMeasureIntverval, isr, sem){
+					 chargeHyst(500, ChargingState::Unplugged), sem(xSemaphoreCreateBinary()), timer(ShortMeasureIntverval, isr, sem){
 
 	gpio_config_t cfg_gpio = {};
 	cfg_gpio.mode = GPIO_MODE_INPUT;
