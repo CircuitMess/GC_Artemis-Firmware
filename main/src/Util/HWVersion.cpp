@@ -1,18 +1,16 @@
 #include "HWVersion.h"
 
 bool HWVersion::check(){
-	uint16_t version = 0;
-
-	const esp_err_t err = esp_efuse_read_field_blob((const esp_efuse_desc_t**) Efuse_ver, &version, 16);
+	const esp_err_t err = esp_efuse_read_field_blob((const esp_efuse_desc_t**) Efuse_ver, &CachedVersion, 16);
 	if(err != ESP_OK){
 		return false;
 	}
 
-	if(version == Version){
+	if(CachedVersion == Version){
 		return true;
 	}
 
-	ESP_LOGE("Hardware check", "Hardware version (0x%04x) does not match software version (0x%04x).", version, Version);
+	log();
 
 	return false;
 }
@@ -34,4 +32,8 @@ bool HWVersion::write(){
 	}
 
 	return true;
+}
+
+void HWVersion::log(){
+	ESP_LOGE("Hardware check", "Hardware version (0x%04x) does not match software version (0x%04x).", CachedVersion, Version);
 }

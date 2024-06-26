@@ -76,6 +76,7 @@ void init(){
 	if(!HWVersion::check()){
 		while(true){
 			vTaskDelay(1000);
+			HWVersion::log();
 		}
 	}
 
