@@ -50,6 +50,7 @@ private:
 	static bool Time1();
 	static bool Time2();
 	static bool IMUTest();
+	static bool HWVersion();
 
 	void AudioVisualTest();
 	void rgb();

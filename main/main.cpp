@@ -35,6 +35,7 @@
 #include "Screens/Lander/LunarLander.h"
 #include "Screens/PerseCtrl/WiFiSTA.h"
 #include "Screens/PerseCtrl/TCPClient.h"
+#include "Util/HWVersion.h"
 
 LVGL* lvgl;
 BacklightBrightness* bl;
@@ -70,6 +71,13 @@ void init(){
 		auto test = new JigHWTest();
 		test->start();
 		vTaskDelete(nullptr);
+	}
+
+	if(!HWVersion::check()){
+		while(true){
+			vTaskDelay(1000);
+			HWVersion::log();
+		}
 	}
 
 	auto blPwm = new PWM(PIN_BL, LEDC_CHANNEL_1, true);

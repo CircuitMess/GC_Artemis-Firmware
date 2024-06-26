@@ -12,6 +12,7 @@
 #include <driver/ledc.h>
 #include "Devices/Input.h"
 #include "Util/Events.h"
+#include "Util/HWVersion.h"
 
 
 JigHWTest* JigHWTest::test = nullptr;
@@ -47,6 +48,7 @@ JigHWTest::JigHWTest(){
 	tests.push_back({ JigHWTest::SPIFFSTest, "SPIFFS", [](){} });
 	tests.push_back({ JigHWTest::BatteryCalib, "Battery calibration", [](){} });
 	tests.push_back({ JigHWTest::BatteryCheck, "Battery check", [](){} });
+	tests.push_back({ JigHWTest::HWVersion, "Hardware version", [](){} });
 }
 
 bool JigHWTest::checkJig(){
@@ -517,4 +519,8 @@ bool JigHWTest::IMUTest(){
 	uint8_t data;
 	auto ret = i2c->readReg(0x6A, 0x0FU, &data, 1, 10);
 	return ret == ESP_OK && data == 0x6AU;
+}
+
+bool JigHWTest::HWVersion(){
+	return HWVersion::write() && HWVersion::check();
 }
