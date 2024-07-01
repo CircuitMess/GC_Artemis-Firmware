@@ -56,6 +56,7 @@ private:
 	void rgb();
 
 	static const int16_t referenceVoltage = 4050; // 50mV for backlight voltage drop compensation
+	static int16_t voltOffset;
 
 	static constexpr uint32_t CheckTimeout = 500;
 
