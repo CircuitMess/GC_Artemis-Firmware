@@ -17,7 +17,7 @@ public:
 	void enAltLock(bool altLock);
 	void enAutoSleep(bool autoSleep);
 
-	static constexpr uint32_t ShutdownTime = 3000; //3s
+	static constexpr uint32_t ShutdownTime = 5000; //3s
 
 	void wake(bool blockLockScreen = false);
 	void imuSignal();
