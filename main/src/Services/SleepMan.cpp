@@ -11,12 +11,28 @@ SleepMan::SleepMan(LVGL& lvgl) : events(12), lvgl(lvgl),
 								 imu(*((IMU*) Services.get(Service::IMU))),
 								 bl(*((BacklightBrightness*) Services.get(Service::Backlight))),
 								 settings(*((Settings*) Services.get(Service::Settings))){
+
+	const bool tiltDetect = settings.get().motionDetection;
+	imu.enableTiltDetection(tiltDetect);
+	if(tiltDetect){
+		imu.setTiltDirection(IMU::TiltDirection::Lowered);
+
+		if(checkIMUTilt(IMU::TiltDirection::Lowered)){
+			waitForLower = false;
+			imu.setTiltDirection(IMU::TiltDirection::Lifted);
+			waitForLift = true;
+			ESP_LOGI(tag, "startup while lowered!");
+
+		}else{
+			imu.setTiltDirection(IMU::TiltDirection::Lowered);
+			waitForLift = false;
+		}
+	}
+
 	Events::listen(Facility::Input, &events);
 	Events::listen(Facility::Motion, &events);
 	Events::listen(Facility::Battery, &events);
 
-	imu.enableTiltDetection(settings.get().motionDetection);
-	imu.setTiltDirection(IMU::TiltDirection::Lowered);
 
 	actTime = millis();
 }
