@@ -55,7 +55,26 @@ void shutdown(){
 	sleepMan->shutdown();
 }
 
+static const gpio_num_t LEDs[] = { GPIO_NUM_17, GPIO_NUM_18, GPIO_NUM_43, GPIO_NUM_44, GPIO_NUM_45, GPIO_NUM_46 };
+
+void setLEDs(){
+	for(int i = 0; i < sizeof(LEDs) / sizeof(LEDs[0]); i++){
+		const gpio_num_t pin = LEDs[i];
+		gpio_config_t config = {
+				.pin_bit_mask = 1ULL << pin,
+				.mode = GPIO_MODE_OUTPUT,
+				.pull_up_en = GPIO_PULLUP_DISABLE,
+				.pull_down_en = GPIO_PULLDOWN_DISABLE,
+				.intr_type = GPIO_INTR_DISABLE
+		};
+
+		gpio_config(&config);
+		gpio_set_level(pin, 0);
+	}
+}
+
 void init(){
+	setLEDs();
 	gpio_install_isr_service(ESP_INTR_FLAG_LOWMED | ESP_INTR_FLAG_IRAM);
 
 	auto ret = nvs_flash_init();
