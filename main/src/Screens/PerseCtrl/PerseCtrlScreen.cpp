@@ -33,11 +33,15 @@ PerseCtrlScreen::PerseCtrlScreen() : wifi(*(WiFiSTA*) Services.get(Service::WiFi
 	lv_img_set_src(feedImg, &imgDsc);
 
 	pairLabel = lv_label_create(*this);
-	lv_obj_set_size(pairLabel, 128, 28);
+	lv_obj_set_size(pairLabel, 128, LV_SIZE_CONTENT);
 	lv_obj_set_style_text_color(pairLabel, Color, 0);
 	lv_obj_set_style_text_align(pairLabel, LV_TEXT_ALIGN_CENTER, 0);
-	lv_label_set_text(pairLabel, "Push and hold wheel to pair");
-	lv_obj_set_pos(pairLabel, 0, 60);
+	lv_label_set_text(pairLabel, "Push and hold wheel to pair\n\n"
+								 "Controls:\n"
+								 "Tilt Artemis - move Rover\n"
+								 "Wheel click - toggle headlights\n"
+								 "Wheel up/down - move camera tower");
+	lv_obj_center(pairLabel);
 
 	Events::listen(Facility::Input, &evts);
 	Events::listen(Facility::TCP, &evts);
