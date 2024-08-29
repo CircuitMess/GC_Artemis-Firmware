@@ -41,10 +41,9 @@ void LockScreen::onStart(){
 }
 
 void LockScreen::onStop(){
+	lv_group_focus_obj(skin->getMain());
 	Events::unlisten(&queue);
 	setSleep(false);
-	delete skin;
-	skin = nullptr;
 }
 
 void LockScreen::setSleep(bool en){
