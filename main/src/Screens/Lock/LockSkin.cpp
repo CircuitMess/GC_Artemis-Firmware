@@ -16,6 +16,8 @@
 
 LockSkin::LockSkin(lv_obj_t* parent, lv_group_t* inputGroup) : LVObject(parent), inputGroup(inputGroup){
 	notifs.reserve(MaxNotifs);
+
+	buildUI();
 }
 
 void LockSkin::loop(){
@@ -43,7 +45,6 @@ void LockSkin::loop(){
 }
 
 void LockSkin::prepare(){
-	buildUI();
 
 	lv_obj_scroll_to(rest, 0, 0, LV_ANIM_OFF);
 	lv_obj_scroll_to(*this, 0, 0, LV_ANIM_OFF);
