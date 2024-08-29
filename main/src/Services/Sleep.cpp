@@ -33,6 +33,11 @@ void Sleep::sleep(std::function<void()> preWake){
 	bl->fadeOut();
 	ConMan.goLowPow();
 
+	gpio_sleep_set_direction((gpio_num_t)TFT_DC, GPIO_MODE_INPUT);
+	gpio_sleep_set_direction((gpio_num_t)TFT_RST, GPIO_MODE_INPUT);
+	gpio_sleep_set_direction((gpio_num_t)TFT_SCK, GPIO_MODE_INPUT);
+	gpio_sleep_set_direction((gpio_num_t)TFT_MOSI, GPIO_MODE_INPUT);
+
 	int64_t sleepStartTime = esp_timer_get_time();
 	sleepStart();
 	auto sleepTime = esp_timer_get_time() - sleepStartTime;
