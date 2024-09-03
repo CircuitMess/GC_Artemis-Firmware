@@ -11,6 +11,7 @@
 class Item : public LVSelectable {
 public:
 	Item(lv_obj_t* parent, std::function<void()> dismiss);
+	~Item() override;
 
 	void update(const Notif& notif);
 	NotifIcon getNotifIcon();
