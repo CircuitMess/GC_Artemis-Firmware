@@ -12,7 +12,7 @@
 
 lv_color_t PerseCtrlScreen::Color = lv_color_make(255, 101, 0);
 
-PerseCtrlScreen::PerseCtrlScreen() : wifi(*(WiFiSTA*) Services.get(Service::WiFi)), evts(6){
+PerseCtrlScreen::PerseCtrlScreen() : evts(6){
 	wifi.start();
 
 	tcp = std::make_unique<TCPClient>();
@@ -111,12 +111,6 @@ void PerseCtrlScreen::loop(){
 				vTaskDelay(LV_DISP_DEF_REFR_PERIOD);
 				lv_timer_handler();
 
-				auto settings = (Settings*) Services.get(Service::Settings);
-				if(settings){
-					cacheReturned = true;
-					FSLVGL::loadCache(settings->get().themeData.theme);
-				}
-
 				transition([](){ return std::make_unique<MainMenu>(); });
 				return;
 			}else if((eventData->btn == Input::Up || eventData->btn == Input::Down) && eventData->action == Input::Data::Release){
@@ -131,6 +125,7 @@ void PerseCtrlScreen::loop(){
 
 			if(eventData->status == TCPClient::Event::Status::Disconnected){
 				paired = false;
+				pair.reset();
 				memset(feedBuf, 0, 160*120*2);
 				feed.clearFrame();
 				lv_obj_invalidate(feedImg);

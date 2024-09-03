@@ -13,7 +13,8 @@ public:
 		} status;
 	};
 
-	TCPClient();
+	TCPClient() = default;
+	virtual ~TCPClient();
 
 	bool isConnected() const;
 
@@ -26,6 +27,7 @@ public:
 private:
 	int sock = -1;
 
+	bool connected = false;
 };
 
 
