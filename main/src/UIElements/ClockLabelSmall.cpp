@@ -1,3 +1,4 @@
+#include <string>
 #include "ClockLabelSmall.h"
 #include "Theme/theme.h"
 #include "Settings/Settings.h"

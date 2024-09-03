@@ -98,7 +98,7 @@ void LVGIF::setDoneCallback(std::function<void()> cb){
 	this->cb = cb;
 }
 
-void LVGIF::setImage(uint index){
+void LVGIF::setImage(size_t index){
 	this->index = index;
 	sprintf(imgPath, "%s/%d.bin", path, index);
 	lv_img_set_src(img, imgPath);

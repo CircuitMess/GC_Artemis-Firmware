@@ -1,6 +1,7 @@
 #ifndef CLOCKSTAR_FIRMWARE_I2C_H
 #define CLOCKSTAR_FIRMWARE_I2C_H
 
+#include <freertos/FreeRTOS.h>
 #include <hal/i2c_types.h>
 #include <hal/gpio_types.h>
 #include <esp_err.h>
