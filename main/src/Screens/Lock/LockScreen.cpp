@@ -41,7 +41,9 @@ void LockScreen::onStart(){
 }
 
 void LockScreen::onStop(){
-	lv_group_focus_obj(skin->getMain());
+	if(skin != nullptr){
+		lv_group_focus_obj(skin->getMain());
+	}
 	Events::unlisten(&queue);
 	setSleep(false);
 }
