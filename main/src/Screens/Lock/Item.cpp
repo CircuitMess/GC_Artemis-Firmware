@@ -83,6 +83,10 @@ Item::Item(lv_obj_t* parent, std::function<void()> dismiss) : LVSelectable(paren
 	}, LV_EVENT_DEFOCUSED, this);
 }
 
+Item::~Item(){
+	while(lv_obj_remove_event_cb(*this, nullptr)){}
+}
+
 void Item::update(const Notif& notif){
 	notifIcon = ::notifIcon(notif);
 	lv_img_set_src(icon, ::iconPath(notifIcon, true));
