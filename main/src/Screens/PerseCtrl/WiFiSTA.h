@@ -65,8 +65,6 @@ private:
 
 	static constexpr uint16_t ScanListSize = 24;
 
-	inline static bool eventLoopCreated = false;
-
 	static wifi_ap_record_t* findNetwork(wifi_ap_record_t* ap_info, uint32_t numRecords);
 };
 

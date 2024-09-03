@@ -17,7 +17,7 @@ public:
 	virtual void onStop() override;
 
 private:
-	WiFiSTA& wifi;
+	WiFiSTA wifi;
 	std::unique_ptr<TCPClient> tcp;
 	Feed feed;
 	std::unique_ptr<Comm> comm;

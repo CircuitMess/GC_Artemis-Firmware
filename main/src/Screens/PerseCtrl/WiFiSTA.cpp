@@ -22,38 +22,41 @@ static std::string mac2str(uint8_t ar[]){
 }
 
 WiFiSTA::WiFiSTA() : hysteresis({0, 20, 40, 60, 80}, 1){
-	if(!eventLoopCreated){
-		ESP_ERROR_CHECK(esp_event_loop_create_default());
-		eventLoopCreated = true;
-	}
+	ESP_ERROR_CHECK(esp_event_loop_create_default());
+
+	wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+	ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+
+	ESP_ERROR_CHECK(esp_netif_init());
+	netif = createNetif();
+
+	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_FLASH));
+	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
 
 	esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, [](void* arg, esp_event_base_t base, int32_t id, void* data){
 		if(base != WIFI_EVENT) return;
 		auto wifi = static_cast<WiFiSTA*>(arg);
 		wifi->event(id, data);
 	}, this, &evtHandler);
-
-	ESP_ERROR_CHECK(esp_netif_init());
-	netif = createNetif();
-
-	wifi_init_config_t cfg_wifi = WIFI_INIT_CONFIG_DEFAULT();
-	esp_wifi_init(&cfg_wifi);
-
-	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
 }
 
 WiFiSTA::~WiFiSTA(){
+	ESP_ERROR_CHECK(esp_event_handler_instance_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, &evtHandler));
+	ESP_ERROR_CHECK(esp_event_loop_delete_default());
+
 	esp_wifi_scan_stop();
-	esp_wifi_disconnect();
-	esp_wifi_stop();
-
-	esp_netif_deinit();
-
-	if(netif != nullptr){
-		esp_netif_destroy(netif);
+	if(esp_wifi_disconnect() == ESP_FAIL){
+		abort();
 	}
-
-	esp_event_handler_instance_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, &evtHandler);
+	esp_err_t err = esp_wifi_stop();
+	if (err == ESP_ERR_WIFI_NOT_INIT) {
+		return;
+	}
+	ESP_ERROR_CHECK(err);
+	ESP_ERROR_CHECK(esp_wifi_deinit());
+	ESP_ERROR_CHECK(esp_wifi_clear_default_wifi_driver_and_handlers(netif));
+	esp_netif_destroy(netif);
+	netif = nullptr;
 }
 
 bool WiFiSTA::hasCachedSSID() const{
@@ -192,8 +195,7 @@ void WiFiSTA::event(int32_t id, void* data){
 }
 
 esp_netif_t* WiFiSTA::createNetif(){
-	esp_netif_inherent_config_t base{};
-	memcpy(&base, ESP_NETIF_BASE_DEFAULT_WIFI_STA, sizeof(esp_netif_inherent_config_t));
+	esp_netif_inherent_config_t base = ESP_NETIF_INHERENT_DEFAULT_WIFI_STA();
 	base.flags = (esp_netif_flags_t) ((base.flags & ~(ESP_NETIF_DHCP_SERVER | ESP_NETIF_DHCP_CLIENT | ESP_NETIF_FLAG_EVENT_IP_MODIFIED)) | ESP_NETIF_FLAG_GARP);
 
 	const esp_netif_ip_info_t ip = {
@@ -203,14 +205,7 @@ esp_netif_t* WiFiSTA::createNetif(){
 	};
 	base.ip_info = &ip;
 
-	esp_netif_config_t cfg = ESP_NETIF_DEFAULT_WIFI_STA();
-	cfg.base = &base;
-
-	esp_netif_t* netif = esp_netif_new(&cfg);
-	assert(netif);
-	esp_netif_set_default_netif(netif);
-
-	esp_netif_attach_wifi_station(netif);
+	esp_netif_obj* netif = esp_netif_create_wifi(WIFI_IF_STA, &base);
 	esp_wifi_set_default_wifi_sta_handlers();
 
 	return netif;
