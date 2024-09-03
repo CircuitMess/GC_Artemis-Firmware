@@ -35,7 +35,7 @@ private:
 
 	void goSleep();
 
-	bool inSleep = false;
+	volatile bool inSleep = false;
 
 	uint32_t actTime = 0;
 	bool autoSleep = true;
@@ -52,7 +52,7 @@ private:
 	static constexpr uint32_t AltHoldTime = 300;
 	uint32_t altPress;
 
-	bool nsBlocked = false;
+	volatile bool nsBlocked = false;
 
 	//if sleep is caused by btn press, register for Lowered event instead of Lifted, then clear this flag when Lowered occurs
 	bool waitForLower = false;
