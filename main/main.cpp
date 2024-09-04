@@ -1,3 +1,4 @@
+#include <freertos/FreeRTOS.h>
 #include <driver/gpio.h>
 #include <nvs_flash.h>
 #include <bootloader_random.h>

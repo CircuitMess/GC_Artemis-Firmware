@@ -1,3 +1,4 @@
+#include <freertos/FreeRTOS.h>
 #include "I2C.h"
 #include <driver/i2c.h>
 #include <vector>

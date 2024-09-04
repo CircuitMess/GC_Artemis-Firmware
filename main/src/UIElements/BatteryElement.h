@@ -6,6 +6,7 @@
 #include "Devices/Battery.h"
 #include "Util/Events.h"
 #include "Settings/Settings.h"
+#include <string>
 
 class BatteryElement : public LVObject {
 public:
