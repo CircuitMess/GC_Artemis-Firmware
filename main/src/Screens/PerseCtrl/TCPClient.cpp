@@ -5,12 +5,16 @@
 
 static const char* TAG = "TCPClient";
 
-TCPClient::TCPClient(){
-
+TCPClient::~TCPClient(){
+	if(sock != -1){
+		shutdown(sock, SHUT_RDWR);
+		close(sock);
+		sock = -1;
+	}
 }
 
 bool TCPClient::isConnected() const{
-	return sock != -1;
+	return connected;
 }
 
 bool TCPClient::connect(){
@@ -41,6 +45,7 @@ bool TCPClient::connect(){
 
 	Event event{ Event::Status::Connected };
 	Events::post(Facility::TCP, event);
+	connected = true;
 
 	ESP_LOGI(TAG, "Connection established");
 
@@ -55,6 +60,7 @@ void TCPClient::disconnect(){
 
 	Event event{ Event::Status::Disconnected };
 	Events::post(Facility::TCP, event);
+	connected = false;
 
 	close(sock);
 	sock = -1;

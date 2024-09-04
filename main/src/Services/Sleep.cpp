@@ -33,6 +33,12 @@ void Sleep::sleep(std::function<void()> preWake){
 	bl->fadeOut();
 	ConMan.goLowPow();
 
+	gpio_sleep_set_direction((gpio_num_t)TFT_DC, GPIO_MODE_INPUT);
+	gpio_sleep_set_pull_mode((gpio_num_t)TFT_RST, GPIO_PULLUP_ONLY);
+
+	gpio_sleep_sel_en((gpio_num_t)TFT_DC);
+	gpio_sleep_sel_en((gpio_num_t)TFT_RST);
+
 	int64_t sleepStartTime = esp_timer_get_time();
 	sleepStart();
 	auto sleepTime = esp_timer_get_time() - sleepStartTime;
@@ -44,7 +50,10 @@ void Sleep::sleep(std::function<void()> preWake){
 
 	Events::post(Facility::Sleep, Event { .action = Event::SleepOff });
 
-	preWake();
+	if(preWake){
+		preWake();
+	}
+
 	bl->fadeIn();
 
 	ESP_LOGI(TAG, "Slept for %lld us\n", sleepTime);

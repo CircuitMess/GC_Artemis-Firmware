@@ -148,9 +148,6 @@ void init(){
 	server->start();
 	Services.set(Service::Phone, phone);
 
-	WiFiSTA* wifi = new WiFiSTA();
-	Services.set(Service::WiFi, wifi);
-
 	srand(esp_random());
 
 	FSLVGL::loadCache(settings->get().themeData.theme);
