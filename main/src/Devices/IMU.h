@@ -126,6 +126,9 @@ private:
 
 	static double xlConv(int16_t raw);
 	static double gyConv(int16_t raw);
+
+	static constexpr uint8_t DefaultTiltThreshold = 1; // total thresh is tiltThresh * 15.625mg
+	static constexpr uint8_t DefaultTiltLatency = 6; // total latency is tiltLatency * 40ms
 };
 
 
