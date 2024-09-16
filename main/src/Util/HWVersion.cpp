@@ -42,3 +42,7 @@ bool HWVersion::readVersion(uint16_t& version){
 
 	return true;
 }
+
+uint16_t HWVersion::getHardcodedVersion(){
+	return Version;
+}

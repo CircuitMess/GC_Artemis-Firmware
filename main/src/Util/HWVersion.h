@@ -12,6 +12,8 @@ public:
 
 	static bool readVersion(uint16_t &version);
 
+	static uint16_t getHardcodedVersion();
+
 private:
 	static inline uint16_t CachedVersion = 0;
 	static inline constexpr const uint16_t Version = 0x0003;
