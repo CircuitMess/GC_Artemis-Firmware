@@ -8,10 +8,10 @@
 
 static const char* TAG = "Battery";
 
-#define MAX_READ 2505 // 4.2V
-#define MIN_READ 2120 // 3.6V
+#define MAX_READ 2500 // 4.2V
+#define MIN_READ 2100 // 3.6V
 
-Battery::Battery() : Threaded("Battery", 3 * 1024, 5), adc((gpio_num_t) PIN_BATT, 0.05, MIN_READ, MAX_READ, getVoltOffset()),
+Battery::Battery() : Threaded("Battery", 3 * 1024, 5, 1), adc((gpio_num_t) PIN_BATT, 0.05, MIN_READ, MAX_READ, getVoltOffset()),
 					 hysteresis({ 0, 4, 15, 30, 70, 100 }, 3),
 					 chargeHyst(500, ChargingState::Unplugged), sem(xSemaphoreCreateBinary()), timer(ShortMeasureIntverval, isr, sem){
 
