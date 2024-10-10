@@ -326,7 +326,7 @@ void JigHWTest::AudioVisualTest(){
 			.timer_num        = LEDC_TIMER_0,
 			.freq_hz          = 200,
 			.clk_cfg          = LEDC_AUTO_CLK,
-			.deconfigure      = false
+			// .deconfigure      = false
 	};
 	ledc_timer_config(&ledc_timer);
 
@@ -349,7 +349,7 @@ void JigHWTest::AudioVisualTest(){
 			.timer_num        = static_cast<ledc_timer_t>(((LEDC_CHANNEL_2 / 2) % 4)),
 			.freq_hz          = 5000,
 			.clk_cfg          = LEDC_AUTO_CLK,
-			.deconfigure      = false
+			// .deconfigure      = false
 	};
 	ledc_timer_config(&ledc_timer);
 
@@ -371,7 +371,7 @@ void JigHWTest::AudioVisualTest(){
 			.timer_num        = static_cast<ledc_timer_t>(((LEDC_CHANNEL_3 / 2) % 4)),
 			.freq_hz          = 5000,
 			.clk_cfg          = LEDC_AUTO_CLK,
-			.deconfigure      = false
+			// .deconfigure      = false
 	};
 	ledc_timer_config(&ledc_timer);
 
@@ -393,7 +393,7 @@ void JigHWTest::AudioVisualTest(){
 			.timer_num        = static_cast<ledc_timer_t>(((LEDC_CHANNEL_4 / 2) % 4)),
 			.freq_hz          = 5000,
 			.clk_cfg          = LEDC_AUTO_CLK,
-			.deconfigure      = false
+			// .deconfigure      = false
 	};
 	ledc_timer_config(&ledc_timer);
 
