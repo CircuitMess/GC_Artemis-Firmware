@@ -34,7 +34,7 @@ private:
 	lv_obj_t* notifList = nullptr;
 	lv_obj_t* date = nullptr;
 
-	static constexpr uint8_t MaxNotifs = 20;
+	static constexpr uint8_t MaxNotifs = Phone::MaxNotifs;
 	std::unordered_map<uint32_t, Item*> notifs;
 
 private:

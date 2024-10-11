@@ -2,8 +2,6 @@
 #include "Util/Events.h"
 
 Phone::Phone(BLE::Server* server, BLE::Client* client) : ancs(client), cTime(client), bangle(server){
-	notifs.reserve(20);
-
 	auto reg = [this](NotifSource* src){
 		src->setOnConnect([this, src](){ onConnect(src); });
 		src->setOnDisconnect([this, src](){ onDisconnect(src); });
@@ -37,7 +35,7 @@ Notif Phone::getNotif(uint32_t uid){
 }
 
 std::vector<Notif> Phone::getNotifs(){
-	return notifs;
+	return std::vector<Notif>(notifs.cbegin(), notifs.cend());
 }
 
 uint32_t Phone::getNotifsCount() const{
@@ -83,8 +81,10 @@ void Phone::onAdd(Notif notif){
 		return;
 	}
 
-	if(notifs.size() + 1 == notifs.capacity()){
-		notifs.reserve(notifs.capacity() * 2);
+	while(notifs.size() >= MaxNotifs){
+		const auto notif = notifs.front();
+		notifs.pop_front();
+		Events::post(Facility::Phone, Event { .action = Event::Removed, .data = { .addChgRem = { .id = notif.uid } } });
 	}
 
 	notifs.push_back(notif); // TODO: send whole notification, otherwise (by using a mutex) all newly unlocked tasks will rush after getNotif, and promptly get locked again by the mutex

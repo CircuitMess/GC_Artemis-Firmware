@@ -7,6 +7,7 @@
 #include "ANCS/Client.h"
 #include "CurrentTime.h"
 #include "NotifSource.h"
+#include <deque>
 
 class Phone {
 public:
@@ -22,6 +23,8 @@ public:
 			PhoneType phoneType;
 		} data;
 	};
+
+	static constexpr size_t MaxNotifs = 20;
 
 	Phone(BLE::Server* server, BLE::Client* client);
 
@@ -52,7 +55,9 @@ private:
 	void onModify(Notif notif);
 	void onRemove(uint32_t id);
 
-	std::vector<Notif> notifs; // TODO: mutex
+	// TODO: const size backed dequeue
+	// TODO: mutex
+	std::deque<Notif> notifs;
 
 	auto findNotif(uint32_t id);
 
