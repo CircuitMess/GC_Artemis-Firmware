@@ -14,6 +14,7 @@ public:
 	~LunarLander() override;
 
 private:
+	void onStart() override;
 	virtual void onStop() override;
 
 	uint8_t* canvData;

@@ -11,6 +11,7 @@
 #include "Services/ChirpSystem.h"
 #include "Util/Notes.h"
 #include "Services/StatusCenter.h"
+#include "Services/SleepMan.h"
 #include <cmath>
 #include <gtx/rotate_vector.hpp>
 #include <gtx/closest_point.hpp>
@@ -57,6 +58,12 @@ LunarLander::~LunarLander(){
 	free(canvData);
 }
 
+void LunarLander::onStart(){
+	if(auto sleep = (SleepMan*) Services.get(Service::Sleep)){
+		sleep->enAutoSleep(false);
+	}
+}
+
 void LunarLander::onStop(){
 	lv_obj_clean(*this);
 
@@ -76,6 +83,10 @@ void LunarLander::onStop(){
 
 	if(Settings* settings = (Settings*) Services.get(Service::Settings)){
 		FSLVGL::loadCache(settings->get().themeData.theme);
+	}
+
+	if(auto sleep = (SleepMan*) Services.get(Service::Sleep)){
+		sleep->enAutoSleep(true);
 	}
 }
 
