@@ -13,6 +13,7 @@
 #include "Devices/Input.h"
 #include "Util/Events.h"
 #include "Util/HWVersion.h"
+#include "Drivers/lsm6ds3tr-c_reg.h"
 
 
 JigHWTest* JigHWTest::test = nullptr;
@@ -45,6 +46,7 @@ JigHWTest::JigHWTest(){
 	tests.push_back({ JigHWTest::Time1, "RTC crystal", [](){} });
 	tests.push_back({ JigHWTest::Time2, "RTC crystal", [](){} });
 	tests.push_back({ JigHWTest::IMUTest, "Gyroscope", [](){} });
+	tests.push_back({ JigHWTest::IMUInterruptTest, "Gyro interrupt", [](){} });
 	tests.push_back({ JigHWTest::SPIFFSTest, "SPIFFS", [](){} });
 	tests.push_back({ JigHWTest::BatteryCheck, "Battery check", [](){} });
 	tests.push_back({ JigHWTest::HWVersion, "Hardware version", [](){ esp_efuse_batch_write_cancel(); } });
@@ -501,6 +503,37 @@ bool JigHWTest::IMUTest(){
 	uint8_t data;
 	auto ret = i2c->readReg(0x6A, 0x0FU, &data, 1, 10);
 	return ret == ESP_OK && data == 0x6AU;
+}
+
+bool JigHWTest::IMUInterruptTest(){
+	lsm6ds3tr_c_ctrl3_c_t ctrl3_c;
+
+	auto ret = i2c->readReg(0x6A, LSM6DS3TR_C_CTRL3_C, (uint8_t*) &ctrl3_c, 1, 10);
+
+	if(ret != 0){
+		test->log("i2c read err", (int32_t) ret);
+		return false;
+	}
+
+	ctrl3_c.sw_reset = 1;
+	ret = i2c->writeReg(0x6A, LSM6DS3TR_C_CTRL3_C, (uint8_t*) &ctrl3_c, 1, 10);
+
+	if(ret != 0){
+		test->log("i2c write err", (int32_t) ret);
+		return false;
+	}
+	delayMillis(50);
+
+	gpio_set_direction((gpio_num_t) IMU_INT1, GPIO_MODE_INPUT);
+	gpio_set_direction((gpio_num_t) IMU_INT2, GPIO_MODE_INPUT);
+
+	if(gpio_get_level((gpio_num_t) IMU_INT1) || gpio_get_level((gpio_num_t) IMU_INT2)){
+		test->log("IMU interrupt 1", (bool) gpio_get_level((gpio_num_t) IMU_INT1));
+		test->log("IMU interrupt 2", (bool) gpio_get_level((gpio_num_t) IMU_INT2));
+		return false;
+	}
+
+	return true;
 }
 
 bool JigHWTest::HWVersion(){
