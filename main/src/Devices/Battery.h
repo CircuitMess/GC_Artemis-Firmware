@@ -8,12 +8,14 @@
 #include "Util/Hysteresis.h"
 #include "Periph/Timer.h"
 #include "Util/TimeHysteresis.h"
+#include "Services/ADCReader.h"
 #include <mutex>
 #include <esp_efuse.h>
+#include <memory>
 
 class Battery : private Threaded {
 public:
-	Battery();
+	Battery(ADC& adc);
 	~Battery() override;
 	void begin();
 
@@ -35,18 +37,21 @@ public:
 		};
 	};
 
-	static int16_t getVoltOffset();
-	static uint16_t mapRawReading(uint16_t reading);
-
 	bool isShutdown() const;
 
 private:
 	static constexpr uint32_t ShortMeasureIntverval = 100;
 	static constexpr uint32_t LongMeasureIntverval = 6000;
 
-	ADC adc;
+	static constexpr uint32_t VoltFull = 4200; //[mV]
+	static constexpr uint32_t VoltEmpty = 3600; //[mV]
+	static constexpr float EMA_factor = 0.05;
+	static constexpr float EMA_factor_sleep = 0.5;
 
 	Hysteresis hysteresis;
+
+	std::unique_ptr<ADCReader> readerBatt;
+	adc_cali_handle_t caliBatt;
 
 	std::mutex mut;
 
