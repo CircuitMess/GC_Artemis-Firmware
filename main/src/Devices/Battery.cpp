@@ -45,7 +45,7 @@ Battery::Battery(ADC& adc) : Threaded("Battery", 3 * 1024, 5, 1), hysteresis({ 0
 	};
 	ESP_ERROR_CHECK(adc_cali_create_scheme_curve_fitting(&curveCfg, &caliBatt));
 
-	readerBatt = std::make_unique<ADCReader>(adc, chan, caliBatt, 0, 2.0f, EMA_factor, VoltEmpty, VoltFull);
+	readerBatt = std::make_unique<ADCReader>(adc, chan, caliBatt, ADC_offset, 2.0f, EMA_factor, VoltEmpty, VoltFull);
 
 	checkCharging(true);
 

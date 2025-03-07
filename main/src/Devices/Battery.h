@@ -72,6 +72,8 @@ private:
 
 	bool shutdown = false;
 
+	static constexpr float ADC_offset = 75.f; //for better accuracy
+
 	static constexpr esp_efuse_desc_t adc1_low = { EFUSE_BLK3, 0, 8 };
 	static constexpr const esp_efuse_desc_t* efuse_adc1_low[] = { &adc1_low, nullptr };
 	static constexpr esp_efuse_desc_t adc1_high = { EFUSE_BLK3, 8, 8 };
