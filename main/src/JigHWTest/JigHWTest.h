@@ -42,7 +42,6 @@ private:
 	void log(const char* property, int32_t value);
 	void log(const char* property, const std::string& value);
 
-	static bool BatteryCalib();
 	static bool BatteryCheck();
 	static bool SPIFFSTest();
 	static uint32_t calcChecksum(FILE* file);
@@ -55,8 +54,7 @@ private:
 	void AudioVisualTest();
 	void rgb();
 
-	static const int16_t referenceVoltage = 4000; // 50mV for backlight voltage drop compensation
-	static int16_t voltOffset;
+	static constexpr int16_t referenceVoltage = 4000;
 
 	static constexpr uint32_t CheckTimeout = 500;
 
