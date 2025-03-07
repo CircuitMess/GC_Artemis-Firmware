@@ -5,6 +5,8 @@
 #include <Util/stdafx.h>
 #include <cmath>
 #include <driver/gpio.h>
+#include "Util/Services.h"
+#include "Services/SleepMan.h"
 
 static const char* TAG = "Battery";
 
@@ -46,6 +48,13 @@ Battery::Battery(ADC& adc) : Threaded("Battery", 3 * 1024, 5, 1), hysteresis({ 0
 	readerBatt = std::make_unique<ADCReader>(adc, chan, caliBatt, 0, 2.0f, EMA_factor, VoltEmpty, VoltFull);
 
 	checkCharging(true);
+
+	readerBatt->resetEma();
+	if(readerBatt->getValue() <= 1.f){
+		auto sleepMan = (SleepMan*)Services.get(Service::Sleep);
+		sleepMan->shutdown();
+	}
+
 	sample(true); // this will initiate shutdown if battery is critical
 }
 
