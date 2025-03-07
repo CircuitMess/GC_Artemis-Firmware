@@ -31,19 +31,19 @@ Battery::Battery(ADC& adc) : Threaded("Battery", 3 * 1024, 5, 1), hysteresis({ 0
 	assert(unit == adc.getUnit());
 
 	adc.config(chan, {
-			.atten = ADC_ATTEN_DB_0,
+			.atten = ADC_ATTEN_DB_11,
 			.bitwidth = ADC_BITWIDTH_12
 	});
 
 	const adc_cali_curve_fitting_config_t curveCfg = {
 			.unit_id = unit,
 			.chan = chan,
-			.atten = ADC_ATTEN_DB_0,
+			.atten = ADC_ATTEN_DB_11,
 			.bitwidth = ADC_BITWIDTH_12
 	};
 	ESP_ERROR_CHECK(adc_cali_create_scheme_curve_fitting(&curveCfg, &caliBatt));
 
-	readerBatt = std::make_unique<ADCReader>(adc, chan, caliBatt, 0, 4.0f, EMA_factor, VoltEmpty, VoltFull);
+	readerBatt = std::make_unique<ADCReader>(adc, chan, caliBatt, 0, 2.0f, EMA_factor, VoltEmpty, VoltFull);
 
 	checkCharging(true);
 	sample(true); // this will initiate shutdown if battery is critical
