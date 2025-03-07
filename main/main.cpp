@@ -102,6 +102,8 @@ void init(){
 		}
 	}
 
+	auto adc1 = new ADC(ADC_UNIT_1);
+
 	auto blPwm = new PWM(PIN_BL, LEDC_CHANNEL_1, true);
 	blPwm->detach();
 	bl = new BacklightBrightness(blPwm);
@@ -132,7 +134,7 @@ void init(){
 	auto status = new StatusCenter();
 	Services.set(Service::Status, status);
 
-	auto battery = new Battery(); // Battery is doing shutdown
+	auto battery = new Battery(*adc1); // Battery is doing shutdown
 	if(battery->isShutdown()) return; // Stop initialization if battery is critical
 	Services.set(Service::Battery, battery);
 
