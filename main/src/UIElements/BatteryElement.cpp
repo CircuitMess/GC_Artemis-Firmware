@@ -45,14 +45,18 @@ void BatteryElement::loop(){
 				return;
 			}*/
 
-			auto lvl = battEvent->level;
-			if(lvl >= Battery::COUNT){
+			/*auto lvl = battEvent->level;
+			if(lvl >= Battery::High){
 				set(BatteryElement::Full);
-			}else if(lvl < Battery::VeryLow){
+			}else if(lvl < Battery::Low){
 				set(BatteryElement::Empty);
-			}else{
-				set((BatteryElement::Level) (battery.getLevel() - 1));
-			}
+			}else if(lvl >= Battery::High){
+				set(BatteryElement::Full);
+			}else if(lvl == Battery::Low){
+				set(BatteryElement::Low);
+			}else if(lvl == Battery::Mid){
+				set(BatteryElement::Mid);
+			}*/
 		}
 		free(event.data);
 	}
@@ -80,6 +84,7 @@ void BatteryElement::updateLevelVisuals(){
 }
 
 void BatteryElement::set(BatteryElement::Level level){
+	return;
 	this->level = level;
 	if(level == Charging){
 		chargingMillis = millis();
