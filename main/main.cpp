@@ -95,12 +95,12 @@ void init(){
 		vTaskDelete(nullptr);
 	}
 
-	if(!HWVersion::check()){
+	/*if(!HWVersion::check()){
 		while(true){
 			vTaskDelay(1000);
 			HWVersion::log();
 		}
-	}
+	}*/
 
 	auto adc1 = new ADC(ADC_UNIT_1);
 

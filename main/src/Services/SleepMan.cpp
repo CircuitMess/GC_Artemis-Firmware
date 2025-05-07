@@ -3,6 +3,7 @@
 #include "Util/Services.h"
 #include "Screens/ShutdownScreen.h"
 #include <esp_sleep.h>
+#include <Util/stdafx.h>
 #include "Screens/MainMenu/MainMenu.h"
 
 static const char* tag = "SleepMan";

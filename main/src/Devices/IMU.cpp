@@ -2,6 +2,7 @@
 #include <Util/Events.h>
 #include <driver/gpio.h>
 #include <esp_log.h>
+#include <Util/stdafx.h>
 #include "Pins.hpp"
 #include "Services/Sleep.h"
 #include "Util/Services.h"

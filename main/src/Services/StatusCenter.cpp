@@ -68,13 +68,14 @@ void StatusCenter::processPhone(const Phone::Event& evt){
 }
 
 void StatusCenter::processBatt(const Battery::Event& evt){
-	if(evt.action == Battery::Event::Charging){
+	// TODO
+	/*if(evt.action == Battery::Event::Charging){
 		if(evt.chargeStatus == Battery::ChargingState::Full){
 			battState = Full;
 		}else if(evt.chargeStatus == Battery::ChargingState::Charging){
 			battState = Charging;
 		}
-	}else{
+	}else*/{
 		auto level = evt.level;
 
 		if(level == Battery::Critical){
