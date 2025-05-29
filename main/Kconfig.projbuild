@@ -24,3 +24,15 @@ choice CM_BUILD_EXAMPLE
     config CM_TEST_SLEEP_WAKE_INT
         bool "Light sleep with GPIO interrupt and wake on same pin"
 endchoice
+
+choice ARTEMIS_VERSION
+    prompt "Version"
+    help
+        Hardware version of the Artemis board.
+    default VERSION
+
+    config VERSION
+        hex "Hardware version"
+        default 0x0007
+        range 0x0003 0x0007
+endchoice

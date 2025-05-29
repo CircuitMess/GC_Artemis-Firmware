@@ -26,7 +26,7 @@ void Sleep::sleep(std::function<void()> preWake){
 
 	input->pause();
 	time->pause();
-	//battery->setSleep(true); TODO
+	battery->setSleep(true);
 
 	Events::post(Facility::Sleep, Event { .action = Event::SleepOn });
 
@@ -46,7 +46,7 @@ void Sleep::sleep(std::function<void()> preWake){
 	ConMan.goHiPow();
 	input->resume();
 	time->resume();
-	//battery->setSleep(false); TODO
+	battery->setSleep(false);
 
 	Events::post(Facility::Sleep, Event { .action = Event::SleepOff });
 

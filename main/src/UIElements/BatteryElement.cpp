@@ -8,11 +8,10 @@ BatteryElement::BatteryElement(lv_obj_t* parent) : LVObject(parent), battery(*(B
 
 	Events::listen(Facility::Battery, &queue);
 
-	// TODO
-	/*if(battery.getChargingState() != Battery::ChargingState::Unplugged){
+	if(battery.getChargingState() != Battery::ChargingState::Unplugged){
 		set(BatteryElement::Charging);
 		return;
-	}*/
+	}
 
 	auto lvl = battery.getLevel();
 	if(lvl >= Battery::COUNT){
@@ -34,8 +33,7 @@ void BatteryElement::loop(){
 		if(event.facility == Facility::Battery){
 			auto* battEvent = (Battery::Event*) event.data;
 
-			// TODO
-			/*if(battEvent->action == Battery::Event::Charging){
+			if(battEvent->action == Battery::Event::Charging){
 				if(battEvent->chargeStatus == Battery::ChargingState::Charging){
 					set(BatteryElement::Charging);
 				}else if(battEvent->chargeStatus == Battery::ChargingState::Full){
@@ -43,20 +41,16 @@ void BatteryElement::loop(){
 				}
 				free(event.data);
 				return;
-			}*/
+			}
 
-			/*auto lvl = battEvent->level;
-			if(lvl >= Battery::High){
+			auto lvl = battEvent->level;
+			if(lvl >= Battery::COUNT){
 				set(BatteryElement::Full);
-			}else if(lvl < Battery::Low){
+			}else if(lvl < Battery::VeryLow){
 				set(BatteryElement::Empty);
-			}else if(lvl >= Battery::High){
-				set(BatteryElement::Full);
-			}else if(lvl == Battery::Low){
-				set(BatteryElement::Low);
-			}else if(lvl == Battery::Mid){
-				set(BatteryElement::Mid);
-			}*/
+			}else{
+				set((BatteryElement::Level) (battery.getLevel() - 1));
+			}
 		}
 		free(event.data);
 	}
@@ -84,7 +78,6 @@ void BatteryElement::updateLevelVisuals(){
 }
 
 void BatteryElement::set(BatteryElement::Level level){
-	return;
 	this->level = level;
 	if(level == Charging){
 		chargingMillis = millis();
