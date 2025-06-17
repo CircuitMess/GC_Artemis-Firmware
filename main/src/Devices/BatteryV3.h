@@ -18,9 +18,6 @@ public:
 
 	uint8_t getPerc() const;
 	Level getLevel() const;
-	ChargingState getChargingState() const;
-
-	bool isShutdown() const;
 
 private:
 	static constexpr float VoltFull = 4200.0f; //[mV]

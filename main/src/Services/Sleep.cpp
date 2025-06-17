@@ -37,11 +37,15 @@ void Sleep::sleep(std::function<void()> preWake){
 	gpio_sleep_set_pull_mode((gpio_num_t)Pins::get(Pin::TftRst), GPIO_PULLUP_ONLY);
 	gpio_sleep_set_pull_mode((gpio_num_t)Pins::get(Pin::TftSck), GPIO_PULLDOWN_ONLY);
 	gpio_sleep_set_pull_mode((gpio_num_t)Pins::get(Pin::TftMosi), GPIO_PULLUP_ONLY);
+	gpio_sleep_set_pull_mode((gpio_num_t)Pins::get(Pin::BattVref), GPIO_PULLDOWN_ONLY);
+	gpio_sleep_set_pull_mode((gpio_num_t)Pins::get(Pin::LedBl), GPIO_PULLUP_ONLY);
 
 	gpio_sleep_sel_en((gpio_num_t)Pins::get(Pin::TftDc));
 	gpio_sleep_sel_en((gpio_num_t)Pins::get(Pin::TftRst));
 	gpio_sleep_sel_en((gpio_num_t)Pins::get(Pin::TftSck));
 	gpio_sleep_sel_en((gpio_num_t)Pins::get(Pin::TftMosi));
+	gpio_sleep_sel_en((gpio_num_t)Pins::get(Pin::BattVref));
+	gpio_sleep_sel_en((gpio_num_t)Pins::get(Pin::LedBl));
 
 	int64_t sleepStartTime = esp_timer_get_time();
 	sleepStart();
