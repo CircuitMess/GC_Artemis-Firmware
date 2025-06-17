@@ -6,10 +6,10 @@
 
 // button index -> GPIO port
 const std::unordered_map<Input::Button, gpio_num_t> Input::PinMap{
-		{ Up,     (gpio_num_t) BTN_UP },
-		{ Down,   (gpio_num_t) BTN_DOWN },
-		{ Select, (gpio_num_t) BTN_SELECT },
-		{ Alt,    (gpio_num_t) BTN_ALT }
+		{ Up,     (gpio_num_t) Pins::get(Pin::BtnUp) },
+		{ Down,   (gpio_num_t) Pins::get(Pin::BtnDown) },
+		{ Select, (gpio_num_t) Pins::get(Pin::BtnSelect) },
+		{ Alt,    (gpio_num_t) Pins::get(Pin::BtnAlt) }
 };
 
 const std::unordered_map<Input::Button, const char*> Input::PinLabels{

@@ -10,10 +10,11 @@
 #include <driver/adc.h>
 #include <driver/gptimer.h>
 #include <driver/ledc.h>
+#include <Services/ADCReader.h>
 #include "Devices/Input.h"
 #include "Util/Events.h"
-#include "Util/HWVersion.h"
 #include "Drivers/lsm6ds3tr-c_reg.h"
+#include "Util/EfuseMeta.h"
 
 
 JigHWTest* JigHWTest::test = nullptr;
@@ -25,7 +26,7 @@ RTC* JigHWTest::rtc = nullptr;
 
 JigHWTest::JigHWTest(){
 	gpio_config_t io_conf = {
-			.pin_bit_mask = 1 << JIG_STATUS,
+			.pin_bit_mask = (uint64_t) 1 << Pins::get(Pin::JigStatus),
 			.mode = GPIO_MODE_OUTPUT,
 			.pull_up_en = GPIO_PULLUP_DISABLE,
 			.pull_down_en = GPIO_PULLDOWN_DISABLE,
@@ -37,7 +38,7 @@ JigHWTest::JigHWTest(){
 	display = new Display();
 	canvas = &display->getLGFX();
 
-	i2c = new I2C(I2C_NUM_0, (gpio_num_t) I2C_SDA, (gpio_num_t) I2C_SCL);
+	i2c = new I2C(I2C_NUM_0, (gpio_num_t) Pins::get(Pin::I2cSda), (gpio_num_t) Pins::get(Pin::I2cScl));
 	rtc = new RTC(*i2c);
 
 	test = this;
@@ -89,14 +90,14 @@ void JigHWTest::start(){
 	esp_efuse_batch_write_begin();
 
 	gpio_config_t cfg = {
-			.pin_bit_mask = ((uint64_t) 1) << PIN_BL,
+			.pin_bit_mask = ((uint64_t) 1) << Pins::get(Pin::LedBl),
 			.mode = GPIO_MODE_OUTPUT,
 			.pull_up_en = GPIO_PULLUP_DISABLE,
 			.pull_down_en = GPIO_PULLDOWN_DISABLE,
 			.intr_type = GPIO_INTR_DISABLE
 	};
 	gpio_config(&cfg);
-	gpio_set_level((gpio_num_t) PIN_BL, 0);
+	gpio_set_level((gpio_num_t) Pins::get(Pin::LedBl), 0);
 
 	canvas->clear(0);
 	rgb();
@@ -228,7 +229,7 @@ bool JigHWTest::BatteryCheck(){
 
 	adc_cali_handle_t cali;
 	std::unique_ptr<ADCReader> reader;
-	config(PIN_BATT, cali, reader);
+	config(Pins::get(Pin::BattRead), cali, reader);
 
 	constexpr uint16_t numReadings = 50;
 	constexpr uint16_t readDelay = 10;
@@ -307,7 +308,7 @@ void JigHWTest::AudioVisualTest(){
 	ledc_timer_config(&ledc_timer);
 
 	ledc_channel_config_t ledc_channel = {
-			.gpio_num       = PIN_BUZZ,
+			.gpio_num       = Pins::get(Pin::Buzz),
 			.speed_mode     = LEDC_LOW_SPEED_MODE,
 			.channel        = LEDC_CHANNEL_0,
 			.intr_type      = LEDC_INTR_DISABLE,
@@ -330,7 +331,7 @@ void JigHWTest::AudioVisualTest(){
 	ledc_timer_config(&ledc_timer);
 
 	ledc_channel = {
-			.gpio_num       = RGB_R,
+			.gpio_num       = Pins::get(Pin::Rgb_r),
 			.speed_mode     = static_cast<ledc_mode_t>((LEDC_CHANNEL_2 / 8)),
 			.channel        = LEDC_CHANNEL_2,
 			.intr_type      = LEDC_INTR_DISABLE,
@@ -352,7 +353,7 @@ void JigHWTest::AudioVisualTest(){
 	ledc_timer_config(&ledc_timer);
 
 	ledc_channel = {
-			.gpio_num       = RGB_G,
+			.gpio_num       = Pins::get(Pin::Rgb_g),
 			.speed_mode     = static_cast<ledc_mode_t>((LEDC_CHANNEL_3 / 8)),
 			.channel        = LEDC_CHANNEL_3,
 			.intr_type      = LEDC_INTR_DISABLE,
@@ -374,7 +375,7 @@ void JigHWTest::AudioVisualTest(){
 	ledc_timer_config(&ledc_timer);
 
 	ledc_channel = {
-			.gpio_num       = RGB_B,
+			.gpio_num       = Pins::get(Pin::Rgb_b),
 			.speed_mode     = static_cast<ledc_mode_t>((LEDC_CHANNEL_4 / 8)),
 			.channel        = LEDC_CHANNEL_4,
 			.intr_type      = LEDC_INTR_DISABLE,
@@ -385,7 +386,7 @@ void JigHWTest::AudioVisualTest(){
 	};
 	ledc_channel_config(&ledc_channel);
 
-	static constexpr const int LEDs[] = { LED_1, LED_2, LED_3, LED_4, LED_5, LED_6 };
+	static const int LEDs[] = { Pins::get(Pin::Led_1), Pins::get(Pin::Led_2), Pins::get(Pin::Led_3), Pins::get(Pin::Led_4), Pins::get(Pin::Led_5), Pins::get(Pin::Led_6) };
 
 	for(int LED : LEDs){
 		gpio_config_t cfg = {
@@ -524,12 +525,12 @@ bool JigHWTest::IMUInterruptTest(){
 	}
 	delayMillis(50);
 
-	gpio_set_direction((gpio_num_t) IMU_INT1, GPIO_MODE_INPUT);
-	gpio_set_direction((gpio_num_t) IMU_INT2, GPIO_MODE_INPUT);
+	gpio_set_direction((gpio_num_t) Pins::get(Pin::Imu_int1), GPIO_MODE_INPUT);
+	gpio_set_direction((gpio_num_t) Pins::get(Pin::Imu_int2), GPIO_MODE_INPUT);
 
-	if(gpio_get_level((gpio_num_t) IMU_INT1) || gpio_get_level((gpio_num_t) IMU_INT2)){
-		test->log("IMU interrupt 1", (bool) gpio_get_level((gpio_num_t) IMU_INT1));
-		test->log("IMU interrupt 2", (bool) gpio_get_level((gpio_num_t) IMU_INT2));
+	if(gpio_get_level((gpio_num_t) Pins::get(Pin::Imu_int1)) || gpio_get_level((gpio_num_t) Pins::get(Pin::Imu_int2))){
+		test->log("IMU interrupt 1", (bool) gpio_get_level((gpio_num_t) Pins::get(Pin::Imu_int1)));
+		test->log("IMU interrupt 2", (bool) gpio_get_level((gpio_num_t) Pins::get(Pin::Imu_int2)));
 		return false;
 	}
 
@@ -538,7 +539,7 @@ bool JigHWTest::IMUInterruptTest(){
 
 bool JigHWTest::HWVersion(){
 	uint16_t version = 1;
-	bool result = HWVersion::readVersion(version);
+	bool result = EfuseMeta::readPID(version);
 
 	if(!result){
 		test->log("HW version", "couldn't read from efuse");
@@ -547,7 +548,7 @@ bool JigHWTest::HWVersion(){
 
 	if(version != 0){
 		test->log("Existing HW version", (uint32_t) version);
-		if(version == HWVersion::getHardcodedVersion()){
+		if(version == EfuseMeta::getHardcodedPID()){
 			test->log("Already fused.", (uint32_t) version);
 			return true;
 		}else{
@@ -556,5 +557,5 @@ bool JigHWTest::HWVersion(){
 		}
 	}
 
-	return HWVersion::write();
+	return EfuseMeta::write();
 }

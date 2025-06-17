@@ -1,4 +1,5 @@
 #include "SleepMan.h"
+#include <esp_log.h>
 #include "Screens/Lock/LockScreen.h"
 #include "Util/Services.h"
 #include "Screens/ShutdownScreen.h"
@@ -112,9 +113,9 @@ void SleepMan::shutdown(){
 	bl.fadeOut();
 	imu.shutdown();
 
-	gpio_set_level((gpio_num_t) PIN_PWDN, 0);
+	gpio_set_level((gpio_num_t) Pins::get(Pin::Pwdn), 0);
 	const gpio_config_t cfg = {
-			.pin_bit_mask = 1ULL << PIN_PWDN,
+			.pin_bit_mask = 1ULL << Pins::get(Pin::Pwdn),
 			.mode = GPIO_MODE_OUTPUT
 	};
 	gpio_config(&cfg);

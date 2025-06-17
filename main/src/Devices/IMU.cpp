@@ -108,26 +108,26 @@ bool IMU::init(){
 	io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
 	io_conf.pull_down_en = GPIO_PULLDOWN_ENABLE;
 
-	io_conf.pin_bit_mask = (1ULL << IMU_INT1);
+	io_conf.pin_bit_mask = (1ULL << Pins::get(Pin::Imu_int1));
 	gpio_config(&io_conf);
-	gpio_isr_handler_add((gpio_num_t) IMU_INT1, isr1, this);
+	gpio_isr_handler_add((gpio_num_t) Pins::get(Pin::Imu_int1), isr1, this);
 
-	io_conf.pin_bit_mask = (1ULL << IMU_INT2);
+	io_conf.pin_bit_mask = (1ULL << Pins::get(Pin::Imu_int2));
 	gpio_config(&io_conf);
-	gpio_isr_handler_add((gpio_num_t) IMU_INT2, isr2, this);
+	gpio_isr_handler_add((gpio_num_t) Pins::get(Pin::Imu_int2), isr2, this);
 
 	return true;
 }
 
 void IRAM_ATTR IMU::isr1(void* arg){
-	gpio_set_intr_type((gpio_num_t) IMU_INT1, GPIO_INTR_POSEDGE);
+	gpio_set_intr_type((gpio_num_t) Pins::get(Pin::Imu_int1), GPIO_INTR_POSEDGE);
 	auto imu = static_cast<IMU*>(arg);
 	auto wake = pdFALSE;
 	xSemaphoreGiveFromISR(imu->sem1, &wake);
 }
 
 void IRAM_ATTR IMU::isr2(void* arg){
-	gpio_set_intr_type((gpio_num_t) IMU_INT2, GPIO_INTR_POSEDGE);
+	gpio_set_intr_type((gpio_num_t) Pins::get(Pin::Imu_int2), GPIO_INTR_POSEDGE);
 	auto imu = static_cast<IMU*>(arg);
 	auto wake = pdFALSE;
 	xSemaphoreGiveFromISR(imu->sem1, &wake);
@@ -136,12 +136,12 @@ void IRAM_ATTR IMU::isr2(void* arg){
 void IMU::thread1Func(){
 	if(xSemaphoreTake(sem1, portMAX_DELAY) != pdTRUE) return;
 
-	while(gpio_get_level((gpio_num_t) IMU_INT1) || gpio_get_level((gpio_num_t) IMU_INT2)){
+	while(gpio_get_level((gpio_num_t) Pins::get(Pin::Imu_int1)) || gpio_get_level((gpio_num_t) Pins::get(Pin::Imu_int2))){
 		fetchEvents();
 	}
 
 	lsm6ds3tr_c_int_notification_set(&ctx, LSM6DS3TR_C_INT_LATCHED);
-	gpio_set_intr_type((gpio_num_t) IMU_INT2, GPIO_INTR_HIGH_LEVEL);
+	gpio_set_intr_type((gpio_num_t) Pins::get(Pin::Imu_int2), GPIO_INTR_HIGH_LEVEL);
 }
 
 void IMU::thread2Func(){
@@ -388,8 +388,8 @@ void IMU::shutdown(){
 	lsm6ds3tr_c_pin_int2_route_set(&ctx, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
 	lsm6ds3tr_c_wrist_tilt_sens_set(&ctx, 0);
 
-	gpio_isr_handler_remove((gpio_num_t) IMU_INT1);
-	gpio_isr_handler_remove((gpio_num_t) IMU_INT2);
+	gpio_isr_handler_remove((gpio_num_t) Pins::get(Pin::Imu_int1));
+	gpio_isr_handler_remove((gpio_num_t) Pins::get(Pin::Imu_int2));
 
 	lsm6ds3tr_c_xl_data_rate_set(&ctx, LSM6DS3TR_C_XL_ODR_OFF);
 	lsm6ds3tr_c_gy_data_rate_set(&ctx, LSM6DS3TR_C_GY_ODR_OFF);

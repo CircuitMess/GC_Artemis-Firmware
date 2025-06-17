@@ -32,7 +32,7 @@ private:
 	std::vector<Test> tests;
 	const char* currentTest;
 
-	static constexpr gpio_num_t statusLed = (gpio_num_t) JIG_STATUS;
+	inline static gpio_num_t statusLed = (gpio_num_t) Pins::get(Pin::JigStatus);
 
 	void log(const char* property, const char* value);
 	void log(const char* property, float value);

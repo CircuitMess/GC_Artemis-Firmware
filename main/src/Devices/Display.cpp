@@ -21,10 +21,10 @@ void Display::setupBus(){
 	lgfx::Bus_SPI::config_t cfg = {
 		.freq_write = 40000000,
 		.freq_read = 40000000,
-		.pin_sclk = TFT_SCK,
+		.pin_sclk = (int16_t) Pins::get(Pin::TftSck),
 		.pin_miso = -1,
-		.pin_mosi = TFT_MOSI,
-		.pin_dc = TFT_DC,
+		.pin_mosi = (int16_t) Pins::get(Pin::TftMosi),
+		.pin_dc = (int16_t) Pins::get(Pin::TftDc),
 		.spi_mode = 0,
 		.spi_3wire = false,
 		.use_lock = false,
@@ -36,11 +36,11 @@ void Display::setupBus(){
 
 void Display::setupPanel(){
 	auto& settings = *(Settings*) Services.get(Service::Settings);
-	const uint8_t rotation = settings.get().screenRotate ? 3 : 1;
+	const uint8_t rotation = settings.get().screenRotate ? 1 : 3; // TODO this is different for
 
 	lgfx::Panel_Device::config_t cfg = {
 			.pin_cs = -1,
-			.pin_rst = TFT_RST,
+			.pin_rst = (int16_t) Pins::get(Pin::TftRst),
 			.pin_busy = -1,
 			.memory_width = 132,
 			.memory_height = 132,
