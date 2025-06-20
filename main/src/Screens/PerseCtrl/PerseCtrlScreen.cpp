@@ -1,4 +1,5 @@
 #include "PerseCtrlScreen.h"
+#include <Util/stdafx.h>
 #include "Services/SleepMan.h"
 #include "Devices/Input.h"
 #include "Screens/MainMenu/MainMenu.h"

@@ -1,4 +1,4 @@
-idf_component_register(SRCS "hooks.c" PRIV_REQUIRES hal)
+idf_component_register(SRCS "hooks.c" PRIV_REQUIRES hal efuse)
 
 # We need to force GCC to integrate this static library into the
 # bootloader link. Indeed, by default, as the hooks in the bootloader are weak,
