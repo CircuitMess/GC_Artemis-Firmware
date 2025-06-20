@@ -80,8 +80,7 @@ void Pins::initPinMaps(){
 			{ Pin::Led_3,     44 },
 			{ Pin::Led_4,     43 },
 			{ Pin::Led_5,     18 },
-			{ Pin::Led_6,     17 },
-			{ Pin::JigStatus, -1 },
+			{ Pin::Led_6,     17 }
 	};
 
 	Revision2 = {
@@ -113,8 +112,7 @@ void Pins::initPinMaps(){
 			{ Pin::Led_3,     44 },
 			{ Pin::Led_4,     43 },
 			{ Pin::Led_5,     18 },
-			{ Pin::Led_6,     17 },
-			{ Pin::JigStatus, -1 },
+			{ Pin::Led_6,     17 }
 	};
 }
 

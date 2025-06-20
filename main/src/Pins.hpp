@@ -36,10 +36,12 @@ enum class Pin : uint8_t {
 	Led_3,
 	Led_4,
 	Led_5,
-	Led_6,
-	JigStatus
+	Led_6
 };
 
+/**
+ * Note: This class does not affect pins used in the bootloader hook!
+ */
 class Pins {
 	typedef std::unordered_map<Pin, int> PinMap;
 public:
