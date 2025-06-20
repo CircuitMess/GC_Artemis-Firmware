@@ -30,3 +30,13 @@ esp_err_t ADC::read(adc_channel_t chan, int& valueOut, const adc_cali_handle_t c
 		return adc_oneshot_read(hndl, chan, &valueOut);
 	}
 }
+
+void ADC::reinit(){
+	ESP_ERROR_CHECK(adc_oneshot_del_unit(hndl));
+	const adc_oneshot_unit_init_cfg_t config = {
+			.unit_id = unit,
+			.clk_src = ADC_RTC_CLK_SRC_DEFAULT,
+			.ulp_mode = ADC_ULP_MODE_DISABLE
+	};
+	ESP_ERROR_CHECK(adc_oneshot_new_unit(&config, &hndl));
+}

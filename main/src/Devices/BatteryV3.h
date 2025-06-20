@@ -20,7 +20,7 @@ public:
 	Level getLevel() const;
 
 private:
-	static constexpr float VoltFull = 4200.0f; //[mV]
+	static constexpr float VoltFull = 4150.0f; //[mV]
 	static constexpr float VoltEmpty = 3600.0f; //[mV]
 	static constexpr float EmaA = 0.05f;
 	static constexpr float EmaA_sleep = 0.5f;
@@ -30,6 +30,7 @@ private:
 	static constexpr int CalReads = 10;
 	static constexpr float CalExpected = 2500;
 
+	ADC& adc;
 	PinOut refSwitch;
 
 	Hysteresis hysteresis;
@@ -39,12 +40,17 @@ private:
 
 	std::unique_ptr<ADCReader> readerRef;
 	adc_cali_handle_t caliRef;
+	float lastCalibrationOffset = 0;
 
 	void calibrate();
 
 	virtual void sample(bool fresh) override;
 
 	virtual void onSleep(bool sleep) override;
+
+	void configReader(int pin, adc_cali_handle_t& cali, std::unique_ptr<ADCReader>& reader, bool emaAndMap);
+
+	void inSleepReconfigure() override;
 };
 
 #endif //ARTEMIS_BATTERYV3_H

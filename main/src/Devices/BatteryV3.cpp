@@ -9,35 +9,9 @@
 
 static const char* TAG = "Battery";
 
-BatteryV3::BatteryV3(ADC& adc) : refSwitch(Pins::get(Pin::BattVref)), hysteresis({ 0, 4, 15, 30, 70, 100 }, 3){
-	const auto config = [this, &adc](int pin, adc_cali_handle_t& cali, std::unique_ptr<ADCReader>& reader, bool emaAndMap){
-		adc_unit_t unit;
-		adc_channel_t chan;
-		ESP_ERROR_CHECK(adc_oneshot_io_to_channel(pin, &unit, &chan));
-		assert(unit == adc.getUnit());
-
-		adc.config(chan, {
-				.atten = ADC_ATTEN_DB_2_5,
-				.bitwidth = ADC_BITWIDTH_12
-		});
-
-		const adc_cali_curve_fitting_config_t curveCfg = {
-				.unit_id = unit,
-				.chan = chan,
-				.atten = ADC_ATTEN_DB_2_5,
-				.bitwidth = ADC_BITWIDTH_12
-		};
-		ESP_ERROR_CHECK(adc_cali_create_scheme_curve_fitting(&curveCfg, &cali));
-
-		if(emaAndMap){
-			reader = std::make_unique<ADCReader>(adc, chan, caliBatt, Offset, Factor, EmaA, VoltEmpty, VoltFull);
-		}else{
-			reader = std::make_unique<ADCReader>(adc, chan, caliBatt, Offset, Factor);
-		}
-	};
-
-	config(Pins::get(Pin::BattRead), caliBatt, readerBatt, true);
-	config(Pins::get(Pin::BattRead), caliRef, readerRef, false);
+BatteryV3::BatteryV3(ADC& adc) : adc(adc), refSwitch(Pins::get(Pin::BattVref)), hysteresis({ 0, 4, 15, 30, 70, 100 }, 3){
+	configReader(Pins::get(Pin::BattRead), caliBatt, readerBatt, true);
+	configReader(Pins::get(Pin::BattRead), caliRef, readerRef, false);
 
 	calibrate();
 
@@ -72,6 +46,8 @@ void BatteryV3::calibrate(){
 
 	refSwitch.off();
 
+	lastCalibrationOffset = offset;
+
 	printf("Calibration: Read %.02f mV, expected %.02f mV. Applying %.02f mV offset.\n", reading, CalExpected, offset);
 }
 
@@ -85,13 +61,9 @@ void BatteryV3::sample(bool fresh){
 		readerBatt->resetEma();
 		const float val = readerBatt->getValue();
 		hysteresis.reset(val);
-
-		printf("%f\n", val);
 	}else{
 		const float val = readerBatt->sample();
 		hysteresis.update(val);
-
-		printf("%f\n", val);
 	}
 
 	if(oldLevel != getLevel() || fresh){
@@ -115,4 +87,36 @@ uint8_t BatteryV3::getPerc() const{
 
 Battery::Level BatteryV3::getLevel() const{
 	return (Level) hysteresis.get();
+}
+
+void BatteryV3::inSleepReconfigure(){
+	adc.reinit();
+	configReader(Pins::get(Pin::BattRead), caliBatt, readerBatt, true);
+	readerBatt->setMoreOffset(lastCalibrationOffset);
+}
+
+void BatteryV3::configReader(int pin, adc_cali_handle_t& cali, std::unique_ptr<ADCReader>& reader, bool emaAndMap){
+	adc_unit_t unit;
+	adc_channel_t chan;
+	ESP_ERROR_CHECK(adc_oneshot_io_to_channel(pin, &unit, &chan));
+	assert(unit == adc.getUnit());
+
+	adc.config(chan, {
+			.atten = ADC_ATTEN_DB_2_5,
+			.bitwidth = ADC_BITWIDTH_12
+	});
+
+	const adc_cali_curve_fitting_config_t curveCfg = {
+			.unit_id = unit,
+			.chan = chan,
+			.atten = ADC_ATTEN_DB_2_5,
+			.bitwidth = ADC_BITWIDTH_12
+	};
+	ESP_ERROR_CHECK(adc_cali_create_scheme_curve_fitting(&curveCfg, &cali));
+
+	if(emaAndMap){
+		reader = std::make_unique<ADCReader>(adc, chan, caliBatt, Offset, Factor, EmaA, VoltEmpty, VoltFull);
+	}else{
+		reader = std::make_unique<ADCReader>(adc, chan, caliBatt, Offset, Factor);
+	}
 }

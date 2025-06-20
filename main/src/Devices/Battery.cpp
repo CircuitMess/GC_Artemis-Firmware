@@ -91,7 +91,13 @@ void Battery::loop(){
 	std::lock_guard lock(mut);
 
 	checkCharging();
-	sample();
+	if(!sleepReconfigured && sleep){
+		inSleepReconfigure();
+		sleepReconfigured = true;
+		sample(true);
+	}else{
+		sample();
+	}
 
 	startTimer();
 }
@@ -122,6 +128,12 @@ bool Battery::isShutdown() const{
 }
 
 void Battery::setSleep(bool sleep){
+	if(sleep){
+		sleepReconfigured = false;
+	}else{
+		inSleepReconfigure();
+	}
+
 	timer.stop();
 	std::lock_guard lock(mut);
 

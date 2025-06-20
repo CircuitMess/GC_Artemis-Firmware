@@ -80,3 +80,7 @@ uint8_t BatteryV2::getPerc() const{
 Battery::Level BatteryV2::getLevel() const{
 	return (Level) hysteresis.get();
 }
+
+void BatteryV2::inSleepReconfigure(){
+
+}

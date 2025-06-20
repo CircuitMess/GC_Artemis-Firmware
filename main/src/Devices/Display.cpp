@@ -2,8 +2,9 @@
 #include <Pins.hpp>
 #include "Util/Services.h"
 #include "Settings/Settings.h"
+#include "Util/EfuseMeta.h"
 
-Display::Display(){
+Display::Display(uint8_t revision) : revision(revision){
 	setupBus();
 	setupPanel();
 
@@ -36,7 +37,13 @@ void Display::setupBus(){
 
 void Display::setupPanel(){
 	auto& settings = *(Settings*) Services.get(Service::Settings);
-	const uint8_t rotation = settings.get().screenRotate ? 1 : 3; // TODO this is different for
+
+	uint8_t rotation;
+	if(revision == 2){
+		rotation = settings.get().screenRotate ? 1 : 3;
+	}else{
+		rotation = settings.get().screenRotate ? 3 : 1;
+	}
 
 	lgfx::Panel_Device::config_t cfg = {
 			.pin_cs = -1,
@@ -76,7 +83,14 @@ void Display::drawTest(){
 }
 
 void Display::setRotation(bool rotation){
-	const uint8_t val = rotation ? 3 : 1;
+	uint8_t val;
+
+	if(revision == 2){
+		 val = rotation ? 1 : 3;
+	}else{
+		 val = rotation ? 3 : 1;
+	}
+
 	lgfx::Panel_Device::config_t cfg = lgfx.getPanel()->config();
 	if(val == cfg.offset_rotation) return;
 

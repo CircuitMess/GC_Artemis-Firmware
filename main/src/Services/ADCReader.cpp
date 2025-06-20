@@ -12,8 +12,6 @@ float ADCReader::sample(){
 		return getValue();
 	}
 
-	printf("Raw %d\n", raw);
-
 	if(value == -1 || emaA == 1){
 		value = raw;
 	}else{

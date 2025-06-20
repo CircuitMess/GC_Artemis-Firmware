@@ -35,6 +35,7 @@ private:
 	static constexpr const esp_efuse_desc_t* efuse_adc1_high[] = { &adc1_high, nullptr };
 
 	virtual void onSleep(bool sleep) override;
+	void inSleepReconfigure() override;
 };
 
 #endif //ARTEMIS_BATTERYV2_H

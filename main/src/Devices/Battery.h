@@ -63,6 +63,16 @@ private:
 	static void isr(void* arg);
 
 	bool shutdown = false;
+
+	bool sleepReconfigured = false;
+	/**
+	 * Sometimes ADC will start having an offset during sleep and after wakeup.
+	 * This method will be called before first measurement during sleep, and also after wakeup.
+	 *
+	 * Necessary on certain HW revisions because of this ADC reading glitch after/during light sleep
+	 * (https://github.com/espressif/esp-idf/issues/12612)
+	 */
+	virtual void inSleepReconfigure() = 0;
 };
 
 #endif //CLOCKSTAR_LIBRARY_BATTERY_H

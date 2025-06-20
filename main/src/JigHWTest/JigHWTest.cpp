@@ -35,7 +35,7 @@ JigHWTest::JigHWTest(){
 	gpio_config(&io_conf);
 	gpio_set_level(statusLed, 1);
 
-	display = new Display();
+	display = new Display(EfuseMeta::getHardcodedRevision());
 	canvas = &display->getLGFX();
 
 	i2c = new I2C(I2C_NUM_0, (gpio_num_t) Pins::get(Pin::I2cSda), (gpio_num_t) Pins::get(Pin::I2cScl));
