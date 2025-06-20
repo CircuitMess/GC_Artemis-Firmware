@@ -59,6 +59,8 @@ void shutdown(){
 	sleepMan->shutdown();
 }
 
+//This works since it's same across all revisions.
+//Change if necessary (since setLEDs() call could mess up another hardware revision)
 static const gpio_num_t LEDs[] = { GPIO_NUM_17, GPIO_NUM_18, GPIO_NUM_43, GPIO_NUM_44, GPIO_NUM_45, GPIO_NUM_46 };
 
 void setLEDs(){
@@ -93,9 +95,12 @@ void init(){
 
 	if(JigHWTest::checkJig()){
 		printf("Jig\n");
+		Pins::setLatest();
 		auto test = new JigHWTest();
 		test->start();
 		vTaskDelete(nullptr);
+	}else{
+		printf("Hello\n");
 	}
 
 	if(!EfuseMeta::check()){
@@ -105,7 +110,13 @@ void init(){
 		}
 	}
 
-	Pins::setLatest();
+	uint8_t rev = 0;
+	if(!EfuseMeta::readRev(rev)){
+		while(true){
+			vTaskDelay(1000);
+			printf("Failed to read hardware revision.");
+		}
+	}
 
 	auto adc1 = new ADC(ADC_UNIT_1);
 
@@ -122,7 +133,7 @@ void init(){
 	auto imu = new IMU(*i2c);
 	Services.set(Service::IMU, imu);
 
-	auto disp = new Display();
+	auto disp = new Display(rev);
 	auto input = new Input();
 	Services.set(Service::Input, input);
 
@@ -141,17 +152,9 @@ void init(){
 
 	Battery* battery = nullptr;
 
-	uint8_t rev = 0;
-	if(!EfuseMeta::readRev(rev)){
-		while(true){
-			vTaskDelay(1000);
-			printf("Failed to read hardware revision.");
-		}
-	}
-
-	/*if(rev == 0){
+	if(rev == 0 || rev == 1){
 		battery = new BatteryV2(*adc1);
-	}else*/{
+	}else{
 		battery = new BatteryV3(*adc1);
 	}
 
