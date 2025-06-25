@@ -35,12 +35,30 @@ void IRAM_ATTR bootloader_before_init(void){
 	//Setting it to low (0) during bootloader WILL brick the device!
 	esp_efuse_desc_t RevBlock = { EFUSE_BLK3, 32, 8 };
 	const esp_efuse_desc_t* Rev_Blob[] = { &RevBlock, NULL };
+
+	esp_efuse_desc_t PIDBlock = { EFUSE_BLK3, 16, 16 };
+	const esp_efuse_desc_t* PID_Blob[] = { &PIDBlock, NULL };
+
 	uint8_t Revision = 0;
-	const esp_err_t err = esp_efuse_read_field_blob((const esp_efuse_desc_t**) Rev_Blob, &Revision, 8);
+    uint16_t PID = 0;
 	gpio_num_t PWDN;
 
-    // TODO this could fuck up if a new artemis without efuse goes into bootloader before jigtest, that way a wrong pwdr pin will be selected
-	if(Revision == 2 && err == ESP_OK){
+	esp_err_t err = esp_efuse_read_field_blob((const esp_efuse_desc_t**) Rev_Blob, &Revision, 8);
+    if(err != ESP_OK){
+    	ESP_LOGE(TAG, "Failed to read revision");
+        return;
+    }
+
+	err = esp_efuse_read_field_blob((const esp_efuse_desc_t**) PID_Blob, &PID, 16);
+	if(err != ESP_OK){
+        ESP_LOGE(TAG, "Failed to read PID");
+		return;
+	}
+
+	if(PID == 0 && Revision == 0){
+		PWDN = GPIO_NUM_37;
+		ESP_LOGI(TAG, "Rev2 assumed from bootloader");
+    }else if(Revision == 2){
 		PWDN = GPIO_NUM_37;
 		ESP_LOGI(TAG, "Rev2 from bootloader");
 	}else{
