@@ -16,8 +16,8 @@ public:
 
 	void setSleep(bool sleep);
 
-	uint8_t getPerc() const;
-	Level getLevel() const;
+	virtual uint8_t getPerc() const override;
+	virtual Level getLevel() const override;
 
 private:
 	static constexpr float VoltFull = 4150.0f; //[mV]
