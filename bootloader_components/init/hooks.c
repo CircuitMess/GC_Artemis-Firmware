@@ -39,6 +39,7 @@ void IRAM_ATTR bootloader_before_init(void){
 	const esp_err_t err = esp_efuse_read_field_blob((const esp_efuse_desc_t**) Rev_Blob, &Revision, 8);
 	gpio_num_t PWDN;
 
+    // TODO this could fuck up if a new artemis without efuse goes into bootloader before jigtest, that way a wrong pwdr pin will be selected
 	if(Revision == 2 && err == ESP_OK){
 		PWDN = GPIO_NUM_37;
 		ESP_LOGI(TAG, "Rev2 from bootloader");
