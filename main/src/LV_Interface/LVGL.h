@@ -37,6 +37,7 @@ private:
 
 	std::unique_ptr<LVScreen> currentScreen;
 
+	std::mutex mutex;
 };
 
 

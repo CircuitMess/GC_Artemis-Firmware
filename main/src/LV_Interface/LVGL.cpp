@@ -43,6 +43,8 @@ void LVGL::loop(){
 		sleep->loop();
 	}
 
+	// TODO this rly should have a lock on it, but unfortunately the system is made this way:
+	// TODO screens start other screens in their own loop which would lock the thread forever, should ideally be some kind of a queue that automatically starts new after looping current
 	if(currentScreen){
 		currentScreen->loop();
 	}
@@ -55,6 +57,7 @@ void LVGL::loop(){
 void LVGL::startScreen(std::function<std::unique_ptr<LVScreen>()> create){
 	stopScreen();
 
+	std::lock_guard lock(mutex);
 	lv_obj_t* tmp = lv_obj_create(nullptr);
 	lv_scr_load_anim(tmp, LV_SCR_LOAD_ANIM_NONE, 0, 0, false);
 
@@ -66,6 +69,7 @@ void LVGL::startScreen(std::function<std::unique_ptr<LVScreen>()> create){
 }
 
 void LVGL::stopScreen(){
+	std::lock_guard lock(mutex);
 	if(!currentScreen) return;
 	currentScreen->stop();
 	lv_indev_set_group(InputLVGL::getInstance()->getIndev(), nullptr);
