@@ -5,7 +5,7 @@
 
 static const char* TAG = "Time";
 
-Time::Time(RTC& rtc) : SleepyThreaded(UpdateInterval, "Time", 2 * 1024, 6, 0), rtc(rtc){
+Time::Time(RTC& rtc) : SleepyThreaded(UpdateInterval, "Time", 3 * 1024, 6, 0), rtc(rtc){
 	updateFromRTC();
 	start();
 }
