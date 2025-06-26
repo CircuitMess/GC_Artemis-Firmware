@@ -234,6 +234,8 @@ void JigHWTest::start(){
 			}
 			tone = false;
 		}
+
+		delayMillis(10);
 	}
 }
 
@@ -569,6 +571,8 @@ bool JigHWTest::buttons(){
 		canvas->setTextColor(TFT_LIGHTGRAY);
 		canvas->printf("]");
 		canvas->pushSprite(0, 0);
+
+		delayMillis(10);
 	}
 
 	canvas->fillRect(cX - 3, cY - 4, 120, 20, TFT_BLACK);
