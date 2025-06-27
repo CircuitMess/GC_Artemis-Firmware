@@ -45,6 +45,7 @@ void BatteryV3::calibrate(){
 	readerBatt->setMoreOffset(offset);
 
 	refSwitch.off();
+	delayMillis(100);
 
 	lastCalibrationOffset = offset;
 
