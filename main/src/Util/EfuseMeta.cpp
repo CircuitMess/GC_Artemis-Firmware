@@ -4,8 +4,7 @@ bool EfuseMeta::check(){
 	readPID(CachedPID);
 	readRev(CachedRevision);
 
-	//Make an exception for this product a having blank PID!
-	if(CachedPID == PID || CachedPID == 0){
+	if(CachedPID == PID){
 		return true;
 	}
 
