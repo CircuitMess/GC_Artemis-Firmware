@@ -27,6 +27,14 @@ private:
 
 	static constexpr float Factor = 4.0f;
 	static constexpr float Offset = 0;
+
+	/**
+	 * Voltage drop on battery line!
+	 * Measured with full battery on max brightness, and on battery plugged out.
+	 * Voltage drop is approximately linear across 3.6 - 4.2V range.
+	 * Sample size of 2 devices.
+	 */
+	static constexpr float BattReadOffset = 75; //[mV],
 	static constexpr int CalReads = 10;
 	static constexpr float CalExpected = 2500;
 

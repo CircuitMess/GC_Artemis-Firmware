@@ -122,7 +122,7 @@ void BatteryV3::configReader(int pin, adc_cali_handle_t& cali, std::unique_ptr<A
 	ESP_ERROR_CHECK(adc_cali_create_scheme_curve_fitting(&curveCfg, &cali));
 
 	if(emaAndMap){
-		reader = std::make_unique<ADCReader>(adc, chan, caliBatt, Offset, Factor, EmaA, VoltEmpty, VoltFull);
+		reader = std::make_unique<ADCReader>(adc, chan, caliBatt, BattReadOffset, Factor, EmaA, VoltEmpty, VoltFull);
 	}else{
 		reader = std::make_unique<ADCReader>(adc, chan, caliBatt, Offset, Factor);
 	}
