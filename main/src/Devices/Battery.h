@@ -64,10 +64,10 @@ private:
 
 	bool shutdown = false;
 
-	bool sleepReconfigured = false;
 	/**
 	 * Sometimes ADC will start having an offset during sleep and after wakeup.
-	 * This method will be called before first measurement during sleep, and also after wakeup.
+	 * This method will be called every time the Battery class wakes up during sleep,
+	 * and also after final wakeup of the rest of the system.
 	 *
 	 * Necessary on certain HW revisions because of this ADC reading glitch after/during light sleep
 	 * (https://github.com/espressif/esp-idf/issues/12612)

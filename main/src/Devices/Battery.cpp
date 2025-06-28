@@ -91,9 +91,9 @@ void Battery::loop(){
 	std::lock_guard lock(mut);
 
 	checkCharging();
-	if(!sleepReconfigured && sleep){
+	if(sleep){
+		ESP_LOGI(TAG, "InSleepReconfigure\n");
 		inSleepReconfigure();
-		sleepReconfigured = true;
 		sample(true);
 	}else{
 		sample();
@@ -128,9 +128,8 @@ bool Battery::isShutdown() const{
 }
 
 void Battery::setSleep(bool sleep){
-	if(sleep){
-		sleepReconfigured = false;
-	}else{
+	if(!sleep){
+		ESP_LOGI(TAG, "Battery reconfigure on wake\n");
 		inSleepReconfigure();
 	}
 
