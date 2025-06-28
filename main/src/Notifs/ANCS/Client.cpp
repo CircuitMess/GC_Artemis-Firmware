@@ -4,7 +4,7 @@
 
 static const char* TAG = "ANCS";
 
-ANCS::Client::Client(BLE::Client* client) : notifThread([this](){ loopNotif(); }, "ANCS::Notif", 3 * 1024), dataThread([this](){ loopData(); }, "ANCS::Data", 3 * 1024){
+ANCS::Client::Client(BLE::Client* client) : notifThread([this](){ loopNotif(); }, "ANCS::Notif", 2 * 1024), dataThread([this](){ loopData(); }, "ANCS::Data", 3 * 1024){
 	service = client->addService(ServiceUUID);
 	chr.notif = service->addChar(Char_NotifSource_UUID, ESP_GATT_CHAR_PROP_BIT_NOTIFY);
 	chr.ctrl = service->addChar(Char_ControlPoint_UUID, ESP_GATT_CHAR_PROP_BIT_WRITE);
