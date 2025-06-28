@@ -46,10 +46,12 @@ BacklightBrightness* bl;
 SleepMan* sleepMan;
 
 void shutdown(){
+	lvgl->startScreen([](){ return std::make_unique<ShutdownScreen>(); });
+
 	if(!lvgl->running()){
 		lvgl->start();
 	}
-	lvgl->startScreen([](){ return std::make_unique<ShutdownScreen>(); });
+
 	lv_timer_handler();
 	sleepMan->wake(true);
 	if(!bl->isOn()){

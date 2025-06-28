@@ -6,6 +6,7 @@
 #include <cmath>
 #include <driver/gpio.h>
 #include "Services/SleepMan.h"
+#include <Util/Services.h>
 
 static const char* TAG = "Battery";
 
@@ -15,7 +16,12 @@ BatteryV3::BatteryV3(ADC& adc) : adc(adc), refSwitch(Pins::get(Pin::BattVref)), 
 
 	calibrate();
 
-	sample(true);
+	readerBatt->resetEma();
+	if(readerBatt->getValue() <= 1.f){
+		auto sleepMan = (SleepMan*)Services.get(Service::Sleep);
+		sleepMan->shutdown();
+	}
+
 	sample(true);
 
 	checkCharging(true);

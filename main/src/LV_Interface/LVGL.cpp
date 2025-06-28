@@ -57,7 +57,7 @@ void LVGL::loop(){
 void LVGL::startScreen(std::function<std::unique_ptr<LVScreen>()> create){
 	stopScreen();
 
-	std::lock_guard lock(mutex);
+//	std::lock_guard lock(mutex);
 	lv_obj_t* tmp = lv_obj_create(nullptr);
 	lv_scr_load_anim(tmp, LV_SCR_LOAD_ANIM_NONE, 0, 0, false);
 
@@ -69,7 +69,7 @@ void LVGL::startScreen(std::function<std::unique_ptr<LVScreen>()> create){
 }
 
 void LVGL::stopScreen(){
-	std::lock_guard lock(mutex);
+//	std::lock_guard lock(mutex);
 	if(!currentScreen) return;
 	currentScreen->stop();
 	lv_indev_set_group(InputLVGL::getInstance()->getIndev(), nullptr);
