@@ -98,6 +98,7 @@ Battery::Level BatteryV3::getLevel() const{
 
 void BatteryV3::inSleepReconfigure(){
 	adc.reinit();
+	adc_cali_delete_scheme_curve_fitting(caliBatt);
 	configReader(Pins::get(Pin::BattRead), caliBatt, readerBatt, true);
 	readerBatt->setMoreOffset(lastCalibrationOffset);
 }
