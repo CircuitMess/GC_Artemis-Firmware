@@ -14,6 +14,8 @@ public:
 
 	esp_err_t read(adc_channel_t chan, int& valueOut, adc_cali_handle_t cali = nullptr) const;
 
+	void reinit();
+
 private:
 	adc_oneshot_unit_handle_t hndl;
 	const adc_unit_t unit;

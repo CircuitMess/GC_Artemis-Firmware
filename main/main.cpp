@@ -3,6 +3,9 @@
 #include <nvs_flash.h>
 #include <bootloader_random.h>
 #include <esp_random.h>
+#include <Devices/BatteryV2.h>
+#include <Devices/BatteryV3.h>
+
 #include "Settings/Settings.h"
 #include "Pins.hpp"
 #include "Periph/I2C.h"
@@ -20,6 +23,7 @@
 #include "LV_Interface/FSLVGL.h"
 #include "LV_Interface/InputLVGL.h"
 #include <lvgl/lvgl.h>
+#include "Util/EfuseMeta.h"
 #include "Theme/theme.h"
 #include "Util/Services.h"
 #include "Services/BacklightBrightness.h"
@@ -36,17 +40,18 @@
 #include "Screens/Lander/LunarLander.h"
 #include "Screens/PerseCtrl/WiFiSTA.h"
 #include "Screens/PerseCtrl/TCPClient.h"
-#include "Util/HWVersion.h"
 
 LVGL* lvgl;
 BacklightBrightness* bl;
 SleepMan* sleepMan;
 
 void shutdown(){
+	lvgl->startScreen([](){ return std::make_unique<ShutdownScreen>(); });
+
 	if(!lvgl->running()){
 		lvgl->start();
 	}
-	lvgl->startScreen([](){ return std::make_unique<ShutdownScreen>(); });
+
 	lv_timer_handler();
 	sleepMan->wake(true);
 	if(!bl->isOn()){
@@ -56,6 +61,8 @@ void shutdown(){
 	sleepMan->shutdown();
 }
 
+//This works since it's same across all revisions.
+//Change if necessary (since setLEDs() call could mess up another hardware revision)
 static const gpio_num_t LEDs[] = { GPIO_NUM_17, GPIO_NUM_18, GPIO_NUM_43, GPIO_NUM_44, GPIO_NUM_45, GPIO_NUM_46 };
 
 void setLEDs(){
@@ -90,34 +97,45 @@ void init(){
 
 	if(JigHWTest::checkJig()){
 		printf("Jig\n");
+		Pins::setLatest();
 		auto test = new JigHWTest();
 		test->start();
 		vTaskDelete(nullptr);
+	}else{
+		printf("Hello\n");
 	}
 
-	if(!HWVersion::check()){
+	if(!EfuseMeta::check()){
 		while(true){
 			vTaskDelay(1000);
-			HWVersion::log();
+			EfuseMeta::log();
+		}
+	}
+
+	uint8_t rev = 0;
+	if(!EfuseMeta::readRev(rev)){
+		while(true){
+			vTaskDelay(1000);
+			printf("Failed to read hardware revision.");
 		}
 	}
 
 	auto adc1 = new ADC(ADC_UNIT_1);
 
-	auto blPwm = new PWM(PIN_BL, LEDC_CHANNEL_1, true);
+	auto blPwm = new PWM(Pins::get(Pin::LedBl), LEDC_CHANNEL_1, true);
 	blPwm->detach();
 	bl = new BacklightBrightness(blPwm);
 	Services.set(Service::Backlight, bl);
 
-	auto buzzPwm = new PWM(PIN_BUZZ, LEDC_CHANNEL_0);
+	auto buzzPwm = new PWM(Pins::get(Pin::Buzz), LEDC_CHANNEL_0);
 	auto audio = new ChirpSystem(*buzzPwm);
 	Services.set(Service::Audio, audio);
 
-	auto i2c = new I2C(I2C_NUM_0, (gpio_num_t) I2C_SDA, (gpio_num_t) I2C_SCL);
+	auto i2c = new I2C(I2C_NUM_0, (gpio_num_t) Pins::get(Pin::I2cSda), (gpio_num_t) Pins::get(Pin::I2cScl));
 	auto imu = new IMU(*i2c);
 	Services.set(Service::IMU, imu);
 
-	auto disp = new Display();
+	auto disp = new Display(rev);
 	auto input = new Input();
 	Services.set(Service::Input, input);
 
@@ -134,7 +152,14 @@ void init(){
 	auto status = new StatusCenter();
 	Services.set(Service::Status, status);
 
-	auto battery = new Battery(*adc1); // Battery is doing shutdown
+	Battery* battery = nullptr;
+
+	if(rev == 0 || rev == 1){
+		battery = new BatteryV2(*adc1);
+	}else{
+		battery = new BatteryV3(*adc1);
+	}
+
 	if(battery->isShutdown()) return; // Stop initialization if battery is critical
 	Services.set(Service::Battery, battery);
 

@@ -5,7 +5,7 @@
 
 class Display {
 public:
-	Display();
+	Display(uint8_t revision);
 	virtual ~Display();
 
 	LGFX_Device& getLGFX();
@@ -21,6 +21,8 @@ private:
 
 	void setupBus();
 	void setupPanel();
+
+	const uint8_t revision;
 
 };
 

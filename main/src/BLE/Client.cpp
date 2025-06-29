@@ -224,6 +224,10 @@ void BLE::Client::passToChar(esp_gattc_cb_event_t event, esp_ble_gattc_cb_param_
 
 void BLE::Client::close(){
 	for(auto& svc : services){
+		if(svc == nullptr) {
+			continue;
+		}
+
 		svc->close();
 	}
 	chars.clear();

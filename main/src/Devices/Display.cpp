@@ -2,8 +2,9 @@
 #include <Pins.hpp>
 #include "Util/Services.h"
 #include "Settings/Settings.h"
+#include "Util/EfuseMeta.h"
 
-Display::Display(){
+Display::Display(uint8_t revision) : revision(revision){
 	setupBus();
 	setupPanel();
 
@@ -21,10 +22,10 @@ void Display::setupBus(){
 	lgfx::Bus_SPI::config_t cfg = {
 		.freq_write = 40000000,
 		.freq_read = 40000000,
-		.pin_sclk = TFT_SCK,
+		.pin_sclk = (int16_t) Pins::get(Pin::TftSck),
 		.pin_miso = -1,
-		.pin_mosi = TFT_MOSI,
-		.pin_dc = TFT_DC,
+		.pin_mosi = (int16_t) Pins::get(Pin::TftMosi),
+		.pin_dc = (int16_t) Pins::get(Pin::TftDc),
 		.spi_mode = 0,
 		.spi_3wire = false,
 		.use_lock = false,
@@ -36,11 +37,17 @@ void Display::setupBus(){
 
 void Display::setupPanel(){
 	auto& settings = *(Settings*) Services.get(Service::Settings);
-	const uint8_t rotation = settings.get().screenRotate ? 3 : 1;
+
+	uint8_t rotation;
+	if(revision == 2){
+		rotation = settings.get().screenRotate ? 1 : 3;
+	}else{
+		rotation = settings.get().screenRotate ? 3 : 1;
+	}
 
 	lgfx::Panel_Device::config_t cfg = {
 			.pin_cs = -1,
-			.pin_rst = TFT_RST,
+			.pin_rst = (int16_t) Pins::get(Pin::TftRst),
 			.pin_busy = -1,
 			.memory_width = 132,
 			.memory_height = 132,
@@ -76,7 +83,14 @@ void Display::drawTest(){
 }
 
 void Display::setRotation(bool rotation){
-	const uint8_t val = rotation ? 3 : 1;
+	uint8_t val;
+
+	if(revision == 2){
+		 val = rotation ? 1 : 3;
+	}else{
+		 val = rotation ? 3 : 1;
+	}
+
 	lgfx::Panel_Device::config_t cfg = lgfx.getPanel()->config();
 	if(val == cfg.offset_rotation) return;
 

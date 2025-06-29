@@ -10,19 +10,19 @@ settings(*((Settings*) Services.get(Service::Settings)))
 	Events::listen(Facility::Phone, &events);
 	Events::listen(Facility::Battery, &events);
 
-	auto pwmR = new PWM(RGB_R, LEDC_CHANNEL_2, true);
-	auto pwmG = new PWM(RGB_G, LEDC_CHANNEL_3, true);
-	auto pwmB = new PWM(RGB_B, LEDC_CHANNEL_4, true);
+	auto pwmR = new PWM(Pins::get(Pin::Rgb_r), LEDC_CHANNEL_2, true);
+	auto pwmG = new PWM(Pins::get(Pin::Rgb_g), LEDC_CHANNEL_3, true);
+	auto pwmB = new PWM(Pins::get(Pin::Rgb_b), LEDC_CHANNEL_4, true);
 
 	led = new RGBLEDController(*pwmR, *pwmG, *pwmB);
 	led->begin();
 
-	singleLeds[0] = std::make_shared<DigitalLEDController>((gpio_num_t) LED_1);
-	singleLeds[1] = std::make_shared<DigitalLEDController>((gpio_num_t) LED_2);
-	singleLeds[2] = std::make_shared<DigitalLEDController>((gpio_num_t) LED_3);
-	singleLeds[3] = std::make_shared<DigitalLEDController>((gpio_num_t) LED_4);
-	singleLeds[4] = std::make_shared<DigitalLEDController>((gpio_num_t) LED_5);
-	singleLeds[5] = std::make_shared<DigitalLEDController>((gpio_num_t) LED_6);
+	singleLeds[0] = std::make_shared<DigitalLEDController>((gpio_num_t) Pins::get(Pin::Led_1));
+	singleLeds[1] = std::make_shared<DigitalLEDController>((gpio_num_t) Pins::get(Pin::Led_2));
+	singleLeds[2] = std::make_shared<DigitalLEDController>((gpio_num_t) Pins::get(Pin::Led_3));
+	singleLeds[3] = std::make_shared<DigitalLEDController>((gpio_num_t) Pins::get(Pin::Led_4));
+	singleLeds[4] = std::make_shared<DigitalLEDController>((gpio_num_t) Pins::get(Pin::Led_5));
+	singleLeds[5] = std::make_shared<DigitalLEDController>((gpio_num_t) Pins::get(Pin::Led_6));
 
 	for(const std::shared_ptr<DigitalLEDController>& singleLed : singleLeds){
 		singleLed->begin();
