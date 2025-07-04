@@ -256,6 +256,12 @@ void JigHWTest::log(const char* property, const std::string& value){
 }
 
 bool JigHWTest::BatteryCheck(){
+	//Just in case BattVref was active
+	const gpio_num_t RefSwitch = (gpio_num_t) Pins::get(Pin::BattVref);
+	gpio_set_direction(RefSwitch, GPIO_MODE_OUTPUT);
+	gpio_set_level(RefSwitch, 0);
+	delayMillis(100);
+
 	ADC adc(ADC_UNIT_1);
 
 	const auto config = [&adc](int pin, adc_cali_handle_t& cali, std::unique_ptr<ADCReader>& reader){
