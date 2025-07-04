@@ -53,8 +53,10 @@ private:
 	static bool Time2();
 	static bool IMUTest();
 	static bool IMUInterruptTest();
-	static bool buttons();
 	static bool HWVersion();
+
+	/** UNUSED */
+	static bool buttons();
 
 	static constexpr int16_t BatVoltageMinimum = 3300;
 	static constexpr float VoltReference = 2500;
