@@ -219,10 +219,24 @@ void JigHWTest::start(){
 				}
 			}
 
-			delayMillis(10);
 			painted = !painted;
 			canvas->pushSprite(0, 0);
 			flashTime = millis();
+		}
+		delayMillis(10);
+
+		if(!pass) continue;
+
+		//Shutdown on input only if test has passed
+		for(int i = 0; i < ButtonCount; i++){
+			if(input->getState((Input::Button) i)){
+				const auto pin = (gpio_num_t) Pins::get(Pin::Pwdn);
+				gpio_set_direction(pin, GPIO_MODE_OUTPUT);
+				gpio_set_level(pin, 0);
+				while(1){
+					vTaskDelay(portMAX_DELAY);
+				}
+			}
 		}
 	}
 }
