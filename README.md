@@ -5,7 +5,18 @@ To build the Artemis base firmware, you'll need the ESP-IDF. You can find the ge
 guide [here](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/). The 
 production firmware is built using IDF version 5.1, commit [3a45d4e](https://github.com/espressif/esp-idf/tree/3a45d4e949a174e8829a2e4c86c421b030ceac5a).
 
-In the root directory of the project:
+### ESP-IDF patching
+Contained in the repository is [ESP-IDF.patch](ESP-IDF.patch).
+The patch addresses [issues](https://github.com/espressif/esp-idf/issues/11690) in IDF v5.1
+related to FPU registers during context switching.
+
+For proper code functioning, apply this patch onto your ESP-IDF installation path using:
+```shell
+cd /esp-idf-path/
+git apply ESP-IDF.patch
+```
+
+After patching, in the root directory of the project:
 
 **To build the firmware** run ```idf.py build```
 
