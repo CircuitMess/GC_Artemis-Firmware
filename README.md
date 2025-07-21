@@ -16,7 +16,28 @@ cd /esp-idf-path/
 git apply ESP-IDF.patch
 ```
 
-After patching, in the root directory of the project:
+Clone all submodules from the project root
+```shell
+git submodule update --init --recursive
+```
+
+### JPEGDEC patching
+Contained in the repository is [JPEGDEC.patch](JPEGDEC.patch).
+Apply it onto the cloned JPEGDEC submodule:
+```shell
+cd components/JPEGDEC
+git apply ../../JPEGDEC.patch
+```
+
+### LovyanGFX patching
+Contained in the repository is [LovyanGFX.patch](LovyanGFX.patch).
+Apply it onto the cloned LovyanGFX submodule:
+```shell
+cd components/LovyanGFX
+git apply ../../LovyanGFX.patch
+```
+
+After patching everything, in the root directory of the project:
 
 **To build the firmware** run ```idf.py build```
 
@@ -32,4 +53,4 @@ esptool -c esp32s3 -b 921600 -p <PORT> write_flash 0 Artemis-Firmware.bin
 
 Alternatively, you can also do so using [CircuitBlocks](https://code.circuitmess.com/) by 
 logging in, clicking the "Restore Firmware" button in the top-right corner, and following the 
-on-screen instructions. 
+on-screen instructions.

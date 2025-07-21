@@ -1,0 +1,25 @@
+Subject: [PATCH] JPEGDEC
+---
+Index: CMakeLists.txt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt	(revision 4abe058cada9174c199f0f2c449a4e00d942e95a)
++++ b/CMakeLists.txt	(date 1753101338433)
+@@ -1,8 +1,8 @@
+-set(srcs 
+-    "src/JPEGDEC.cpp"
+-    "src/jpeg.inl"
++set(srcs
++        "src/JPEGDEC.cpp"
++        "src/jpeg.inl"
+ )
+-idf_component_register(SRCS ${srcs}      
+-                    REQUIRES "jpegdec"
+-                    INCLUDE_DIRS "src"
++idf_component_register(SRCS ${srcs}
++        #                    REQUIRES "jpegdec"
++        INCLUDE_DIRS "src"
+ )
