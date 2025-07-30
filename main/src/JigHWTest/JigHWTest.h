@@ -10,6 +10,7 @@
 #include "Periph/I2C.h"
 #include "Devices/RTC.h"
 #include <Pins.hpp>
+#include "Devices/Input.h"
 
 struct Test {
 	bool (* test)();
@@ -25,14 +26,15 @@ public:
 
 private:
 	static Display* display;
-	static LGFX_Device* canvas;
+	static LGFX_Device* panel;
+	static LGFX_Sprite * canvas;
+
 	static I2C* i2c;
 	static RTC* rtc;
 	static JigHWTest* test;
+	static Input* input;
 	std::vector<Test> tests;
 	const char* currentTest;
-
-	static constexpr gpio_num_t statusLed = (gpio_num_t) JIG_STATUS;
 
 	void log(const char* property, const char* value);
 	void log(const char* property, float value);
@@ -43,6 +45,7 @@ private:
 	void log(const char* property, const std::string& value);
 
 	static bool BatteryCheck();
+	static bool VoltReferenceCheck();
 	static bool SPIFFSTest();
 	static uint32_t calcChecksum(FILE* file);
 	static bool RTCTest();
@@ -52,17 +55,14 @@ private:
 	static bool IMUInterruptTest();
 	static bool HWVersion();
 
-	void AudioVisualTest();
-	void rgb();
+	/** UNUSED */
+	static bool buttons();
 
-	static constexpr int16_t referenceVoltage = 4000;
+	static constexpr int16_t BatVoltageMinimum = 3300;
+	static constexpr float VoltReference = 2500;
+	static constexpr float VoltReferenceTolerance = 100;
 
 	static constexpr uint32_t CheckTimeout = 500;
-
-	static constexpr esp_efuse_desc_t adc1_low = { EFUSE_BLK3, 0, 8 };
-	static constexpr const esp_efuse_desc_t* efuse_adc1_low[] = { &adc1_low, nullptr };
-	static constexpr esp_efuse_desc_t adc1_high = { EFUSE_BLK3, 8, 8 };
-	static constexpr const esp_efuse_desc_t* efuse_adc1_high[] = { &adc1_high, nullptr };
 
 	static constexpr esp_vfs_spiffs_conf_t spiffsConfig = {
 			.base_path = "/spiffs",
@@ -70,6 +70,9 @@ private:
 			.max_files = 8,
 			.format_if_mount_failed = false
 	};
+
+	static constexpr uint8_t ButtonCount = 4;
+
 };
 
 #endif //CLOCKSTAR_FIRMWARE_JIGHWTEST_H

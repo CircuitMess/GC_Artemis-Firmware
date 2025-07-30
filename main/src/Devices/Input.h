@@ -20,12 +20,15 @@ public:
 		enum Action { Release, Press } action;
 	};
 
+	bool getState(Button btn) const;
+
 private:
 	void scan();
 	void pressed(Button btn);
 	void released(Button btn);
 
-	static const std::unordered_map<Button, gpio_num_t> PinMap;
+	// button index -> GPIO port
+	std::unordered_map<Button, gpio_num_t> PinMap;
 
 	std::unordered_map<Button, bool> btnState;
 
