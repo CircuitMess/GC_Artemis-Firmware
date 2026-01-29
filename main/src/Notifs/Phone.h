@@ -3,7 +3,7 @@
 
 
 #include <cstdint>
-#include "Bangle.h"
+#include "Android.h"
 #include "ANCS/Client.h"
 #include "CurrentTime.h"
 #include "NotifSource.h"
@@ -44,7 +44,7 @@ public:
 private:
 	ANCS::Client ancs;
 	CurrentTime cTime;
-	Bangle bangle;
+	Android android;
 
 	NotifSource* current = nullptr;
 
