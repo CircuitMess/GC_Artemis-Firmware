@@ -6,6 +6,7 @@
 #include "BLE/UART.h"
 #include <string>
 #include <map>
+#include <vector>
 
 // Communication with Android devices via BLE UART
 class Android : public NotifSource, private Threaded {
@@ -59,6 +60,11 @@ private:
 
 	std::unordered_set<uint32_t> missedCalls;
 
+	float timezone_offset = 0;
+	uint64_t timestamp = 0;
+
+	void setTime();
+	std::vector<std::string> splitProtocolMsg(const std::string& s, char delim = ';');
 };
 
 #endif //ARTEMIS_FIRMWARE_ANDROID_H

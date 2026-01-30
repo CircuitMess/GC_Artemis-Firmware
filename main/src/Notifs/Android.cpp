@@ -4,6 +4,8 @@
 #include <cmath>
 #include <regex>
 #include <mbedtls/base64.h>
+#include "Util/Services.h"
+#include "Services/Time.h"
 
 static const char* TAG = "Android";
 
@@ -43,6 +45,8 @@ void Android::onConnect(){
 	if(connected) return;
 	connected = true;
 	connect();
+	printf("Sent from app: hello;1\n"); // mimic hello;<protocolVersion> from app
+	// TODO: verify protocol version - display "Outdated firmware"
 }
 
 void Android::onDisconnect(){
@@ -98,16 +102,29 @@ void Android::loop(){
 	printf("RX line: %s", line.c_str()); // debugging
 	// ESP_LOGI(TAG, "RX line: %s", line.c_str());
 
-	if(line[0] != '{' || line[line.size() - 1] != '}'){
-		ESP_LOGD(TAG, "Malformed JSON: %s", line.c_str());
-		return;
-	}
-
 	handleCommand(line);
 }
 
 void Android::handleCommand(const std::string& line){
 	if(!connected) return;
+
+	auto split_line = splitProtocolMsg(line);
+	auto command = split_line[0];
+
+	//time;<timestamp>;<timezoneOffset>
+	if (command == "time"){
+		if (split_line.size() < 3){
+			ESP_LOGW(TAG, "Invalid time command: %s", line.c_str());
+			return;
+		}
+
+		timestamp = std::stoll(split_line[1]);
+		timezone_offset = std::stod(split_line[2]);
+		ESP_LOGI(TAG, "Got UNIX time: %lld", timestamp);
+		ESP_LOGI(TAG, "Got timezone: %f", timezone_offset);
+		setTime();
+		return;
+	}
 
 	int comlen;
 	const char* com;
@@ -317,4 +334,39 @@ std::string Android::getProperty(const std::string& line, std::string prop){
 	std::replace(s.begin(), s.end(), '\t', ' ');
 
 	return s;
+}
+
+void Android::setTime(){
+	if(timestamp == 0) return;
+
+	auto time = timestamp + timezone_offset * 60;
+
+	auto ts = static_cast<Time*>(Services.get(Service::Time));
+	ts->setTime((time_t) time);
+
+	// If we receive time from the device, we'll consider this the "connected" event. Might happen
+	// multiple times during session, but since we're already connected, those onConnect calls will
+	// be discarded. Main thing is, we're sure we'll get the time first thing when connected
+	onConnect();
+}
+
+
+std::vector<std::string> Android::splitProtocolMsg(const std::string& s, char delim){
+    std::vector<std::string> out;
+
+    size_t start = 0;
+
+    while (true) {
+        size_t pos = s.find(delim, start);
+
+        if (pos == std::string::npos) {
+            out.emplace_back(s.substr(start));
+            break;
+        }
+
+        out.emplace_back(s.substr(start, pos - start));
+        start = pos + 1;
+    }
+
+    return out;
 }
