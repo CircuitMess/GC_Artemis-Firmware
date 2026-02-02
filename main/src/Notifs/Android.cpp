@@ -132,6 +132,7 @@ void Android::handleCommand(const std::string& line){
 		return;
 	}
 
+	//notifDel;<notifID>
 	else if(command == "notifDel"){
 		if (split_line.size() < 2){
 			ESP_LOGW(TAG, "Invalid notifDel command: %s", line.c_str());
@@ -140,6 +141,31 @@ void Android::handleCommand(const std::string& line){
 
 		uint32_t id = std::stoul(split_line[1]);
 		handleNotifDel(id);
+		return;
+	}
+
+	// notifModify;<notifID>;<title>;<content>;<appID>;<sender>;<category>;<labelPos>;<labelNeg>
+	else if(command == "notifModify"){
+		if (split_line.size() < 5){
+			ESP_LOGW(TAG, "Invalid notifMod command: %s", line.c_str());
+			return;
+		}
+
+		Notif notif = {
+				.uid = std::stoul(split_line[1]),
+				.title = split_line[2],
+				.message = split_line[3],
+				.appID = split_line[4],
+				.category = Notif::Category::Other, // TODO: map category and other optional
+		};
+
+		handleNotifModify(notif);
+		return;
+	}
+
+	// callIncoming;<callID>;<callerName>;<callerNumber>
+	else if(command == "callIncoming"){
+		handleCallIncoming(split_line);
 		return;
 	}
 }
@@ -176,7 +202,12 @@ void Android::handleNotifModify(const Notif& notif){
 	notifModify(notif);
 }
 
-void Android::handle_call(const std::string& line){
+void Android::handleCallIncoming(const std::vector<std::string> split_line){
+	if(split_line.size() < 4){
+		ESP_LOGW(TAG, "Invalid callIncoming command: insufficient parameters!");
+		return;
+	}
+
 	const auto hash = [](const std::string& str){
 		uint32_t n = 0;
 		for(int i = 0; i < str.size(); i++){
@@ -185,24 +216,11 @@ void Android::handle_call(const std::string& line){
 		return n;
 	};
 
-	auto name = getProperty(line, "name");
-	auto number = getProperty(line, "number");
+	auto name = split_line[2];
+	auto number = split_line[3];
 	auto uid = hash(name) * hash(number);
 
-	auto cmd = getProperty(line, "cmd");
-	CallCmd command = CallCmd::Invalid;
-	if(cmd == "outgoing"){
-		command = CallCmd::Outgoing;
-	}else if(cmd == "end"){
-		command = CallCmd::End;
-	}else if(cmd == "incoming"){
-		command = CallCmd::Incoming;
-	}else if(cmd == "start"){
-		command = CallCmd::Start;
-	}else{
-		ESP_LOGW(TAG, "Invalid call cmd: %s", cmd.c_str());
-	}
-
+	CallCmd command = CallCmd::Incoming;
 
 	if(currentCallId == -1){
 		currentCallId = uid;
@@ -231,21 +249,29 @@ void Android::handle_call(const std::string& line){
 
 		if(inCall && newCallRinging){
 			return;
-		}else if(ringing && newCallRinging){
+		}
+		
+		else if(ringing && newCallRinging){
 			notifRemove(currentCallId);
 			currentCallState = CallState::None;
-		}else if((ringing || inCall) && inNewCall){
+		}
+
+		else if((ringing || inCall) && inNewCall){
 			notifRemove(currentCallId);
+
 			if(command == CallCmd::Start){
 				currentCallState = CallState::Incoming;
-			}else if(command == CallCmd::Outgoing){
+			}
+			
+			else if(command == CallCmd::Outgoing){
 				currentCallState = CallState::None;
 			}
-		}else{
+		}
+		
+		else{
 			return; //treat all other cases as invalid, keep old call as the one "active"
 		}
 	}
-
 
 	currentCallId = uid;
 
@@ -264,7 +290,7 @@ void Android::handle_call(const std::string& line){
 
 	Notif notif = {
 			.uid = (uint32_t) uid,
-			.title = name + " (" + number + ")", //ime(broj)
+			.title = name + " (" + number + ")", // name(number)
 			.message = info.message, //incoming call, missed call
 			.appID = "",
 			.category = info.category
