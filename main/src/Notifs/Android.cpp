@@ -59,11 +59,15 @@ void Android::onDisconnect(){
 	disconnect();
 }
 
+// notifPos;<notifID>
 void Android::actionPos(uint32_t uid){
 	if(!connected) return;
+
+	uart.printf("notifPos;%d\n", uid);
 	// TODO: pos & neg for call
 }
 
+// notifNeg;<notifID>
 void Android::actionNeg(uint32_t uid){
 	if(!connected) return;
 	// TODO: pos & neg for call
@@ -75,7 +79,7 @@ void Android::actionNeg(uint32_t uid){
 		return;
 	}
 
-	uart.printf("{t:\"notify\",id:%d,n:\"DISMISS\"} \n", uid);
+	uart.printf("notifNeg;%d\n", uid);
 }
 
 void Android::findPhoneStart(){
@@ -89,7 +93,6 @@ void Android::findPhoneStop(){
 }
 
 void Android::loop(){
-	printf("Waiting for data...\n");
 	auto data = uart.scan_nl(portMAX_DELAY);
 	if(!data || data->empty()) return;
 
@@ -99,9 +102,6 @@ void Android::loop(){
 	// trimming
 	line.erase(line.begin(), std::find_if(line.begin(), line.end(), [](unsigned char ch){ return !std::isspace(ch); }));
 	line.erase(std::find_if(line.rbegin(), line.rend(), [](unsigned char ch){ return !std::isspace(ch); }).base(), line.end());
-
-	printf("RX line: %s", line.c_str()); // debugging
-	// ESP_LOGI(TAG, "RX line: %s", line.c_str());
 
 	handleCommand(line);
 }
@@ -334,49 +334,6 @@ void Android::handleIncomingStop(uint32_t id){
 	}
 }
 
-std::string Android::getProperty(const std::string& line, std::string prop){
-	prop.insert(0, "$.");
-	int len;
-	const char* val;
-	std::string s;
-
-	if(mjson_find(line.c_str(), line.size(), prop.c_str(), &val, &len) == MJSON_TOK_B64){
-		s = std::string(val + 1, val + len - 1);
-
-		size_t outLen = 0;
-		auto ret = mbedtls_base64_decode(nullptr, 0, &outLen, (unsigned char*) s.c_str(), s.length());
-		if(ret != MBEDTLS_ERR_BASE64_BUFFER_TOO_SMALL || outLen <= 0){
-			ESP_LOGW(TAG, "(1) Failed decoding base64: %s | Return status: %d", s.c_str(), ret);
-			return {};
-		}
-
-		std::string decoded(outLen + 1, '\0');
-		ret = mbedtls_base64_decode((unsigned char*) decoded.data(), decoded.size(), &outLen, (unsigned char*) s.c_str(), s.length());
-		if(ret != 0 || outLen <= 0){
-			ESP_LOGW(TAG, "(2) Failed decoding base64: %s | Return status: %d", s.c_str(), ret);
-			return {};
-		}
-		decoded.resize(outLen);
-
-		s = std::move(decoded);
-	}else if(mjson_find(line.c_str(), line.size(), prop.c_str(), &val, &len) == MJSON_TOK_STRING){
-		s = std::string(val + 1, val + len - 1);
-	}else{
-		ESP_LOGD(TAG, "Missing prop in notif: %s", prop.c_str() + 2);
-		return {};
-	}
-
-	s = std::regex_replace(s, std::regex(R"(\\u[a-zA-Z0-9]{3,4})"), "?");
-	s = std::regex_replace(s, std::regex(R"(\\n)"), "\n");
-	s = std::regex_replace(s, std::regex(R"(\\r)"), "\r");
-	s = std::regex_replace(s, std::regex(R"(\\\\)"), "\\");
-	s = std::regex_replace(s, std::regex(R"(\\t)"), "\t");
-	s.erase(std::remove(s.begin(), s.end(), '\r'), s.end());
-	std::replace(s.begin(), s.end(), '\t', ' ');
-
-	return s;
-}
-
 void Android::setTime(){
 	if(timestamp == 0) return;
 
@@ -419,28 +376,6 @@ std::vector<std::string> Android::splitProtocolMsg(const std::string& s, char de
 void Android::notifList(){
 	if(!connected) return;
 	uart.printf("notifList\n"); // TODO: handle after app implementation
-}
-
-// notifPos;<notifID>
-void Android::notifPos(uint32_t uid){
-	if(!connected) return;
-	uart.printf("notifPos;%d\n", uid);
-	// TODO: pos & neg for call
-}
-
-// notifNeg;<notifID>
-void Android::notifNeg(uint32_t uid){
-	if(!connected) return;
-	// TODO: pos & neg for call
-
-	if(uid == currentCallId) return;
-
-	if(missedCalls.count(uid)){
-		missedCalls.erase(uid);
-		return;
-	}
-
-	uart.printf("notifNeg;%d\n", uid);
 }
 
 void Android::callReject(uint32_t uid){
