@@ -46,6 +46,7 @@ void Android::onConnect(){
 	connected = true;
 	connect();
 	printf("Sent from app: hello;1\n"); // mimic hello;<protocolVersion> from app
+	uart.printf("version;%s;%s\n", PROTOCOL_VERSION, FW_VERSION); // response
 	// TODO: verify protocol version - display "Outdated firmware"
 }
 
@@ -79,12 +80,12 @@ void Android::actionNeg(uint32_t uid){
 
 void Android::findPhoneStart(){
 	if(!connected) return;
-	uart.printf("{t:\"findPhone\",n:true} \n");
+	uart.printf("findPhoneStart\n");
 }
 
 void Android::findPhoneStop(){
 	if(!connected) return;
-	uart.printf("{t:\"findPhone\", n:false} \n");
+	uart.printf("findPhoneStop\n");
 }
 
 void Android::loop(){
@@ -169,6 +170,7 @@ void Android::handleCommand(const std::string& line){
 		return;
 	}
 
+	// callIncomingStop;<callID>
 	else if(command == "incomingStop"){
 		if (split_line.size() < 2){
 			ESP_LOGW(TAG, "Invalid incomingStop command: %s", line.c_str());
@@ -177,6 +179,12 @@ void Android::handleCommand(const std::string& line){
 
 		uint32_t id = std::stoul(split_line[1]);
 		handleIncomingStop(id);
+		return;
+	}
+
+	// findPhoneStopAck
+	else if(command == "findPhoneStopAck"){
+		ESP_LOGI(TAG, "Find phone stopped ack received"); // one-minute ringing timeout from app
 		return;
 	}
 }

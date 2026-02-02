@@ -11,6 +11,9 @@
 // Communication with Android devices via BLE UART
 class Android : public NotifSource, private Threaded {
 public:
+	static constexpr const char* PROTOCOL_VERSION = "1";
+	static constexpr const char* FW_VERSION = "v2.1";
+
 	Android(BLE::Server* server);
 	virtual ~Android();
 
