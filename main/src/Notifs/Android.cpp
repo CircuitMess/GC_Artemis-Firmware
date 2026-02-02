@@ -126,64 +126,28 @@ void Android::handleCommand(const std::string& line){
 		return;
 	}
 
-	int comlen;
-	const char* com;
-	if(mjson_find(line.c_str(), line.size(), "$.t", &com, &comlen) != MJSON_TOK_STRING){
-		ESP_LOGW(TAG, "Invalid JSON, missing command: %s", line.c_str());
+	// notifAdd;<notifID>;<title>;<content>;<appID>;<sender>;<category>;<labelPos>;<labelNeg>
+	if(command == "notifAdd"){
+		handleAddNotify(split_line);
 		return;
 	}
-
-	std::string t(com + 1, com + comlen - 1);
-
-	static const std::unordered_map<std::string, std::function<void(const std::string& line)>> handlers = {
-			{ "notify",        [this](const std::string& line){ handle_notify(line); } },
-			{ "notify-",       [this](const std::string& line){
-				double id;
-				int res = mjson_get_number(line.c_str(), line.size(), "$.id", &id);
-				if(!res){
-					ESP_LOGE(TAG, "Received notify del without id");
-					return;
-				}
-
-				if(std::round(id) != id || id < 0){
-					ESP_LOGE(TAG, "Received notify del command with invalid id: %f", id);
-					return;
-				}
-
-				handle_notifyDel(id);
-			} },
-			{ "call",          [this](const std::string& line){ handle_call(line); } }
-	};
-
-	auto handler = handlers.find(t);
-	if(handler == handlers.end()){
-		ESP_LOGW(TAG, "Unhandled command from phone: %s", t.data());
-		return;
-	}
-
-	ESP_LOGI(TAG, "Command: %s", t.data());
-	handler->second(line);
 }
 
-void Android::handle_notify(const std::string& line){
-	double id;
-	int res = mjson_get_number(line.c_str(), line.size(), "$.id", &id);
-	if(!res){
-		ESP_LOGE(TAG, "Received notify without id");
+void Android::handleAddNotify(const std::vector<std::string> split_line){
+	// 5 required params + 4 optional
+	if(split_line.size() < 5){
+		ESP_LOGW(TAG, "Invalid notifAdd command: insufficient parameters!");
 		return;
 	}
 
-	if(std::round(id) != id || id < 0){
-		ESP_LOGE(TAG, "Received notify with invalid id: %f", id);
-		return;
-	}
+	uint32_t id = std::stoul(split_line[1]);
 
 	Notif notif = {
-			.uid = (uint32_t) id,
-			.title = getProperty(line, "title"),
-			.message = getProperty(line, "body"),
-			.appID = getProperty(line, "src"),
-			.category = Notif::Category::Other,
+			.uid = id,
+			.title = split_line[2],
+			.message = split_line[3],
+			.appID = split_line[4],
+			.category = Notif::Category::Other, // TODO: map category and other optional
 	};
 
 	ESP_LOGI(TAG, "New notif ID %ld", notif.uid);

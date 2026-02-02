@@ -34,7 +34,7 @@ private:
 	void handleCommand(const std::string& line);
 
 	// command handlers
-	void handle_notify(const std::string& line);
+	void handleAddNotify(const std::vector<std::string> split_line);
 	void handle_notifyDel(uint32_t id);
 	void handle_call(const std::string& line);
 
