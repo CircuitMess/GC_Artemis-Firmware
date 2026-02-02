@@ -35,7 +35,8 @@ private:
 
 	// command handlers
 	void handleAddNotify(const std::vector<std::string> split_line);
-	void handle_notifyDel(uint32_t id);
+	void handleNotifDel(uint32_t id);
+	void handleNotifModify(const Notif& notif);
 	void handle_call(const std::string& line);
 
 	static std::string getProperty(const std::string& line, std::string prop);

@@ -127,8 +127,19 @@ void Android::handleCommand(const std::string& line){
 	}
 
 	// notifAdd;<notifID>;<title>;<content>;<appID>;<sender>;<category>;<labelPos>;<labelNeg>
-	if(command == "notifAdd"){
+	else if(command == "notifAdd"){
 		handleAddNotify(split_line);
+		return;
+	}
+
+	else if(command == "notifDel"){
+		if (split_line.size() < 2){
+			ESP_LOGW(TAG, "Invalid notifDel command: %s", line.c_str());
+			return;
+		}
+
+		uint32_t id = std::stoul(split_line[1]);
+		handleNotifDel(id);
 		return;
 	}
 }
@@ -155,9 +166,14 @@ void Android::handleAddNotify(const std::vector<std::string> split_line){
 	notifNew(notif);
 }
 
-void Android::handle_notifyDel(uint32_t id){
+void Android::handleNotifDel(uint32_t id){
 	ESP_LOGI(TAG, "Del notif ID %ld", id);
 	notifRemove(id);
+}
+
+void Android::handleNotifModify(const Notif& notif){
+	ESP_LOGI(TAG, "Mod notif ID %ld", notif.uid);
+	notifModify(notif);
 }
 
 void Android::handle_call(const std::string& line){
