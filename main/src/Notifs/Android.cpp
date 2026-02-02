@@ -168,6 +168,17 @@ void Android::handleCommand(const std::string& line){
 		handleCallIncoming(split_line);
 		return;
 	}
+
+	else if(command == "incomingStop"){
+		if (split_line.size() < 2){
+			ESP_LOGW(TAG, "Invalid incomingStop command: %s", line.c_str());
+			return;
+		}
+
+		uint32_t id = std::stoul(split_line[1]);
+		handleIncomingStop(id);
+		return;
+	}
 }
 
 void Android::handleAddNotify(const std::vector<std::string> split_line){
@@ -297,6 +308,22 @@ void Android::handleCallIncoming(const std::vector<std::string> split_line){
 	};
 
 	notifModify(notif);
+}
+
+void Android::handleIncomingStop(uint32_t id){
+	if(currentCallId != id) return;
+
+	if(currentCallState == CallState::Incoming){
+		currentCallState = CallState::IncomingMissed;
+		missedCalls.insert(id);
+		ESP_LOGI(TAG, "Call ID %ld marked as missed", id);
+	}
+	
+	else{
+		currentCallState = CallState::None;
+		notifRemove(id);
+		ESP_LOGI(TAG, "Call ID %ld ended", id);
+	}
 }
 
 std::string Android::getProperty(const std::string& line, std::string prop){
