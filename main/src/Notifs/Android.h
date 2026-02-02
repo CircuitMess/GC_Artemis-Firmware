@@ -69,7 +69,13 @@ private:
 	uint64_t timestamp = 0;
 
 	void setTime();
+	void requestTime();
 	std::vector<std::string> splitProtocolMsg(const std::string& s, char delim = ';');
+
+	void notifList();
+	void notifPos(uint32_t uid);
+	void notifNeg(uint32_t uid);
+	void callReject(uint32_t uid);
 };
 
 #endif //ARTEMIS_FIRMWARE_ANDROID_H

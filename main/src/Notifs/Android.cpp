@@ -391,6 +391,10 @@ void Android::setTime(){
 	onConnect();
 }
 
+void Android::requestTime(){
+	if(!connected) return;
+	uart.printf("time\n"); // TODO: handle after app implementation
+}
 
 std::vector<std::string> Android::splitProtocolMsg(const std::string& s, char delim){
     std::vector<std::string> out;
@@ -410,4 +414,37 @@ std::vector<std::string> Android::splitProtocolMsg(const std::string& s, char de
     }
 
     return out;
+}
+
+void Android::notifList(){
+	if(!connected) return;
+	uart.printf("notifList\n"); // TODO: handle after app implementation
+}
+
+// notifPos;<notifID>
+void Android::notifPos(uint32_t uid){
+	if(!connected) return;
+	uart.printf("notifPos;%d\n", uid);
+	// TODO: pos & neg for call
+}
+
+// notifNeg;<notifID>
+void Android::notifNeg(uint32_t uid){
+	if(!connected) return;
+	// TODO: pos & neg for call
+
+	if(uid == currentCallId) return;
+
+	if(missedCalls.count(uid)){
+		missedCalls.erase(uid);
+		return;
+	}
+
+	uart.printf("notifNeg;%d\n", uid);
+}
+
+void Android::callReject(uint32_t uid){
+	if(!connected) return;
+	uart.printf("callReject;%d\n", uid);
+	// TODO: handle after app implementation
 }
