@@ -1,11 +1,7 @@
 #include "Android.h"
-#include <esp_log.h>
-#include <mjson.h>
-#include <cmath>
-#include <regex>
-#include <mbedtls/base64.h>
 #include "Util/Services.h"
 #include "Services/Time.h"
+#include <esp_log.h>
 
 static const char* TAG = "Android";
 
@@ -26,10 +22,7 @@ const std::unordered_map<Android::CallState, Android::CallInfo> Android::CallInf
 		{ Android::CallState::IncomingAccepted, { "Call in progress...", Notif::Category::IncomingCall } }
 };
 
-Android::Android(BLE::Server* server)
-	: Threaded("Android", 4 * 1024),
-	  server(server),
-	  uart(server) {
+Android::Android(BLE::Server* server) : Threaded("Android", 4 * 1024), server(server), uart(server){
 	server->setOnConnectCb([this](const esp_bd_addr_t addr){ onConnect(); });
 	server->setOnDisconnectCb([this](const esp_bd_addr_t addr){ onDisconnect(); });
 	start();
@@ -45,8 +38,8 @@ void Android::onConnect(){
 	if(connected) return;
 	connected = true;
 	connect();
-	printf("Sent from app: hello;1\n"); // mimic hello;<protocolVersion> from app
-	uart.printf("version;%s;%s\n", PROTOCOL_VERSION, FW_VERSION); // response
+	ESP_LOGI(TAG, "Sent from app: hello;1\n"); // mimic hello;<protocolVersion> from app
+	uart.printf("version;%s;%s\n", ProtocolVersion, FirmwareVersion); // response
 	// TODO: verify protocol version - display "Outdated firmware"
 }
 
@@ -112,90 +105,65 @@ void Android::handleCommand(const std::string& line){
 	auto split_line = splitProtocolMsg(line);
 	auto command = split_line[0];
 
-	//time;<timestamp>;<timezoneOffset>
-	if (command == "time"){
-		if (split_line.size() < 3){
+	if(command == "time"){
+		if(split_line.size() < 3){
 			ESP_LOGW(TAG, "Invalid time command: %s", line.c_str());
 			return;
 		}
 
-		timestamp = std::stoll(split_line[1]);
-		timezone_offset = std::stod(split_line[2]);
-		ESP_LOGI(TAG, "Got UNIX time: %lld", timestamp);
-		ESP_LOGI(TAG, "Got timezone: %f", timezone_offset);
-		setTime();
+		handleTime(split_line);
 		return;
-	}
+	}else if(command == "notifAdd"){
+		if(split_line.size() < 5){
+			ESP_LOGW(TAG, "Invalid notifAdd command: %s", line.c_str());
+			return;
+		}
 
-	// notifAdd;<notifID>;<title>;<content>;<appID>;<sender>;<category>;<labelPos>;<labelNeg>
-	else if(command == "notifAdd"){
-		handleAddNotify(split_line);
+		handleNotifAdd(split_line);
 		return;
-	}
-
-	//notifDel;<notifID>
-	else if(command == "notifDel"){
-		if (split_line.size() < 2){
+	}else if(command == "notifDel"){
+		if(split_line.size() < 2){
 			ESP_LOGW(TAG, "Invalid notifDel command: %s", line.c_str());
 			return;
 		}
 
-		uint32_t id = std::stoul(split_line[1]);
-		handleNotifDel(id);
+		handleNotifDel(split_line);
 		return;
-	}
-
-	// notifModify;<notifID>;<title>;<content>;<appID>;<sender>;<category>;<labelPos>;<labelNeg>
-	else if(command == "notifModify"){
-		if (split_line.size() < 5){
+	}else if(command == "notifModify"){
+		if(split_line.size() < 5){
 			ESP_LOGW(TAG, "Invalid notifMod command: %s", line.c_str());
 			return;
 		}
 
-		Notif notif = {
-				.uid = std::stoul(split_line[1]),
-				.title = split_line[2],
-				.message = split_line[3],
-				.appID = split_line[4],
-				.category = Notif::Category::Other, // TODO: map category and other optional
-		};
-
-		handleNotifModify(notif);
+		handleNotifModify(split_line);
 		return;
-	}
+	}else if(command == "callIncoming"){
+		if(split_line.size() < 4){
+			ESP_LOGW(TAG, "Invalid callIncoming command: %s", line.c_str());
+			return;
+		}
 
-	// callIncoming;<callID>;<callerName>;<callerNumber>
-	else if(command == "callIncoming"){
 		handleCallIncoming(split_line);
 		return;
-	}
-
-	// callIncomingStop;<callID>
-	else if(command == "incomingStop"){
-		if (split_line.size() < 2){
+	}else if(command == "incomingStop"){
+		if(split_line.size() < 2){
 			ESP_LOGW(TAG, "Invalid incomingStop command: %s", line.c_str());
 			return;
 		}
 
-		uint32_t id = std::stoul(split_line[1]);
-		handleIncomingStop(id);
+		handleIncomingStop(split_line);
 		return;
-	}
-
-	// findPhoneStopAck
-	else if(command == "findPhoneStopAck"){
-		ESP_LOGI(TAG, "Find phone stopped ack received"); // one-minute ringing timeout from app
+	}else if(command == "findPhoneStopAck"){
+		handleFindPhoneStopAck(split_line);
+		return;
+	}else{
+		ESP_LOGW(TAG, "Unknown command: %s", line.c_str());
 		return;
 	}
 }
 
-void Android::handleAddNotify(const std::vector<std::string> split_line){
-	// 5 required params + 4 optional
-	if(split_line.size() < 5){
-		ESP_LOGW(TAG, "Invalid notifAdd command: insufficient parameters!");
-		return;
-	}
-
+// notifAdd;<notifID>;<title>;<content>;<appID>;<sender>;<category>;<labelPos>;<labelNeg>
+void Android::handleNotifAdd(const std::vector<std::string>& split_line){
 	uint32_t id = std::stoul(split_line[1]);
 
 	Notif notif = {
@@ -211,22 +179,29 @@ void Android::handleAddNotify(const std::vector<std::string> split_line){
 	notifNew(notif);
 }
 
-void Android::handleNotifDel(uint32_t id){
+//notifDel;<notifID>
+void Android::handleNotifDel(const std::vector<std::string>& split_line){
+	uint32_t id = std::stoul(split_line[1]);
 	ESP_LOGI(TAG, "Del notif ID %ld", id);
 	notifRemove(id);
 }
 
-void Android::handleNotifModify(const Notif& notif){
+// notifModify;<notifID>;<title>;<content>;<appID>;<sender>;<category>;<labelPos>;<labelNeg>
+void Android::handleNotifModify(const std::vector<std::string>& split_line){
+	Notif notif = {
+			.uid = std::stoul(split_line[1]),
+			.title = split_line[2],
+			.message = split_line[3],
+			.appID = split_line[4],
+			.category = Notif::Category::Other, // TODO: map category and other optional
+	};
+
 	ESP_LOGI(TAG, "Mod notif ID %ld", notif.uid);
 	notifModify(notif);
 }
 
-void Android::handleCallIncoming(const std::vector<std::string> split_line){
-	if(split_line.size() < 4){
-		ESP_LOGW(TAG, "Invalid callIncoming command: insufficient parameters!");
-		return;
-	}
-
+// callIncoming;<callID>;<callerName>;<callerNumber>
+void Android::handleCallIncoming(const std::vector<std::string>& split_line){
 	const auto hash = [](const std::string& str){
 		uint32_t n = 0;
 		for(int i = 0; i < str.size(); i++){
@@ -253,7 +228,6 @@ void Android::handleCallIncoming(const std::vector<std::string> split_line){
 
 	//take care of edge-cases when multiple simultaneous calls occur
 	if(uid != currentCallId && currentCallState != CallState::None){
-
 		const bool inCall = (currentCallState == CallState::IncomingAccepted || currentCallState == CallState::Outgoing);
 		const bool inNewCall = (command == CallCmd::Start || command == CallCmd::Outgoing);
 		const bool newCallRinging = (command == CallCmd::Incoming);
@@ -268,26 +242,18 @@ void Android::handleCallIncoming(const std::vector<std::string> split_line){
 
 		if(inCall && newCallRinging){
 			return;
-		}
-		
-		else if(ringing && newCallRinging){
+		}else if(ringing && newCallRinging){
 			notifRemove(currentCallId);
 			currentCallState = CallState::None;
-		}
-
-		else if((ringing || inCall) && inNewCall){
+		}else if((ringing || inCall) && inNewCall){
 			notifRemove(currentCallId);
 
 			if(command == CallCmd::Start){
 				currentCallState = CallState::Incoming;
-			}
-			
-			else if(command == CallCmd::Outgoing){
+			}else if(command == CallCmd::Outgoing){
 				currentCallState = CallState::None;
 			}
-		}
-		
-		else{
+		}else{
 			return; //treat all other cases as invalid, keep old call as the one "active"
 		}
 	}
@@ -318,23 +284,13 @@ void Android::handleCallIncoming(const std::vector<std::string> split_line){
 	notifModify(notif);
 }
 
-void Android::handleIncomingStop(uint32_t id){
-	if(currentCallId != id) return;
+//time;<timestamp>;<timezoneOffset>
+void Android::handleTime(const std::vector<std::string>& split_line){
+	uint64_t timestamp = std::stoll(split_line[1]);
+	float timezone_offset = std::stod(split_line[2]);
+	ESP_LOGI(TAG, "Got UNIX time: %lld", timestamp);
+	ESP_LOGI(TAG, "Got timezone: %f", timezone_offset);
 
-	if(currentCallState == CallState::Incoming){
-		currentCallState = CallState::IncomingMissed;
-		missedCalls.insert(id);
-		ESP_LOGI(TAG, "Call ID %ld marked as missed", id);
-	}
-	
-	else{
-		currentCallState = CallState::None;
-		notifRemove(id);
-		ESP_LOGI(TAG, "Call ID %ld ended", id);
-	}
-}
-
-void Android::setTime(){
 	if(timestamp == 0) return;
 
 	auto time = timestamp + timezone_offset * 60;
@@ -348,6 +304,27 @@ void Android::setTime(){
 	onConnect();
 }
 
+// callIncomingStop;<callID>
+void Android::handleIncomingStop(const std::vector<std::string>& split_line){
+	uint32_t id = std::stoul(split_line[1]);
+	if(currentCallId != id) return;
+
+	if(currentCallState == CallState::Incoming){
+		currentCallState = CallState::IncomingMissed;
+		missedCalls.insert(id);
+		ESP_LOGI(TAG, "Call ID %ld marked as missed", id);
+	}else{
+		currentCallState = CallState::None;
+		notifRemove(id);
+		ESP_LOGI(TAG, "Call ID %ld ended", id);
+	}
+}
+
+// findPhoneStopAck
+void Android::handleFindPhoneStopAck(const std::vector<std::string>& split_line){
+	ESP_LOGI(TAG, "Find phone stopped ack received"); // one-minute ringing timeout from app
+}
+
 void Android::requestTime(){
 	if(!connected) return;
 	uart.printf("time\n"); // TODO: handle after app implementation
@@ -358,10 +335,10 @@ std::vector<std::string> Android::splitProtocolMsg(const std::string& s, char de
 
     size_t start = 0;
 
-    while (true) {
+    while(true){
         size_t pos = s.find(delim, start);
 
-        if (pos == std::string::npos) {
+        if(pos == std::string::npos){
             out.emplace_back(s.substr(start));
             break;
         }

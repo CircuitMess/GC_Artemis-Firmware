@@ -11,8 +11,8 @@
 // Communication with Android devices via BLE UART
 class Android : public NotifSource, private Threaded {
 public:
-	static constexpr const char* PROTOCOL_VERSION = "1";
-	static constexpr const char* FW_VERSION = "v2.1";
+	static constexpr const char* ProtocolVersion = "1";
+	static constexpr const char* FirmwareVersion = "v2.1";
 
 	Android(BLE::Server* server);
 	virtual ~Android();
@@ -37,20 +37,22 @@ private:
 	void handleCommand(const std::string& line);
 
 	// command handlers
-	void handleAddNotify(const std::vector<std::string> split_line);
-	void handleNotifDel(uint32_t id);
-	void handleNotifModify(const Notif& notif);
-	void handleCallIncoming(const std::vector<std::string> split_line);
-	void handleIncomingStop(uint32_t id);
+	void handleNotifAdd(const std::vector<std::string>& split_line);
+	void handleNotifDel(const std::vector<std::string>& split_line);
+	void handleNotifModify(const std::vector<std::string>& split_line);
+	void handleCallIncoming(const std::vector<std::string>& split_line);
+	void handleIncomingStop(const std::vector<std::string>& split_line);
+	void handleTime(const std::vector<std::string>& split_line);
+	void handleFindPhoneStopAck(const std::vector<std::string>& split_line);
 
-	enum class CallState : uint8_t {
+	enum class CallState : uint8_t{
 		None, Incoming, Outgoing, IncomingAccepted, IncomingMissed
 	};
-	enum class CallCmd : uint8_t {
+	enum class CallCmd : uint8_t{
 		Outgoing, End, Incoming, Start, Invalid, Any
 	};
 
-	struct CallInfo {
+	struct CallInfo{
 		const char* message;
 		Notif::Category category;
 	};
@@ -63,10 +65,6 @@ private:
 
 	std::unordered_set<uint32_t> missedCalls;
 
-	float timezone_offset = 0;
-	uint64_t timestamp = 0;
-
-	void setTime();
 	void requestTime();
 	std::vector<std::string> splitProtocolMsg(const std::string& s, char delim = ';');
 
