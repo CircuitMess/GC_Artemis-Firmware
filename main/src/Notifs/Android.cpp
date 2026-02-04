@@ -5,23 +5,6 @@
 
 static const char* TAG = "Android";
 
-const std::map<std::pair<Android::CallState, Android::CallCmd>, Android::CallState> Android::CallTransitions = {
-		{ { Android::CallState::None,             Android::CallCmd::Incoming }, Android::CallState::Incoming },
-		{ { Android::CallState::None,             Android::CallCmd::Outgoing }, Android::CallState::Outgoing },
-		{ { Android::CallState::Incoming,         Android::CallCmd::End },      Android::CallState::IncomingMissed },
-		{ { Android::CallState::Incoming,         Android::CallCmd::Start },    Android::CallState::IncomingAccepted },
-		{ { Android::CallState::IncomingMissed,   Android::CallCmd::Any },      Android::CallState::None },
-		{ { Android::CallState::IncomingAccepted, Android::CallCmd::End },      Android::CallState::None },
-		{ { Android::CallState::Outgoing,         Android::CallCmd::End },      Android::CallState::None }
-};
-
-const std::unordered_map<Android::CallState, Android::CallInfo> Android::CallInfoMap = {
-		{ Android::CallState::Incoming,         { "Incoming call",       Notif::Category::IncomingCall } },
-		{ Android::CallState::IncomingMissed,   { "Missed call",         Notif::Category::MissedCall } },
-		{ Android::CallState::Outgoing,         { "Calling...",          Notif::Category::OutgoingCall } },
-		{ Android::CallState::IncomingAccepted, { "Call in progress...", Notif::Category::IncomingCall } }
-};
-
 Android::Android(BLE::Server* server) : Threaded("Android", 4 * 1024), server(server), uart(server){
 	server->setOnDisconnectCb([this](const esp_bd_addr_t addr){ onDisconnect(); });
 	start();
@@ -44,9 +27,8 @@ void Android::onConnect(){
 void Android::onDisconnect(){
 	if(!connected) return;
 	connected = false;
-	currentCallState = CallState::None;
+	currentRingingState = false;
 	currentCallId = -1;
-	missedCalls.clear();
 	disconnect();
 }
 
@@ -55,20 +37,13 @@ void Android::actionPos(uint32_t uid){
 	if(!connected) return;
 
 	uart.printf("notifPos;%d\n", uid);
-	// TODO: pos & neg for call
 }
 
 // notifNeg;<notifID>
 void Android::actionNeg(uint32_t uid){
 	if(!connected) return;
-	// TODO: pos & neg for call
 
 	if(uid == currentCallId) return;
-
-	if(missedCalls.count(uid)){
-		missedCalls.erase(uid);
-		return;
-	}
 
 	uart.printf("notifNeg;%d\n", uid);
 }
@@ -153,13 +128,13 @@ void Android::handleCommand(const std::string& line){
 
 		handleCallIncoming(split_line);
 		return;
-	}else if(command == "incomingStop"){
+	}else if(command == "callIncomingStop"){
 		if(split_line.size() < 2){
-			ESP_LOGW(TAG, "Invalid incomingStop command: %s", line.c_str());
+			ESP_LOGW(TAG, "Invalid callIncomingStop command: %s", line.c_str());
 			return;
 		}
 
-		handleIncomingStop(split_line);
+		handleCallIncomingStop(split_line);
 		return;
 	}else if(command == "findPhoneStopAck"){
 		handleFindPhoneStopAck(split_line);
@@ -224,86 +199,28 @@ void Android::handleNotifModify(const std::vector<std::string>& split_line){
 
 // callIncoming;<callID>;<callerName>;<callerNumber>
 void Android::handleCallIncoming(const std::vector<std::string>& split_line){
-	const auto hash = [](const std::string& str){
-		uint32_t n = 0;
-		for(int i = 0; i < str.size(); i++){
-			n += str.at(i) * i;
-		}
-		return n;
-	};
-
+	uint32_t id =  std::stoll(split_line[1]); // notif currently supports only uint32_t, don't use example from protocol docs!
 	auto name = split_line[2];
 	auto number = split_line[3];
-	auto uid = hash(name) * hash(number);
 
-	CallCmd command = CallCmd::Incoming;
-
-	if(currentCallId == -1){
-		currentCallId = uid;
-		currentCallState = CallState::None;
-	}
-
-	//transition used only for incomingMissed -> None
-	if(CallTransitions.count({ currentCallState, CallCmd::Any })){
-		currentCallState = CallTransitions.at({ currentCallState, CallCmd::Any });
-	}
-
-	//take care of edge-cases when multiple simultaneous calls occur
-	if(uid != currentCallId && currentCallState != CallState::None){
-		const bool inCall = (currentCallState == CallState::IncomingAccepted || currentCallState == CallState::Outgoing);
-		const bool inNewCall = (command == CallCmd::Start || command == CallCmd::Outgoing);
-		const bool newCallRinging = (command == CallCmd::Incoming);
-		const bool ringing = (currentCallState == CallState::Incoming);
-
-		if(command == CallCmd::End && !missedCalls.count(currentCallId)){
-			currentCallState = CallState::None;
-			//in case of putting calls on hold, the end command can be sent with a different number, so terminate the call if it happens
-			notifRemove(currentCallId);
-			return;
-		}
-
-		if(inCall && newCallRinging){
-			return;
-		}else if(ringing && newCallRinging){
-			notifRemove(currentCallId);
-			currentCallState = CallState::None;
-		}else if((ringing || inCall) && inNewCall){
-			notifRemove(currentCallId);
-
-			if(command == CallCmd::Start){
-				currentCallState = CallState::Incoming;
-			}else if(command == CallCmd::Outgoing){
-				currentCallState = CallState::None;
-			}
-		}else{
-			return; //treat all other cases as invalid, keep old call as the one "active"
-		}
-	}
-
-	currentCallId = uid;
-
-	if(CallTransitions.count({ currentCallState, command })){
-		currentCallState = CallTransitions.at({ currentCallState, command });
+	if(currentCallId == -1 && currentRingingState == false){
+		currentCallId = id;
+		currentRingingState = true;
 	}else{
-		currentCallState = CallState::None;
-	}
-
-	if(!CallInfoMap.count(currentCallState) && !missedCalls.count(uid)){
-		notifRemove(uid);
+		ESP_LOGI(TAG, "Already in call, ignoring incoming call from %s (%s)", name.c_str(), number.c_str());
 		return;
-	}
-
-	const auto& info = CallInfoMap.at(currentCallState);
-
+	} 
+	
 	Notif notif = {
-			.uid = (uint32_t) uid,
+			.uid = (uint32_t) id,
 			.title = name + " (" + number + ")", // name(number)
-			.message = info.message, //incoming call, missed call
+			.message = "Incoming call",
 			.appID = "",
-			.category = info.category
+			.category = Notif::Category::IncomingCall
 	};
 
-	notifModify(notif);
+	// notifModify(notif);
+	notifNew(notif);
 }
 
 //time;<timestamp>;<timezoneOffset>
@@ -327,19 +244,16 @@ void Android::handleTime(const std::vector<std::string>& split_line){
 }
 
 // callIncomingStop;<callID>
-void Android::handleIncomingStop(const std::vector<std::string>& split_line){
-	uint32_t id = std::stoul(split_line[1]);
-	if(currentCallId != id) return;
+void Android::handleCallIncomingStop(const std::vector<std::string>& split_line){
+	uint32_t id = std::stoll(split_line[1]);
 
-	if(currentCallState == CallState::Incoming){
-		currentCallState = CallState::IncomingMissed;
-		missedCalls.insert(id);
-		ESP_LOGI(TAG, "Call ID %ld marked as missed", id);
-	}else{
-		currentCallState = CallState::None;
-		notifRemove(id);
-		ESP_LOGI(TAG, "Call ID %ld ended", id);
-	}
+	if(currentCallId != id || currentRingingState == false) return; // ignore
+
+	ESP_LOGI(TAG, "Incoming call stopped for ID %ld", currentCallId);
+	notifRemove(currentCallId);
+
+	currentCallId = -1;
+	currentRingingState = false;
 }
 
 // findPhoneStopAck

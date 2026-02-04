@@ -42,29 +42,12 @@ private:
 	void handleNotifDel(const std::vector<std::string>& split_line);
 	void handleNotifModify(const std::vector<std::string>& split_line);
 	void handleCallIncoming(const std::vector<std::string>& split_line);
-	void handleIncomingStop(const std::vector<std::string>& split_line);
+	void handleCallIncomingStop(const std::vector<std::string>& split_line);
 	void handleTime(const std::vector<std::string>& split_line);
 	void handleFindPhoneStopAck(const std::vector<std::string>& split_line);
 
-	enum class CallState : uint8_t{
-		None, Incoming, Outgoing, IncomingAccepted, IncomingMissed
-	};
-	enum class CallCmd : uint8_t{
-		Outgoing, End, Incoming, Start, Invalid, Any
-	};
-
-	struct CallInfo{
-		const char* message;
-		Notif::Category category;
-	};
-
-	static const std::map<std::pair<CallState, CallCmd>, CallState> CallTransitions;
-	static const std::unordered_map<CallState, CallInfo> CallInfoMap;
-
 	uint32_t currentCallId = -1;
-	CallState currentCallState = CallState::None;
-
-	std::unordered_set<uint32_t> missedCalls;
+	bool currentRingingState = false;
 
 	void requestTime();
 	std::vector<std::string> splitProtocolMsg(const std::string& s, char delim = ';');
