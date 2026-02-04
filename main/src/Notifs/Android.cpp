@@ -23,7 +23,6 @@ const std::unordered_map<Android::CallState, Android::CallInfo> Android::CallInf
 };
 
 Android::Android(BLE::Server* server) : Threaded("Android", 4 * 1024), server(server), uart(server){
-	server->setOnConnectCb([this](const esp_bd_addr_t addr){ onConnect(); });
 	server->setOnDisconnectCb([this](const esp_bd_addr_t addr){ onDisconnect(); });
 	start();
 }
@@ -38,9 +37,8 @@ void Android::onConnect(){
 	if(connected) return;
 	connected = true;
 	connect();
-	ESP_LOGI(TAG, "Sent from app: hello;1\n"); // mimic hello;<protocolVersion> from app
 	uart.printf("version;%s;%s\n", ProtocolVersion, FirmwareVersion); // response
-	// TODO: verify protocol version - display "Outdated firmware"
+	requestTime(); // request time after connection
 }
 
 void Android::onDisconnect(){
@@ -100,10 +98,20 @@ void Android::loop(){
 }
 
 void Android::handleCommand(const std::string& line){
-	if(!connected) return;
-
 	auto split_line = splitProtocolMsg(line);
 	auto command = split_line[0];
+
+	if(command == "hello"){
+		if(split_line.size() < 2){
+		ESP_LOGW(TAG, "Invalid hello command");
+		return;
+		}
+
+		handleHello(split_line);
+		return;
+	}
+
+	if(!connected) return; // ignore all commmands until connected
 
 	if(command == "time"){
 		if(split_line.size() < 3){
@@ -161,6 +169,20 @@ void Android::handleCommand(const std::string& line){
 		return;
 	}
 }
+
+// hello;<protocolVersion>
+void Android::handleHello(const std::vector<std::string>& split_line){
+	auto protocolVersion = split_line[1];
+
+	if(protocolVersion != ProtocolVersion) {
+		ESP_LOGW(TAG, "Connection failed! Protocol version mismatch: version %s, expected %s", protocolVersion.c_str(), ProtocolVersion);
+	}
+	else{
+		ESP_LOGI(TAG, "Connected! Hello received, protocol version: %s", protocolVersion.c_str());
+		onConnect();
+	}
+	}
+	
 
 // notifAdd;<notifID>;<title>;<content>;<appID>;<sender>;<category>;<labelPos>;<labelNeg>
 void Android::handleNotifAdd(const std::vector<std::string>& split_line){

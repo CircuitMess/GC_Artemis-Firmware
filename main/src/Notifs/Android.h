@@ -37,6 +37,7 @@ private:
 	void handleCommand(const std::string& line);
 
 	// command handlers
+	void handleHello(const std::vector<std::string>& split_line);
 	void handleNotifAdd(const std::vector<std::string>& split_line);
 	void handleNotifDel(const std::vector<std::string>& split_line);
 	void handleNotifModify(const std::vector<std::string>& split_line);
