@@ -46,7 +46,6 @@ private:
 	void handleTime(const std::vector<std::string>& split_line);
 	void handleFindPhoneStopAck(const std::vector<std::string>& split_line);
 
-	uint32_t currentCallId = -1;
 	bool currentRingingState = false;
 
 	void requestTime();

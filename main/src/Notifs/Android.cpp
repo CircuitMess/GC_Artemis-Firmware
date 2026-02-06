@@ -21,7 +21,6 @@ void Android::onConnect(){
 	if(connected) return;
 	connected = true;
 	connect();
-	uart.printf("version;%s;%s\n", ProtocolVersion, FirmwareVersion); // response
 	requestTime(); // request time after connection
 }
 
@@ -29,7 +28,6 @@ void Android::onDisconnect(){
 	if(!connected) return;
 	connected = false;
 	currentRingingState = false;
-	currentCallId = -1;
 	disconnect();
 }
 
@@ -43,8 +41,6 @@ void Android::actionPos(uint32_t uid){
 // notifNeg;<notifID>
 void Android::actionNeg(uint32_t uid){
 	if(!connected) return;
-
-	if(uid == currentCallId) return;
 
 	uart.printf("notifNeg;%d\n", uid);
 }
@@ -149,7 +145,7 @@ void Android::handleCommand(const std::string& line){
 // hello;<protocolVersion>
 void Android::handleHello(const std::vector<std::string>& split_line){
 	auto protocolVersion = split_line[1];
-
+	uart.printf("version;%s;%s\n", protocolVersion, FirmwareVersion); // response, give protocol version even if missmatch
 	if(protocolVersion != ProtocolVersion) {
 		ESP_LOGW(TAG, "Connection failed! Protocol version mismatch: version %s, expected %s", protocolVersion.c_str(), ProtocolVersion);
 	}
@@ -203,17 +199,13 @@ void Android::handleNotifModify(const std::vector<std::string>& split_line){
 
 // callIncoming;<callID>;<callerName>;<callerNumber>
 void Android::handleCallIncoming(const std::vector<std::string>& split_line){
-	const uint32_t id =  std::stoull(split_line[1]); // notif currently supports only uint32_t, don't use example from protocol docs!
+	const uint32_t id =  std::stoull(split_line[1]);
 	auto name = split_line[2];
 	auto number = split_line[3];
 
-	if(currentCallId == -1 && currentRingingState == false){
-		currentCallId = id;
-		currentRingingState = true;
-	}else{
-		ESP_LOGI(TAG, "Already in call, ignoring incoming call from %s (%s)", name.c_str(), number.c_str());
-		return;
-	} 
+	if(currentRingingState) return;
+	
+	currentRingingState = true;
 	
 	Notif notif = {
 			.uid = (uint32_t) id,
@@ -247,12 +239,9 @@ void Android::handleTime(const std::vector<std::string>& split_line){
 void Android::handleCallIncomingStop(const std::vector<std::string>& split_line){
 	const uint32_t id = std::stoull(split_line[1]);
 
-	if(currentCallId != id || currentRingingState == false) return; // ignore
+	ESP_LOGI(TAG, "Incoming call stopped for ID %ld", id);
+	notifRemove(id);
 
-	ESP_LOGI(TAG, "Incoming call stopped for ID %ld", currentCallId);
-	notifRemove(currentCallId);
-
-	currentCallId = -1;
 	currentRingingState = false;
 }
 
