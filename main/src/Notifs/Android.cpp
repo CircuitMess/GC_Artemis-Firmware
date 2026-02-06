@@ -2,6 +2,7 @@
 #include "Util/Services.h"
 #include "Services/Time.h"
 #include <esp_log.h>
+#include <cctype>
 
 static const char* TAG = "Android";
 
@@ -78,8 +79,8 @@ void Android::handleCommand(const std::string& line){
 
 	if(command == "hello"){
 		if(split_line.size() < 2){
-		ESP_LOGW(TAG, "Invalid hello command");
-		return;
+			ESP_LOGW(TAG, "Invalid hello command");
+			return;
 		}
 
 		handleHello(split_line);
@@ -161,16 +162,16 @@ void Android::handleHello(const std::vector<std::string>& split_line){
 
 // notifAdd;<notifID>;<title>;<content>;<appID>;<sender>;<category>;<labelPos>;<labelNeg>
 void Android::handleNotifAdd(const std::vector<std::string>& split_line){
-	uint32_t id = std::stoul(split_line[1]);
+	const uint32_t id = std::stoull(split_line[1]);
+	const uint32_t cat_val = std::stoull(split_line[6]);
 
 	Notif notif = {
 			.uid = id,
 			.title = split_line[2],
 			.message = split_line[3],
 			.appID = split_line[4],
-			.category = Notif::Category::Other, // TODO: map category and other optional
+			.category = mapNotifCategories(cat_val),
 	};
-
 	ESP_LOGI(TAG, "New notif ID %ld", notif.uid);
 
 	notifNew(notif);
@@ -178,19 +179,22 @@ void Android::handleNotifAdd(const std::vector<std::string>& split_line){
 
 //notifDel;<notifID>
 void Android::handleNotifDel(const std::vector<std::string>& split_line){
-	uint32_t id = std::stoul(split_line[1]);
+	const uint32_t id = std::stoull(split_line[1]);
 	ESP_LOGI(TAG, "Del notif ID %ld", id);
 	notifRemove(id);
 }
 
 // notifModify;<notifID>;<title>;<content>;<appID>;<sender>;<category>;<labelPos>;<labelNeg>
 void Android::handleNotifModify(const std::vector<std::string>& split_line){
+	const uint32_t id = std::stoull(split_line[1]);
+	const uint32_t cat_val = std::stoull(split_line[6]);
+
 	Notif notif = {
-			.uid = std::stoul(split_line[1]),
+			.uid = id,
 			.title = split_line[2],
 			.message = split_line[3],
 			.appID = split_line[4],
-			.category = Notif::Category::Other, // TODO: map category and other optional
+			.category = mapNotifCategories(cat_val),
 	};
 
 	ESP_LOGI(TAG, "Mod notif ID %ld", notif.uid);
@@ -199,7 +203,7 @@ void Android::handleNotifModify(const std::vector<std::string>& split_line){
 
 // callIncoming;<callID>;<callerName>;<callerNumber>
 void Android::handleCallIncoming(const std::vector<std::string>& split_line){
-	uint32_t id =  std::stoll(split_line[1]); // notif currently supports only uint32_t, don't use example from protocol docs!
+	const uint32_t id =  std::stoull(split_line[1]); // notif currently supports only uint32_t, don't use example from protocol docs!
 	auto name = split_line[2];
 	auto number = split_line[3];
 
@@ -219,16 +223,15 @@ void Android::handleCallIncoming(const std::vector<std::string>& split_line){
 			.category = Notif::Category::IncomingCall
 	};
 
-	// notifModify(notif);
 	notifNew(notif);
 }
 
 //time;<timestamp>;<timezoneOffset>
 void Android::handleTime(const std::vector<std::string>& split_line){
 	uint64_t timestamp = std::stoll(split_line[1]);
-	float timezone_offset = std::stod(split_line[2]);
+	uint32_t timezone_offset = std::stoul(split_line[2]);
 	ESP_LOGI(TAG, "Got UNIX time: %lld", timestamp);
-	ESP_LOGI(TAG, "Got timezone: %f", timezone_offset);
+	ESP_LOGI(TAG, "Got timezone: %ld", timezone_offset);
 
 	if(timestamp == 0) return;
 
@@ -237,15 +240,12 @@ void Android::handleTime(const std::vector<std::string>& split_line){
 	auto ts = static_cast<Time*>(Services.get(Service::Time));
 	ts->setTime((time_t) time);
 
-	// If we receive time from the device, we'll consider this the "connected" event. Might happen
-	// multiple times during session, but since we're already connected, those onConnect calls will
-	// be discarded. Main thing is, we're sure we'll get the time first thing when connected
 	onConnect();
 }
 
 // callIncomingStop;<callID>
 void Android::handleCallIncomingStop(const std::vector<std::string>& split_line){
-	uint32_t id = std::stoll(split_line[1]);
+	const uint32_t id = std::stoull(split_line[1]);
 
 	if(currentCallId != id || currentRingingState == false) return; // ignore
 
@@ -263,36 +263,86 @@ void Android::handleFindPhoneStopAck(const std::vector<std::string>& split_line)
 
 void Android::requestTime(){
 	if(!connected) return;
-	uart.printf("time\n"); // TODO: handle after app implementation
+	uart.printf("time\n");
 }
 
 std::vector<std::string> Android::splitProtocolMsg(const std::string& s, char delim){
     std::vector<std::string> out;
 
-    size_t start = 0;
+    size_t i = 0;
+    const size_t n = s.size();
 
-    while(true){
-        size_t pos = s.find(delim, start);
-
-        if(pos == std::string::npos){
-            out.emplace_back(s.substr(start));
-            break;
+    while(i < n){
+        if(s[i] == delim){
+            ++i;
+            continue;
         }
 
-        out.emplace_back(s.substr(start, pos - start));
-        start = pos + 1;
+        size_t numStart = i;
+        int value = 0;
+        bool isNumber = false;
+
+        while(i < n && s[i] >= '0' && s[i] <= '9'){
+            isNumber = true;
+            value = value * 10 + (s[i] - '0');
+            ++i;
+        }
+
+        if(isNumber && i < n && s[i] == ':'){
+            ++i; 
+
+            out.emplace_back(s.substr(i, value));
+            i += value;
+
+            if(i < n && s[i] == delim){
+                ++i;
+            }
+        }else{
+            i = numStart;
+            size_t start = i;
+
+            while(i < n && s[i] != delim){
+                ++i;
+            }
+
+            out.emplace_back(s.substr(start, i - start));
+
+            if(i < n && s[i] == delim){
+                ++i;
+            }
+        }
     }
 
     return out;
 }
 
+
 void Android::notifList(){
 	if(!connected) return;
-	uart.printf("notifList\n"); // TODO: handle after app implementation
+	uart.printf("notifList\n"); 
 }
 
 void Android::callReject(uint32_t uid){
 	if(!connected) return;
 	uart.printf("callReject;%d\n", uid);
-	// TODO: handle after app implementation
+}
+
+Notif::Category Android::mapNotifCategories(uint32_t category_val){
+	static const std::unordered_map<uint32_t, Notif::Category> categoryMap = {
+			{ 0, Notif::Category::Other },
+			{ 1, Notif::Category::Social },
+			{ 2, Notif::Category::Social },
+			{ 3, Notif::Category::Schedule },
+			{ 4, Notif::Category::MissedCall },
+			{ 5, Notif::Category::News },
+			{ 6, Notif::Category::Location },
+			{ 7, Notif::Category::Entertainment }
+	};
+
+	if(!categoryMap.contains(category_val)){
+		ESP_LOGW(TAG, "Unknown category value from app: %ld, defaulting to Other", category_val);
+		return Notif::Category::Other;
+	}
+	
+	return categoryMap.at(category_val);
 }
