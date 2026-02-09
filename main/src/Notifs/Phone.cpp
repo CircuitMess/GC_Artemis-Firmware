@@ -1,7 +1,7 @@
 #include "Phone.h"
 #include "Util/Events.h"
 
-Phone::Phone(BLE::Server* server, BLE::Client* client) : ancs(client), cTime(client), bangle(server){
+Phone::Phone(BLE::Server* server, BLE::Client* client) : ancs(client), cTime(client), android(server){
 	auto reg = [this](NotifSource* src){
 		src->setOnConnect([this, src](){ onConnect(src); });
 		src->setOnDisconnect([this, src](){ onDisconnect(src); });
@@ -11,7 +11,7 @@ Phone::Phone(BLE::Server* server, BLE::Client* client) : ancs(client), cTime(cli
 	};
 
 	reg(&ancs);
-	reg(&bangle);
+	reg(&android);
 }
 
 bool Phone::isConnected(){
@@ -20,7 +20,7 @@ bool Phone::isConnected(){
 
 Phone::PhoneType Phone::getPhoneType(){
 	if(current == &ancs) return PhoneType::IPhone;
-	else if(current == &bangle) return PhoneType::Android;
+	else if(current == &android) return PhoneType::Android;
 	else return PhoneType::None;
 }
 
@@ -111,11 +111,11 @@ void Phone::onRemove(uint32_t id){
 }
 
 void Phone::findPhoneStart(){
-	if(current != &bangle) return;
-	bangle.findPhoneStart();
+	if(current != &android) return;
+	android.findPhoneStart();
 }
 
 void Phone::findPhoneStop(){
-	if(current != &bangle) return;
-	bangle.findPhoneStop();
+	if(current != &android) return;
+	android.findPhoneStop();
 }

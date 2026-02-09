@@ -4,7 +4,7 @@
 #include "Periph/Bluetooth.h"
 #include "BLE/GAP.h"
 #include "BLE/Server.h"
-#include "Notifs/Bangle.h"
+#include "Notifs/Android.h"
 
 void init(){
 	gpio_config_t io_conf = {
@@ -28,42 +28,40 @@ void init(){
 	// esp_log_level_set("BLE::Server::Service", ESP_LOG_VERBOSE);
 	// esp_log_level_set("BLE::Server::Char", ESP_LOG_VERBOSE);
 	// esp_log_level_set("BLE::Server::CharInfo", ESP_LOG_VERBOSE);
-	esp_log_level_set("Bangle", ESP_LOG_VERBOSE);
+	esp_log_level_set("Android", ESP_LOG_VERBOSE);
 
 	auto bt = new Bluetooth();
 	auto gap = new BLE::GAP();
 	auto server = new BLE::Server(gap);
 
-	auto bangle = new Bangle(server);
+	auto android = new Android(server);
 
-	bangle->setOnConnect([](){
-		printf("Gadgetbridge connected\n");
+	android->setOnConnect([](){
+		printf("Android device connected\n");
 	});
 
-	bangle->setOnDisconnect([](){
-		printf("Gadgetbridge disconnected\n");
+	android->setOnDisconnect([](){
+		printf("Android device disconnected\n");
 	});
 
 	auto print = [](const Notif& notif){
 		printf("App ID: %s\n", notif.appID.c_str());
 		printf("Title: %s\n", notif.title.c_str());
-		printf("Subtitle: %s\n", notif.subtitle.c_str());
 		printf("Message: %s\n", notif.message.c_str());
-		printf("Pos: %s / Neg: %s\n", notif.label.pos.c_str(), notif.label.neg.c_str());
 		printf("\n");
 	};
 
-	bangle->setOnNotifAdd([print](Notif notif){
+	android->setOnNotifAdd([print](Notif notif){
 		printf("Add 0x%lx\n", notif.uid);
 		print(notif);
 	});
 
-	bangle->setOnNotifModify([print](Notif notif){
+	android->setOnNotifModify([print](Notif notif){
 		printf("Modify 0x%lx\n", notif.uid);
 		print(notif);
 	});
 
-	bangle->setOnNotifRemove([](uint32_t uid){
+	android->setOnNotifRemove([](uint32_t uid){
 		printf("Removing 0x%lx\n", uid);
 	});
 

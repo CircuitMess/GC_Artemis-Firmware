@@ -1,13 +1,12 @@
 #ifndef CLOCKSTAR_FIRMWARE_PHONE_H
 #define CLOCKSTAR_FIRMWARE_PHONE_H
 
-
-#include <cstdint>
-#include "Bangle.h"
+#include "Android.h"
 #include "ANCS/Client.h"
 #include "CurrentTime.h"
 #include "NotifSource.h"
 #include <deque>
+#include <cstdint>
 
 class Phone {
 public:
@@ -44,7 +43,7 @@ public:
 private:
 	ANCS::Client ancs;
 	CurrentTime cTime;
-	Bangle bangle;
+	Android android;
 
 	NotifSource* current = nullptr;
 

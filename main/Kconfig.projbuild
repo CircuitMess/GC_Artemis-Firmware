@@ -11,8 +11,8 @@ choice CM_BUILD_EXAMPLE
         bool "IMU and sensor fusion example"
     config CM_EXAMPLE_ANCS
         bool "ANCS example"
-    config CM_EXAMPLE_BANGLE
-        bool "BangleJS protocol example"
+    config CM_EXAMPLE_ANDROID
+        bool "ANDROID protocol example"
     config CM_EXAMPLE_GATT_SERVER
         bool "GATT server example"
     config CM_EXAMPLE_GYRO
