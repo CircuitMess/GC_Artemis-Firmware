@@ -145,16 +145,15 @@ void Android::handleCommand(const std::string& line){
 // hello;<protocolVersion>
 void Android::handleHello(const std::vector<std::string>& split_line){
 	auto protocolVersion = split_line[1];
-	uart.printf("version;%s;%s\n", protocolVersion, FirmwareVersion); // response, give protocol version even if missmatch
-	if(protocolVersion != ProtocolVersion) {
+	uart.printf("version;%s;%s\n", protocolVersion.c_str(), FirmwareVersion); // response, give protocol version even if missmatch
+	if(protocolVersion != ProtocolVersion){
 		ESP_LOGW(TAG, "Connection failed! Protocol version mismatch: version %s, expected %s", protocolVersion.c_str(), ProtocolVersion);
-	}
-	else{
+	}else{
 		ESP_LOGI(TAG, "Connected! Hello received, protocol version: %s", protocolVersion.c_str());
 		onConnect();
 	}
-	}
-	
+}
+
 
 // notifAdd;<notifID>;<title>;<content>;<appID>;<sender>;<category>;<labelPos>;<labelNeg>
 void Android::handleNotifAdd(const std::vector<std::string>& split_line){
@@ -199,14 +198,14 @@ void Android::handleNotifModify(const std::vector<std::string>& split_line){
 
 // callIncoming;<callID>;<callerName>;<callerNumber>
 void Android::handleCallIncoming(const std::vector<std::string>& split_line){
-	const uint32_t id =  std::stoull(split_line[1]);
+	const uint32_t id = std::stoull(split_line[1]);
 	auto name = split_line[2];
 	auto number = split_line[3];
 
 	if(currentRingingState) return;
-	
+
 	currentRingingState = true;
-	
+
 	Notif notif = {
 			.uid = (uint32_t) id,
 			.title = name + " (" + number + ")", // name(number)
@@ -256,59 +255,59 @@ void Android::requestTime(){
 }
 
 std::vector<std::string> Android::splitProtocolMsg(const std::string& s, char delim){
-    std::vector<std::string> out;
+	std::vector<std::string> out;
 
-    size_t i = 0;
-    const size_t n = s.size();
+	size_t i = 0;
+	const size_t n = s.size();
 
-    while(i < n){
-        if(s[i] == delim){
-            ++i;
-            continue;
-        }
+	while(i < n){
+		if(s[i] == delim){
+			++i;
+			continue;
+		}
 
-        size_t numStart = i;
-        int value = 0;
-        bool isNumber = false;
+		size_t numStart = i;
+		int value = 0;
+		bool isNumber = false;
 
-        while(i < n && s[i] >= '0' && s[i] <= '9'){
-            isNumber = true;
-            value = value * 10 + (s[i] - '0');
-            ++i;
-        }
+		while(i < n && s[i] >= '0' && s[i] <= '9'){
+			isNumber = true;
+			value = value * 10 + (s[i] - '0');
+			++i;
+		}
 
-        if(isNumber && i < n && s[i] == ':'){
-            ++i; 
+		if(isNumber && i < n && s[i] == ':'){
+			++i;
 
-            out.emplace_back(s.substr(i, value));
-            i += value;
+			out.emplace_back(s.substr(i, value));
+			i += value;
 
-            if(i < n && s[i] == delim){
-                ++i;
-            }
-        }else{
-            i = numStart;
-            size_t start = i;
+			if(i < n && s[i] == delim){
+				++i;
+			}
+		}else{
+			i = numStart;
+			size_t start = i;
 
-            while(i < n && s[i] != delim){
-                ++i;
-            }
+			while(i < n && s[i] != delim){
+				++i;
+			}
 
-            out.emplace_back(s.substr(start, i - start));
+			out.emplace_back(s.substr(start, i - start));
 
-            if(i < n && s[i] == delim){
-                ++i;
-            }
-        }
-    }
+			if(i < n && s[i] == delim){
+				++i;
+			}
+		}
+	}
 
-    return out;
+	return out;
 }
 
 
 void Android::notifList(){
 	if(!connected) return;
-	uart.printf("notifList\n"); 
+	uart.printf("notifList\n");
 }
 
 void Android::callReject(uint32_t uid){
@@ -332,6 +331,6 @@ Notif::Category Android::mapNotifCategories(uint32_t category_val){
 		ESP_LOGW(TAG, "Unknown category value from app: %ld, defaulting to Other", category_val);
 		return Notif::Category::Other;
 	}
-	
+
 	return categoryMap.at(category_val);
 }
