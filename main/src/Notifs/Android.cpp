@@ -158,7 +158,7 @@ void Android::handleHello(const std::vector<std::string>& split_line){
 // notifAdd;<notifID>;<title>;<content>;<appID>;<sender>;<category>;<labelPos>;<labelNeg>
 void Android::handleNotifAdd(const std::vector<std::string>& split_line){
 	const uint32_t id = std::stoull(split_line[1]);
-	const uint32_t cat_val = split_line.size() > 6 ? std::stoull(split_line[6]) : 0;
+	const uint32_t cat_val = !split_line[6].empty() ? std::stoull(split_line[6]) : 0;
 
 	const Notif notif = {
 			.uid = id,
@@ -182,7 +182,7 @@ void Android::handleNotifDel(const std::vector<std::string>& split_line){
 // notifModify;<notifID>;<title>;<content>;<appID>;<sender>;<category>;<labelPos>;<labelNeg>
 void Android::handleNotifModify(const std::vector<std::string>& split_line){
 	const uint32_t id = std::stoull(split_line[1]);
-	const uint32_t cat_val = split_line.size() > 6 ? std::stoull(split_line[6]) : 0;
+	const uint32_t cat_val = !split_line[6].empty() ? std::stoull(split_line[6]) : 0;
 
 	const Notif notif = {
 			.uid = id,
@@ -230,8 +230,6 @@ void Android::handleTime(const std::vector<std::string>& split_line){
 
 	auto ts = static_cast<Time*>(Services.get(Service::Time));
 	ts->setTime((time_t) time);
-
-	onConnect();
 }
 
 // callIncomingStop;<callID>
@@ -301,6 +299,10 @@ std::vector<std::string> Android::splitProtocolMsg(const std::string& s, char de
 			}
 		}
 	}
+
+	if (!s.empty() && s.back() == delim){
+        out.emplace_back("");
+    }
 
 	return out;
 }
