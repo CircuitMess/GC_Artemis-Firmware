@@ -49,12 +49,12 @@ private:
 	bool currentRingingState = false;
 
 	void requestTime();
-	std::vector<std::string> splitProtocolMsg(const std::string& s, char delim = ';');
+	static std::vector<std::string> splitProtocolMsg(const std::string& s, char delim = ';');
 
 	void notifList();
 	void callReject(uint32_t uid);
 
-	Notif::Category mapNotifCategories(uint32_t category_val);
+	static Notif::Category mapNotifCategories(uint32_t category_val);
 };
 
 #endif //ARTEMIS_FIRMWARE_ANDROID_H

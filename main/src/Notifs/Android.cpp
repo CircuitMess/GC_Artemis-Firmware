@@ -70,8 +70,8 @@ void Android::loop(){
 }
 
 void Android::handleCommand(const std::string& line){
-	auto split_line = splitProtocolMsg(line);
-	auto command = split_line[0];
+	const auto split_line = splitProtocolMsg(line);
+	const auto& command = split_line[0];
 
 	if(command == "hello"){
 		if(split_line.size() < 2){
@@ -144,7 +144,7 @@ void Android::handleCommand(const std::string& line){
 
 // hello;<protocolVersion>
 void Android::handleHello(const std::vector<std::string>& split_line){
-	auto protocolVersion = split_line[1];
+	const auto&  protocolVersion = split_line[1];
 	uart.printf("version;%s;%s\n", protocolVersion.c_str(), FirmwareVersion); // response, give protocol version even if missmatch
 	if(protocolVersion != ProtocolVersion){
 		ESP_LOGW(TAG, "Connection failed! Protocol version mismatch: version %s, expected %s", protocolVersion.c_str(), ProtocolVersion);
@@ -158,9 +158,9 @@ void Android::handleHello(const std::vector<std::string>& split_line){
 // notifAdd;<notifID>;<title>;<content>;<appID>;<sender>;<category>;<labelPos>;<labelNeg>
 void Android::handleNotifAdd(const std::vector<std::string>& split_line){
 	const uint32_t id = std::stoull(split_line[1]);
-	const uint32_t cat_val = std::stoull(split_line[6]);
+	const uint32_t cat_val = split_line.size() > 6 ? std::stoull(split_line[6]) : 0;
 
-	Notif notif = {
+	const Notif notif = {
 			.uid = id,
 			.title = split_line[2],
 			.message = split_line[3],
@@ -182,9 +182,9 @@ void Android::handleNotifDel(const std::vector<std::string>& split_line){
 // notifModify;<notifID>;<title>;<content>;<appID>;<sender>;<category>;<labelPos>;<labelNeg>
 void Android::handleNotifModify(const std::vector<std::string>& split_line){
 	const uint32_t id = std::stoull(split_line[1]);
-	const uint32_t cat_val = std::stoull(split_line[6]);
+	const uint32_t cat_val = split_line.size() > 6 ? std::stoull(split_line[6]) : 0;
 
-	Notif notif = {
+	const Notif notif = {
 			.uid = id,
 			.title = split_line[2],
 			.message = split_line[3],
@@ -199,14 +199,14 @@ void Android::handleNotifModify(const std::vector<std::string>& split_line){
 // callIncoming;<callID>;<callerName>;<callerNumber>
 void Android::handleCallIncoming(const std::vector<std::string>& split_line){
 	const uint32_t id = std::stoull(split_line[1]);
-	auto name = split_line[2];
-	auto number = split_line[3];
+	const auto& name = split_line[2];
+	const auto& number = split_line[3];
 
 	if(currentRingingState) return;
 
 	currentRingingState = true;
 
-	Notif notif = {
+	const Notif notif = {
 			.uid = (uint32_t) id,
 			.title = name + " (" + number + ")", // name(number)
 			.message = "Incoming call",
@@ -219,8 +219,8 @@ void Android::handleCallIncoming(const std::vector<std::string>& split_line){
 
 //time;<timestamp>;<timezoneOffset>
 void Android::handleTime(const std::vector<std::string>& split_line){
-	uint64_t timestamp = std::stoll(split_line[1]);
-	uint32_t timezone_offset = std::stoul(split_line[2]);
+	const uint64_t timestamp = std::stoll(split_line[1]);
+	const uint32_t timezone_offset = std::stoul(split_line[2]);
 	ESP_LOGI(TAG, "Got UNIX time: %lld", timestamp);
 	ESP_LOGI(TAG, "Got timezone: %ld", timezone_offset);
 
@@ -262,6 +262,7 @@ std::vector<std::string> Android::splitProtocolMsg(const std::string& s, char de
 
 	while(i < n){
 		if(s[i] == delim){
+			out.emplace_back("");
 			++i;
 			continue;
 		}
@@ -315,7 +316,7 @@ void Android::callReject(uint32_t uid){
 	uart.printf("callReject;%d\n", uid);
 }
 
-Notif::Category Android::mapNotifCategories(uint32_t category_val){
+Notif::Category Android::mapNotifCategories(const uint32_t category_val){
 	static const std::unordered_map<uint32_t, Notif::Category> categoryMap = {
 			{ 0, Notif::Category::Other },
 			{ 1, Notif::Category::Social },
