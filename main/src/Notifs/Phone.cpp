@@ -1,5 +1,7 @@
 #include "Phone.h"
 #include "Util/Events.h"
+#include <functional>
+#include <esp_log.h>
 
 Phone::Phone(BLE::Server* server, BLE::Client* client) : ancs(client), cTime(client), android(server){
 	auto reg = [this](NotifSource* src){
@@ -12,6 +14,15 @@ Phone::Phone(BLE::Server* server, BLE::Client* client) : ancs(client), cTime(cli
 
 	reg(&ancs);
 	reg(&android);
+
+	// media registration (only Android currently implements MediaSource)
+	auto mreg = [this](MediaSource* src){
+		src->setOnConnect([this, src](){ onMediaConnect(src); });
+		src->setOnDisconnect([this, src](){ onMediaDisconnect(src); });
+		src->setOnMediaUpdate([this](Media media){ onMediaUpdate(std::move(media)); });
+	};
+
+	mreg(&android);
 }
 
 bool Phone::isConnected(){
@@ -42,6 +53,11 @@ uint32_t Phone::getNotifsCount() const{
 	return notifs.size();
 }
 
+Media Phone::getMedia(uint32_t uid){
+	if(currentMedia && currentMedia->uid == uid) return *currentMedia;
+	return {};
+}
+
 void Phone::doPos(uint32_t id){
 	if(current == nullptr || findNotif(id) == notifs.end()) return;
 	current->actionPos(id);
@@ -50,6 +66,26 @@ void Phone::doPos(uint32_t id){
 void Phone::doNeg(uint32_t id){
 	if(current == nullptr || findNotif(id) == notifs.end()) return;
 	current->actionNeg(id);
+}
+
+void Phone::doMediaPlay(){
+	if(mediaCurrent == nullptr) return;
+	mediaCurrent->mediaPlay();
+}
+
+void Phone::doMediaPause(){
+	if(mediaCurrent == nullptr) return;
+	mediaCurrent->mediaPause();
+}
+
+void Phone::doMediaNext(){
+	if(mediaCurrent == nullptr) return;
+	mediaCurrent->mediaNext();
+}
+
+void Phone::doMediaPrev(){
+	if(mediaCurrent == nullptr) return;
+	mediaCurrent->mediaPrev();
 }
 
 void Phone::onConnect(NotifSource* src){
@@ -70,6 +106,51 @@ void Phone::onDisconnect(NotifSource* src){
 	if(!notifs.empty()){
 		notifs.clear();
 		Events::post(Facility::Phone, Event { .action = Event::Cleared, .data = { .phoneType = getPhoneType() } });
+	}
+}
+
+void Phone::onMediaConnect(MediaSource* src){
+	mediaCurrent = src;
+	Events::post(Facility::Phone, Event { .action = Event::MediaConnected, .data = { .phoneType = getPhoneType() } });
+
+	if(currentMedia){
+		currentMedia.reset();
+		Events::post(Facility::Phone, Event { .action = Event::MediaCleared, .data = { .phoneType = getPhoneType() } });
+	}
+}
+
+void Phone::onMediaDisconnect(MediaSource* src){
+	if(mediaCurrent != src) return;
+	Events::post(Facility::Phone, Event { .action = Event::MediaDisconnected, .data = { .phoneType = getPhoneType() } });
+	mediaCurrent = nullptr;
+
+	if(currentMedia){
+		currentMedia.reset();
+		Events::post(Facility::Phone, Event { .action = Event::MediaCleared, .data = { .phoneType = getPhoneType() } });
+	}
+}
+
+void Phone::onMediaUpdate(Media media){
+	// empty info -> clear all
+	if(media.title.empty() && media.artist.empty() && media.album.empty() && media.appID.empty()){
+		if(currentMedia){
+			currentMedia.reset();
+			Events::post(Facility::Phone, Event { .action = Event::MediaCleared, .data = { .phoneType = getPhoneType() } });
+		}
+		return;
+	}
+
+	if(!currentMedia){
+		currentMedia = media;
+		Events::post(Facility::Phone, Event { .action = Event::MediaAdded, .data = { .addChgRem = { .id = media.uid } } });
+	}else{
+		if(currentMedia->uid != media.uid){
+			currentMedia = media;
+			Events::post(Facility::Phone, Event { .action = Event::MediaAdded, .data = { .addChgRem = { .id = media.uid } } });
+		}else{
+			currentMedia = media;
+			Events::post(Facility::Phone, Event { .action = Event::MediaChanged, .data = { .addChgRem = { .id = media.uid } } });
+		}
 	}
 }
 

@@ -20,7 +20,7 @@ Android::~Android(){
 void Android::onConnect(){
 	if(connected) return;
 	connected = true;
-	connect();
+	NotifSource::connect();
 	requestTime(); // request time after connection
 }
 
@@ -28,7 +28,7 @@ void Android::onDisconnect(){
 	if(!connected) return;
 	connected = false;
 	currentRingingState = false;
-	disconnect();
+	NotifSource::disconnect();
 }
 
 // notifPos;<notifID>
@@ -135,6 +135,22 @@ void Android::handleCommand(const std::string& line){
 		return;
 	}else if(command == "findPhoneStopAck"){
 		handleFindPhoneStopAck(split_line);
+		return;
+	}else if(command == "mediaState"){
+		if(split_line.size() < 2){
+			ESP_LOGW(TAG, "Invalid mediaState command: %s", line.c_str());
+			return;
+		}
+
+		handleMediaState(split_line);
+		return;
+	}else if(command == "mediaInfo"){
+		if(split_line.size() < 2){
+			ESP_LOGW(TAG, "Invalid mediaInfo command: %s", line.c_str());
+			return;
+		}
+
+		handleMediaInfo(split_line);
 		return;
 	}else{
 		ESP_LOGW(TAG, "Unknown command: %s", line.c_str());
@@ -245,6 +261,65 @@ void Android::handleCallIncomingStop(const std::vector<std::string>& split_line)
 // findPhoneStopAck
 void Android::handleFindPhoneStopAck(const std::vector<std::string>& split_line){
 	ESP_LOGI(TAG, "Find phone stopped ack received"); // one-minute ringing timeout from app
+}
+
+// mediaState;<state>
+void Android::handleMediaState(const std::vector<std::string>& split_line){
+	const uint8_t state_val = std::stoul(split_line[1]);
+	
+	if(state_val == 0) currentMedia.state = MediaState::Stopped;
+	else if(state_val == 1) currentMedia.state = MediaState::Playing;
+	else if(state_val == 2) currentMedia.state = MediaState::Paused;
+	else ESP_LOGW(TAG, "Unknown media state value from app: %d, defaulting to Stopped", state_val);
+	
+	ESP_LOGI(TAG, "Media state changed to: %d", state_val);
+	printf("Media state changed to: %d\n", (int)currentMedia.state);
+	mediaUpdate(currentMedia);
+}
+
+// mediaInfo;<title>;<artist>;<album>;<appID>
+void Android::handleMediaInfo(const std::vector<std::string>& split_line){
+	const auto& title = split_line[1];
+	const auto& artist = split_line[2];
+	const auto& album = split_line[3];
+	const auto& appID = split_line[4];
+	
+	currentMedia = {
+		.uid = currentMedia.uid, // keep uid, only update info and state
+		.state = currentMedia.state,
+		.title = title,
+		.artist = artist,
+		.album = album,
+		.appID = appID
+	};
+	
+	ESP_LOGI(TAG, "Media info: title=%s, artist=%s, album=%s, appID=%s", title.c_str(), artist.c_str(), album.c_str(), appID.c_str());
+	printf("Media info received: title=%s, artist=%s, album=%s, appID=%s\n", currentMedia.title.c_str(), currentMedia.artist.c_str(), currentMedia.album.c_str(), currentMedia.appID.c_str());
+	mediaUpdate(currentMedia);
+}
+
+// mediaPlay
+void Android::mediaPlay(){
+	if(!connected) return;
+	uart.printf("mediaPlay\n");
+}
+
+// mediaPause
+void Android::mediaPause(){
+	if(!connected) return;
+	uart.printf("mediaPause\n");
+}
+
+// mediaNext
+void Android::mediaNext(){
+	if(!connected) return;
+	uart.printf("mediaNext\n");
+}
+
+// mediaPrev
+void Android::mediaPrev(){
+	if(!connected) return;
+	uart.printf("mediaPrev\n");
 }
 
 void Android::requestTime(){
