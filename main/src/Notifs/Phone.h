@@ -68,7 +68,7 @@ private:
 	void onMediaConnect(MediaSource* src);
 	void onMediaDisconnect(MediaSource* src);
 
-	void onMediaUpdate(Media media);
+	void onMediaUpdate(const Media& media);
 
 	void onAdd(Notif notif);
 	void onModify(Notif notif);

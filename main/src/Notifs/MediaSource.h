@@ -25,7 +25,7 @@ public:
 
 protected:
 
-	void mediaUpdate(Media media);
+	void mediaUpdate(const Media& media);
 
 private:
 

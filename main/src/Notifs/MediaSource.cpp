@@ -1,6 +1,6 @@
 #include "MediaSource.h"
 
-void MediaSource::mediaUpdate(Media media) {
+void MediaSource::mediaUpdate(const Media& media) {
 	if(onMediaUpdate) onMediaUpdate(media);
 }
 

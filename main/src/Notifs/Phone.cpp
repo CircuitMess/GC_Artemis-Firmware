@@ -130,7 +130,7 @@ void Phone::onMediaDisconnect(MediaSource* src){
 	}
 }
 
-void Phone::onMediaUpdate(Media media){
+void Phone::onMediaUpdate(const Media& media){
 	// empty info -> clear all
 	if(media.title.empty() && media.artist.empty() && media.album.empty() && media.appID.empty()){
 		if(currentMedia){
