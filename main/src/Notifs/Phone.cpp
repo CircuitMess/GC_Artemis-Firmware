@@ -131,8 +131,8 @@ void Phone::onMediaDisconnect(MediaSource* src){
 }
 
 void Phone::onMediaUpdate(const Media& media){
-	// empty info -> clear all
-	if(media.title.empty() && media.artist.empty() && media.album.empty() && media.appID.empty()){
+	// empty media title -> clear all
+	if(media.title.empty()){
 		if(currentMedia){
 			currentMedia.reset();
 			Events::post(Facility::Phone, Event { .action = Event::MediaCleared, .data = { .phoneType = getPhoneType() } });
@@ -145,9 +145,11 @@ void Phone::onMediaUpdate(const Media& media){
 		Events::post(Facility::Phone, Event { .action = Event::MediaAdded, .data = { .addChgRem = { .id = media.uid } } });
 	}else{
 		if(currentMedia->uid != media.uid){
+			// Different media (new track)
 			currentMedia = media;
 			Events::post(Facility::Phone, Event { .action = Event::MediaAdded, .data = { .addChgRem = { .id = media.uid } } });
 		}else{
+			// Same media, just updated (state changed)
 			currentMedia = media;
 			Events::post(Facility::Phone, Event { .action = Event::MediaChanged, .data = { .addChgRem = { .id = media.uid } } });
 		}

@@ -58,6 +58,7 @@ private:
 
 	bool currentRingingState = false;
 	Media currentMedia;
+	uint32_t mediaIdCounter = 0;
 
 	void requestTime();
 	static std::vector<std::string> splitProtocolMsg(const std::string& s, char delim = ';');

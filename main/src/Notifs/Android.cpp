@@ -284,8 +284,11 @@ void Android::handleMediaInfo(const std::vector<std::string>& split_line){
 	const auto& album = split_line[3];
 	const auto& appID = split_line[4];
 	
+	// Check if this is different media (different track)
+	bool isDifferentMedia = (currentMedia.title != title || currentMedia.artist != artist || currentMedia.album != album || currentMedia.appID != appID);
+	
 	currentMedia = {
-		.uid = currentMedia.uid, // keep uid, only update info and state
+		.uid = isDifferentMedia ? ++mediaIdCounter : currentMedia.uid,
 		.state = currentMedia.state,
 		.title = title,
 		.artist = artist,
