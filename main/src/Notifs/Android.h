@@ -57,8 +57,6 @@ private:
 	void handleMediaInfo(const std::vector<std::string>& split_line);
 
 	bool currentRingingState = false;
-	Media currentMedia;
-	MediaState currentMediaState = MediaState::Stopped;
 	void requestTime();
 	static std::vector<std::string> splitProtocolMsg(const std::string& s, char delim = ';');
 

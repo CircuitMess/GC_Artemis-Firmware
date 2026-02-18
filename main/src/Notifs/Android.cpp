@@ -269,13 +269,15 @@ void Android::handleFindPhoneStopAck(const std::vector<std::string>& split_line)
 void Android::handleMediaState(const std::vector<std::string>& split_line){
 	const uint8_t state_val = std::stoul(split_line[1]);
 	
-	if(state_val == 0) currentMediaState = MediaState::Stopped;
-	else if(state_val == 1) currentMediaState = MediaState::Playing;
-	else if(state_val == 2) currentMediaState = MediaState::Paused;
+	MediaState media_state = MediaState::Stopped;
+
+	if(state_val == 0) media_state = MediaState::Stopped;
+	else if(state_val == 1) media_state = MediaState::Playing;
+	else if(state_val == 2) media_state = MediaState::Paused;
 	else ESP_LOGW(TAG, "Unknown media state value from app: %d, defaulting to Stopped", state_val);
 	
 	ESP_LOGI(TAG, "Media state changed to: %d", state_val);
-	mediaState(currentMediaState);
+	mediaState(media_state);
 }
 
 // mediaInfo;<title>;<artist>;<album>;<appID>
@@ -285,7 +287,7 @@ void Android::handleMediaInfo(const std::vector<std::string>& split_line){
 	const auto& album = split_line[3];
 	const auto& appID = split_line[4];
 	
-	currentMedia = {
+	const Media media = {
 		.title = title,
 		.artist = artist,
 		.album = album,
@@ -293,7 +295,7 @@ void Android::handleMediaInfo(const std::vector<std::string>& split_line){
 	};
 	
 	ESP_LOGI(TAG, "Media info: title=%s, artist=%s, album=%s, appID=%s", title.c_str(), artist.c_str(), album.c_str(), appID.c_str());
-	mediaInfo(currentMedia);
+	mediaInfo(media);
 }
 
 // mediaPlay

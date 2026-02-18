@@ -115,30 +115,24 @@ void Phone::onDisconnect(NotifSource* src){
 
 void Phone::onMediaConnect(MediaSource* src){
 	mediaCurrent = src;
-	Events::post(Facility::Phone, Event { .action = Event::MediaConnected, .data = { .phoneType = getPhoneType() } });
-
-	if(currentMedia){
-		currentMedia.reset();
-		Events::post(Facility::Phone, Event { .action = Event::MediaInfo, .data = { .phoneType = getPhoneType() } });
-	}
+	Events::post(Facility::Phone, Event { .action = Event::MediaConnected });
 }
 
 void Phone::onMediaDisconnect(MediaSource* src){
 	if(mediaCurrent != src) return;
-	Events::post(Facility::Phone, Event { .action = Event::MediaDisconnected, .data = { .phoneType = getPhoneType() } });
+	Events::post(Facility::Phone, Event { .action = Event::MediaDisconnected });
 	mediaCurrent = nullptr;
-
-	if(currentMedia){
-		currentMedia.reset();
-		Events::post(Facility::Phone, Event { .action = Event::MediaInfo, .data = { .phoneType = getPhoneType() } });
-	}
 }
 
 void Phone::onMediaInfo(const Media& media){
 	currentMedia.reset();
 
 	currentMedia = media;
-	Events::post(Facility::Phone, Event { .action = Event::MediaInfo, .data = { .phoneType = getPhoneType() } });
+	Events::post(Facility::Phone, Event { .action = Event::MediaInfo });
+}
+
+void Phone::onMediaState(MediaState state){
+	Events::post(Facility::Phone, Event { .action = Event::MediaState, .data = { .mediaState = getMediaState() } });
 }
 
 void Phone::onAdd(Notif notif){
@@ -176,10 +170,6 @@ void Phone::onRemove(uint32_t id){
 
 	notifs.erase(notif);
 	Events::post(Facility::Phone, Event { .action = Event::Removed, .data = { .addChgRem = { .id = id } } });
-}
-
-void Phone::onMediaState(MediaState state){
-	Events::post(Facility::Phone, Event { .action = Event::MediaState, .data = { .mediaState = state } });
 }
 
 void Phone::findPhoneStart(){
