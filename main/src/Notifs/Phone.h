@@ -5,8 +5,10 @@
 #include "ANCS/Client.h"
 #include "CurrentTime.h"
 #include "NotifSource.h"
+#include "MediaSource.h"
 #include <deque>
 #include <cstdint>
+#include <optional>
 
 class Phone {
 public:
@@ -16,10 +18,12 @@ public:
 	};
 
 	struct Event {
-		enum { Connected, Disconnected, Added, Changed, Removed, Cleared } action;
+		enum { Connected, Disconnected, Added, Changed, Removed, Cleared,
+		      MediaConnected, MediaDisconnected, MediaState, MediaInfo } action;
 		union {
 			struct { uint32_t id; } addChgRem;
 			PhoneType phoneType;
+			::MediaState mediaState;
 		} data;
 	};
 
@@ -37,6 +41,15 @@ public:
 	void doPos(uint32_t id);
 	void doNeg(uint32_t id);
 
+	// Media controls
+	void doMediaPlay();
+	void doMediaPause();
+	void doMediaNext();
+	void doMediaPrev();
+
+	Media getMedia();
+	MediaState getMediaState();
+
 	void findPhoneStart();
 	void findPhoneStop();
 
@@ -46,9 +59,20 @@ private:
 	Android android;
 
 	NotifSource* current = nullptr;
+	MediaSource* mediaCurrent = nullptr;
+	MediaState currentMediaState = MediaState::Stopped;
+
+	// single active media at a time
+	std::optional<Media> currentMedia;
 
 	void onConnect(NotifSource* src);
 	void onDisconnect(NotifSource* src);
+
+	void onMediaConnect(MediaSource* src);
+	void onMediaDisconnect(MediaSource* src);
+
+	void onMediaInfo(const Media& media);
+	void onMediaState(MediaState state);
 
 	void onAdd(Notif notif);
 	void onModify(Notif notif);
@@ -59,7 +83,6 @@ private:
 	std::deque<Notif> notifs;
 
 	auto findNotif(uint32_t id);
-
 };
 
 

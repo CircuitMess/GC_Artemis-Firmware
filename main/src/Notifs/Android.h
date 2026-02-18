@@ -2,14 +2,17 @@
 #define ARTEMIS_FIRMWARE_ANDROID_H
 
 #include "Notifs/NotifSource.h"
+#include "Notifs/MediaSource.h"
+#include "Notifs/Media.h"
 #include "BLE/Server.h"
 #include "BLE/UART.h"
 #include <string>
 #include <map>
+#include <unordered_map>
 #include <vector>
 
 // Communication with Android devices via BLE UART
-class Android : public NotifSource, private Threaded {
+class Android : public NotifSource, public MediaSource, private Threaded {
 public:
 	static constexpr const char* ProtocolVersion = "1";
 	static constexpr const char* FirmwareVersion = "v2.1";
@@ -19,6 +22,11 @@ public:
 
 	void actionPos(uint32_t uid) override;
 	void actionNeg(uint32_t uid) override;
+
+	void mediaPlay() override;
+	void mediaPause() override;
+	void mediaNext() override;
+	void mediaPrev() override;
 
 	void findPhoneStart();
 	void findPhoneStop();
@@ -45,9 +53,10 @@ private:
 	void handleCallIncomingStop(const std::vector<std::string>& split_line);
 	void handleTime(const std::vector<std::string>& split_line);
 	void handleFindPhoneStopAck(const std::vector<std::string>& split_line);
+	void handleMediaState(const std::vector<std::string>& split_line);
+	void handleMediaInfo(const std::vector<std::string>& split_line);
 
 	bool currentRingingState = false;
-
 	void requestTime();
 	static std::vector<std::string> splitProtocolMsg(const std::string& s, char delim = ';');
 
