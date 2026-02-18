@@ -1,7 +1,19 @@
 #include "MediaSource.h"
 
-void MediaSource::mediaUpdate(const Media& media) {
-	if(onMediaUpdate) onMediaUpdate(media);
+void MediaSource::mediaInfo(const Media& media) {
+	if(onMediaInfo) onMediaInfo(media);
+}
+
+void MediaSource::mediaState(MediaState state) {
+	if(onMediaState) onMediaState(state);
+}
+
+void MediaSource::connect() {
+	if(onConnect) onConnect();
+}
+
+void MediaSource::disconnect() {
+	if(onDisconnect) onDisconnect();
 }
 
 void MediaSource::setOnConnect(MediaSource::ConnectCB onConnect) {
@@ -12,6 +24,10 @@ void MediaSource::setOnDisconnect(MediaSource::DisconnectCB onDisconnect) {
 	MediaSource::onDisconnect = std::move(onDisconnect);
 }
 
-void MediaSource::setOnMediaUpdate(MediaSource::MediaUpdateCB onMediaUpdate) {
-	MediaSource::onMediaUpdate = std::move(onMediaUpdate);
+void MediaSource::setOnMediaInfo(MediaSource::MediaInfoCB onMediaInfo) {
+	MediaSource::onMediaInfo = std::move(onMediaInfo);
+}
+
+void MediaSource::setOnMediaState(MediaSource::MediaStateCB onMediaState) {
+	MediaSource::onMediaState = std::move(onMediaState);
 }

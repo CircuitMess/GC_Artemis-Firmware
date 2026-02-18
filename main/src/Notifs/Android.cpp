@@ -21,6 +21,7 @@ void Android::onConnect(){
 	if(connected) return;
 	connected = true;
 	NotifSource::connect();
+	MediaSource::connect();
 	requestTime(); // request time after connection
 }
 
@@ -29,6 +30,7 @@ void Android::onDisconnect(){
 	connected = false;
 	currentRingingState = false;
 	NotifSource::disconnect();
+	MediaSource::disconnect();
 }
 
 // notifPos;<notifID>
@@ -267,14 +269,13 @@ void Android::handleFindPhoneStopAck(const std::vector<std::string>& split_line)
 void Android::handleMediaState(const std::vector<std::string>& split_line){
 	const uint8_t state_val = std::stoul(split_line[1]);
 	
-	if(state_val == 0) currentMedia.state = MediaState::Stopped;
-	else if(state_val == 1) currentMedia.state = MediaState::Playing;
-	else if(state_val == 2) currentMedia.state = MediaState::Paused;
+	if(state_val == 0) currentMediaState = MediaState::Stopped;
+	else if(state_val == 1) currentMediaState = MediaState::Playing;
+	else if(state_val == 2) currentMediaState = MediaState::Paused;
 	else ESP_LOGW(TAG, "Unknown media state value from app: %d, defaulting to Stopped", state_val);
 	
 	ESP_LOGI(TAG, "Media state changed to: %d", state_val);
-	printf("Media state changed to: %d\n", (int)currentMedia.state);
-	mediaUpdate(currentMedia);
+	mediaState(currentMediaState);
 }
 
 // mediaInfo;<title>;<artist>;<album>;<appID>
@@ -284,12 +285,7 @@ void Android::handleMediaInfo(const std::vector<std::string>& split_line){
 	const auto& album = split_line[3];
 	const auto& appID = split_line[4];
 	
-	// Check if this is different media (different track)
-	bool isDifferentMedia = (currentMedia.title != title || currentMedia.artist != artist || currentMedia.album != album || currentMedia.appID != appID);
-	
 	currentMedia = {
-		.uid = isDifferentMedia ? ++mediaIdCounter : currentMedia.uid,
-		.state = currentMedia.state,
 		.title = title,
 		.artist = artist,
 		.album = album,
@@ -297,8 +293,7 @@ void Android::handleMediaInfo(const std::vector<std::string>& split_line){
 	};
 	
 	ESP_LOGI(TAG, "Media info: title=%s, artist=%s, album=%s, appID=%s", title.c_str(), artist.c_str(), album.c_str(), appID.c_str());
-	printf("Media info received: title=%s, artist=%s, album=%s, appID=%s\n", currentMedia.title.c_str(), currentMedia.artist.c_str(), currentMedia.album.c_str(), currentMedia.appID.c_str());
-	mediaUpdate(currentMedia);
+	mediaInfo(currentMedia);
 }
 
 // mediaPlay

@@ -19,10 +19,11 @@ public:
 
 	struct Event {
 		enum { Connected, Disconnected, Added, Changed, Removed, Cleared,
-		      MediaConnected, MediaDisconnected, MediaAdded, MediaChanged, MediaRemoved, MediaCleared } action;
+		      MediaConnected, MediaDisconnected, MediaState, MediaInfo } action;
 		union {
 			struct { uint32_t id; } addChgRem;
 			PhoneType phoneType;
+			::MediaState mediaState;
 		} data;
 	};
 
@@ -46,7 +47,8 @@ public:
 	void doMediaNext();
 	void doMediaPrev();
 
-	Media getMedia(uint32_t uid);
+	Media getMedia();
+	MediaState getMediaState();
 
 	void findPhoneStart();
 	void findPhoneStop();
@@ -58,6 +60,7 @@ private:
 
 	NotifSource* current = nullptr;
 	MediaSource* mediaCurrent = nullptr;
+	MediaState currentMediaState = MediaState::Stopped;
 
 	// single active media at a time
 	std::optional<Media> currentMedia;
@@ -68,7 +71,8 @@ private:
 	void onMediaConnect(MediaSource* src);
 	void onMediaDisconnect(MediaSource* src);
 
-	void onMediaUpdate(const Media& media);
+	void onMediaInfo(const Media& media);
+	void onMediaState(MediaState state);
 
 	void onAdd(Notif notif);
 	void onModify(Notif notif);

@@ -19,7 +19,8 @@ Phone::Phone(BLE::Server* server, BLE::Client* client) : ancs(client), cTime(cli
 	auto mreg = [this](MediaSource* src){
 		src->setOnConnect([this, src](){ onMediaConnect(src); });
 		src->setOnDisconnect([this, src](){ onMediaDisconnect(src); });
-		src->setOnMediaUpdate([this](Media media){ onMediaUpdate(std::move(media)); });
+		src->setOnMediaInfo([this](Media media){ onMediaInfo(std::move(media)); });
+		src->setOnMediaState([this](MediaState state){ onMediaState(state); });
 	};
 
 	mreg(&android);
@@ -53,9 +54,12 @@ uint32_t Phone::getNotifsCount() const{
 	return notifs.size();
 }
 
-Media Phone::getMedia(uint32_t uid){
-	if(currentMedia && currentMedia->uid == uid) return *currentMedia;
-	return {};
+Media Phone::getMedia(){
+	return *currentMedia;
+}
+
+MediaState Phone::getMediaState(){
+	return currentMediaState;
 }
 
 void Phone::doPos(uint32_t id){
@@ -115,7 +119,7 @@ void Phone::onMediaConnect(MediaSource* src){
 
 	if(currentMedia){
 		currentMedia.reset();
-		Events::post(Facility::Phone, Event { .action = Event::MediaCleared, .data = { .phoneType = getPhoneType() } });
+		Events::post(Facility::Phone, Event { .action = Event::MediaInfo, .data = { .phoneType = getPhoneType() } });
 	}
 }
 
@@ -126,34 +130,15 @@ void Phone::onMediaDisconnect(MediaSource* src){
 
 	if(currentMedia){
 		currentMedia.reset();
-		Events::post(Facility::Phone, Event { .action = Event::MediaCleared, .data = { .phoneType = getPhoneType() } });
+		Events::post(Facility::Phone, Event { .action = Event::MediaInfo, .data = { .phoneType = getPhoneType() } });
 	}
 }
 
-void Phone::onMediaUpdate(const Media& media){
-	// empty media title -> clear all
-	if(media.title.empty()){
-		if(currentMedia){
-			currentMedia.reset();
-			Events::post(Facility::Phone, Event { .action = Event::MediaCleared, .data = { .phoneType = getPhoneType() } });
-		}
-		return;
-	}
+void Phone::onMediaInfo(const Media& media){
+	currentMedia.reset();
 
-	if(!currentMedia){
-		currentMedia = media;
-		Events::post(Facility::Phone, Event { .action = Event::MediaAdded, .data = { .addChgRem = { .id = media.uid } } });
-	}else{
-		if(currentMedia->uid != media.uid){
-			// Different media (new track)
-			currentMedia = media;
-			Events::post(Facility::Phone, Event { .action = Event::MediaAdded, .data = { .addChgRem = { .id = media.uid } } });
-		}else{
-			// Same media, just updated (state changed)
-			currentMedia = media;
-			Events::post(Facility::Phone, Event { .action = Event::MediaChanged, .data = { .addChgRem = { .id = media.uid } } });
-		}
-	}
+	currentMedia = media;
+	Events::post(Facility::Phone, Event { .action = Event::MediaInfo, .data = { .phoneType = getPhoneType() } });
 }
 
 void Phone::onAdd(Notif notif){
@@ -191,6 +176,10 @@ void Phone::onRemove(uint32_t id){
 
 	notifs.erase(notif);
 	Events::post(Facility::Phone, Event { .action = Event::Removed, .data = { .addChgRem = { .id = id } } });
+}
+
+void Phone::onMediaState(MediaState state){
+	Events::post(Facility::Phone, Event { .action = Event::MediaState, .data = { .mediaState = state } });
 }
 
 void Phone::findPhoneStart(){

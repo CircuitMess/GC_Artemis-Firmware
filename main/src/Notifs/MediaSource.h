@@ -10,12 +10,14 @@ public:
 	using ConnectCB = std::function<void()>;
 	using DisconnectCB = std::function<void()>;
 
-	using MediaUpdateCB = std::function<void(Media media)>;
+	using MediaInfoCB = std::function<void(Media media)>;
+	using MediaStateCB = std::function<void(MediaState state)>;
 
 	void setOnConnect(ConnectCB onConnect);
 	void setOnDisconnect(DisconnectCB onDisconnect);
 
-	void setOnMediaUpdate(MediaUpdateCB onMediaUpdate);
+	void setOnMediaInfo(MediaInfoCB onMediaInfo);
+	void setOnMediaState(MediaStateCB onMediaState);
 
 	// Actions sent to the app
 	virtual void mediaPlay() = 0;
@@ -25,15 +27,19 @@ public:
 
 protected:
 
-	void mediaUpdate(const Media& media);
+	void connect();
+	void disconnect();
+
+	void mediaInfo(const Media& media);
+	void mediaState(MediaState state);
 
 private:
 
 	ConnectCB onConnect;
 	DisconnectCB onDisconnect;
 
-	MediaUpdateCB onMediaUpdate;
-
+	MediaInfoCB onMediaInfo;
+	MediaStateCB onMediaState;
 };
 
 #endif //CLOCKSTAR_FIRMWARE_MEDIASOURCE_H
