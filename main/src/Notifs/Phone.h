@@ -47,7 +47,7 @@ public:
 	void doMediaNext();
 	void doMediaPrev();
 
-	Media getMedia();
+	const MediaInfo& getMedia() const;
 	MediaState getMediaState();
 
 	void findPhoneStart();
@@ -60,10 +60,9 @@ private:
 
 	NotifSource* current = nullptr;
 	MediaSource* mediaCurrent = nullptr;
-	MediaState currentMediaState = MediaState::Stopped;
 
-	// single active media at a time
-	std::optional<Media> currentMedia;
+	MediaInfo currentMedia;
+	MediaState currentMediaState = MediaState::Stopped;
 
 	void onConnect(NotifSource* src);
 	void onDisconnect(NotifSource* src);
@@ -71,7 +70,7 @@ private:
 	void onMediaConnect(MediaSource* src);
 	void onMediaDisconnect(MediaSource* src);
 
-	void onMediaInfo(const Media& media);
+	void onMediaInfo(const MediaInfo& media);
 	void onMediaState(MediaState state);
 
 	void onAdd(Notif notif);

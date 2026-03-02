@@ -10,7 +10,7 @@ enum class MediaState : uint8_t {
 	Paused
 };
 
-struct Media {
+struct MediaInfo {
 	std::string title;
 	std::string artist;
 	std::string album;

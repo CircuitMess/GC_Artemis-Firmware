@@ -8,7 +8,7 @@ void MediaSource::disconnect() {
 	if(onDisconnect) onDisconnect();
 }
 
-void MediaSource::mediaInfo(const Media& media) {
+void MediaSource::mediaInfo(const MediaInfo& media) {
 	if(onMediaInfo) onMediaInfo(media);
 }
 

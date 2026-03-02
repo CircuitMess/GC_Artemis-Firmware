@@ -19,7 +19,7 @@ Phone::Phone(BLE::Server* server, BLE::Client* client) : ancs(client), cTime(cli
 	auto mreg = [this](MediaSource* src){
 		src->setOnConnect([this, src](){ onMediaConnect(src); });
 		src->setOnDisconnect([this, src](){ onMediaDisconnect(src); });
-		src->setOnMediaInfo([this](Media media){ onMediaInfo(std::move(media)); });
+		src->setOnMediaInfo([this](const MediaInfo& media){ onMediaInfo(media); });
 		src->setOnMediaState([this](MediaState state){ onMediaState(state); });
 	};
 
@@ -54,8 +54,8 @@ uint32_t Phone::getNotifsCount() const{
 	return notifs.size();
 }
 
-Media Phone::getMedia(){
-	return *currentMedia;
+const MediaInfo& Phone::getMedia() const{
+	return currentMedia;
 }
 
 MediaState Phone::getMediaState(){
@@ -100,6 +100,9 @@ void Phone::onConnect(NotifSource* src){
 		notifs.clear();
 		Events::post(Facility::Phone, Event { .action = Event::Cleared, .data = { .phoneType = getPhoneType() } });
 	}
+
+	currentMediaState = MediaState::Stopped;
+	currentMedia = {};
 }
 
 void Phone::onDisconnect(NotifSource* src){
@@ -111,6 +114,9 @@ void Phone::onDisconnect(NotifSource* src){
 		notifs.clear();
 		Events::post(Facility::Phone, Event { .action = Event::Cleared, .data = { .phoneType = getPhoneType() } });
 	}
+
+	currentMediaState = MediaState::Stopped;
+	currentMedia = {};
 }
 
 void Phone::onMediaConnect(MediaSource* src){
@@ -124,14 +130,13 @@ void Phone::onMediaDisconnect(MediaSource* src){
 	mediaCurrent = nullptr;
 }
 
-void Phone::onMediaInfo(const Media& media){
-	currentMedia.reset();
-
+void Phone::onMediaInfo(const MediaInfo& media){
 	currentMedia = media;
 	Events::post(Facility::Phone, Event { .action = Event::MediaInfo });
 }
 
 void Phone::onMediaState(MediaState state){
+	currentMediaState = state;
 	Events::post(Facility::Phone, Event { .action = Event::MediaState, .data = { .mediaState = getMediaState() } });
 }
 

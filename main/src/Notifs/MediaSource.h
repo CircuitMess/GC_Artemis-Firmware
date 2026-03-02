@@ -1,7 +1,7 @@
 #ifndef CLOCKSTAR_FIRMWARE_MEDIASOURCE_H
 #define CLOCKSTAR_FIRMWARE_MEDIASOURCE_H
 
-#include "Media.h"
+#include "MediaInfo.h"
 #include <functional>
 
 class MediaSource {
@@ -10,7 +10,7 @@ public:
 	using ConnectCB = std::function<void()>;
 	using DisconnectCB = std::function<void()>;
 
-	using MediaInfoCB = std::function<void(Media media)>;
+	using MediaInfoCB = std::function<void(const MediaInfo& media)>;
 	using MediaStateCB = std::function<void(MediaState state)>;
 
 	void setOnConnect(ConnectCB onConnect);
@@ -30,7 +30,7 @@ protected:
 	void connect();
 	void disconnect();
 
-	void mediaInfo(const Media& media);
+	void mediaInfo(const MediaInfo& media);
 	void mediaState(MediaState state);
 
 private:

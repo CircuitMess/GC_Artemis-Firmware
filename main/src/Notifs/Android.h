@@ -3,7 +3,7 @@
 
 #include "Notifs/NotifSource.h"
 #include "Notifs/MediaSource.h"
-#include "Notifs/Media.h"
+#include "Notifs/MediaInfo.h"
 #include "BLE/Server.h"
 #include "BLE/UART.h"
 #include <string>

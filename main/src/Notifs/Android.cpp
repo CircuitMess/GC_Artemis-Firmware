@@ -287,7 +287,7 @@ void Android::handleMediaInfo(const std::vector<std::string>& split_line){
 	const auto& album = split_line[3];
 	const auto& appID = split_line[4];
 	
-	const Media media = {
+	const MediaInfo media = {
 		.title = title,
 		.artist = artist,
 		.album = album,
