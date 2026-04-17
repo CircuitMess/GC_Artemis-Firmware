@@ -39,7 +39,7 @@ void Display::setupPanel(){
 	auto& settings = *(Settings*) Services.get(Service::Settings);
 
 	uint8_t rotation;
-	if(revision == 2){
+	if(revision == 2 || revision == 3){
 		rotation = settings.get().screenRotate ? 1 : 3;
 	}else{
 		rotation = settings.get().screenRotate ? 3 : 1;
@@ -49,12 +49,12 @@ void Display::setupPanel(){
 			.pin_cs = -1,
 			.pin_rst = (int16_t) Pins::get(Pin::TftRst),
 			.pin_busy = -1,
-			.memory_width = 132,
-			.memory_height = 132,
+			.memory_width = (uint16_t) (revision == 3 ? 128 : 132),
+			.memory_height = (uint16_t) (revision == 3 ? 128 : 132),
 			.panel_width = 128,
 			.panel_height = 128,
-			.offset_x = 2,
-			.offset_y = 1,
+			.offset_x = (uint16_t) (revision == 3 ? 0 : 2),
+			.offset_y = (uint16_t) (revision == 3 ? -32 : 1),
 			.offset_rotation = rotation,
 			.readable = false,
 			.invert = false,
@@ -85,7 +85,7 @@ void Display::drawTest(){
 void Display::setRotation(bool rotation){
 	uint8_t val;
 
-	if(revision == 2){
+	if(revision == 2 || revision == 3){
 		 val = rotation ? 1 : 3;
 	}else{
 		 val = rotation ? 3 : 1;

@@ -11,7 +11,7 @@ int Pins::get(Pin pin){
 
 		if(revision == 0 || revision == 1){
 			instance->currentMap = &instance->Revision1;
-		}else if(revision == 2){
+		}else if(revision == 2 || revision == 3){
 			instance->currentMap = &instance->Revision2;
 		}else{
 			while(true){
