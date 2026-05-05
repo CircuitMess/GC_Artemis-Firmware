@@ -38,6 +38,10 @@ public:
 	std::vector<Notif> getNotifs();
 	uint32_t getNotifsCount() const;
 
+	Notif getCall();
+	void callIgnore(uint32_t uid);
+	void callReject(uint32_t uid);
+
 	void doPos(uint32_t id);
 	void doNeg(uint32_t id);
 
@@ -52,6 +56,7 @@ public:
 
 	void findPhoneStart();
 	void findPhoneStop();
+	bool findPhoneActive();
 
 private:
 	ANCS::Client ancs;

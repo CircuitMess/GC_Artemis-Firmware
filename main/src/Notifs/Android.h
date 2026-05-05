@@ -30,6 +30,7 @@ public:
 
 	void findPhoneStart();
 	void findPhoneStop();
+	bool findPhoneActive();
 
 private:
 	void loop() override;
@@ -52,16 +53,19 @@ private:
 	void handleCallIncoming(const std::vector<std::string>& split_line);
 	void handleCallIncomingStop(const std::vector<std::string>& split_line);
 	void handleTime(const std::vector<std::string>& split_line);
-	void handleFindPhoneStopAck(const std::vector<std::string>& split_line);
+	void handleFindPhoneStopAck();
+	void handleFindPhoneStopNack();
 	void handleMediaState(const std::vector<std::string>& split_line);
 	void handleMediaInfo(const std::vector<std::string>& split_line);
 
-	bool currentRingingState = false;
-	void requestTime();
 	static std::vector<std::string> splitProtocolMsg(const std::string& s, char delim = ';');
 
 	void notifList();
 	void callReject(uint32_t uid);
+
+	std::unordered_set<uint32_t> callIds;
+
+	bool findPhone = false;
 
 	static Notif::Category mapNotifCategories(uint32_t category_val);
 };

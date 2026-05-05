@@ -54,6 +54,27 @@ uint32_t Phone::getNotifsCount() const{
 	return notifs.size();
 }
 
+Notif Phone::getCall(){
+	for(const auto& notif : notifs){
+		if(notif.category == Notif::Category::IncomingCall){
+			return notif;
+		}
+	}
+
+	return {};
+}
+
+void Phone::callIgnore(uint32_t uid){
+	notifs.erase(findNotif(uid));
+}
+
+void Phone::callReject(uint32_t uid){
+	notifs.erase(findNotif(uid));
+	if(current == &android){
+		current->actionNeg(uid);
+	}
+}
+
 const MediaInfo& Phone::getMedia() const{
 	return currentMedia;
 }
@@ -185,4 +206,9 @@ void Phone::findPhoneStart(){
 void Phone::findPhoneStop(){
 	if(current != &android) return;
 	android.findPhoneStop();
+}
+
+bool Phone::findPhoneActive(){
+	if(current != &android) return false;
+	return android.findPhoneActive();
 }

@@ -7,6 +7,7 @@
 static const char* TAG = "Android";
 
 Android::Android(BLE::Server* server) : Threaded("Android", 4 * 1024), server(server), uart(server){
+	callIds.reserve(4);
 	server->setOnDisconnectCb([this](const esp_bd_addr_t addr){ onDisconnect(); });
 	start();
 }
@@ -22,13 +23,14 @@ void Android::onConnect(){
 	connected = true;
 	NotifSource::connect();
 	MediaSource::connect();
-	requestTime(); // request time after connection
+
+	uart.printf("time\n");
+	uart.printf("notifList\n");
 }
 
 void Android::onDisconnect(){
 	if(!connected) return;
 	connected = false;
-	currentRingingState = false;
 	NotifSource::disconnect();
 	MediaSource::disconnect();
 }
@@ -44,17 +46,32 @@ void Android::actionPos(uint32_t uid){
 void Android::actionNeg(uint32_t uid){
 	if(!connected) return;
 
+	if(callIds.contains(uid)){
+		uart.printf("callReject;%d\n", uid);
+		callIds.erase(uid);
+		notifRemove(uid);
+		return;
+	}
+
 	uart.printf("notifNeg;%d\n", uid);
 }
 
 void Android::findPhoneStart(){
 	if(!connected) return;
+	if(findPhone) return;
 	uart.printf("findPhoneStart\n");
+	findPhone = true;
 }
 
 void Android::findPhoneStop(){
 	if(!connected) return;
+	if(!findPhone) return;
 	uart.printf("findPhoneStop\n");
+	findPhone = false;
+}
+
+bool Android::findPhoneActive(){
+	return findPhone;
 }
 
 void Android::loop(){
@@ -136,7 +153,10 @@ void Android::handleCommand(const std::string& line){
 		handleCallIncomingStop(split_line);
 		return;
 	}else if(command == "findPhoneStopAck"){
-		handleFindPhoneStopAck(split_line);
+		handleFindPhoneStopAck();
+		return;
+	}else if(command == "findPhoneStopNack"){
+		handleFindPhoneStopNack();
 		return;
 	}else if(command == "mediaState"){
 		if(split_line.size() < 2){
@@ -185,7 +205,7 @@ void Android::handleNotifAdd(const std::vector<std::string>& split_line){
 			.appID = split_line[4],
 			.category = mapNotifCategories(cat_val),
 	};
-	ESP_LOGI(TAG, "New notif ID %ld", notif.uid);
+	ESP_LOGI(TAG, "New notif ID %ld, cat %s, notifPos: %s, notifNeg: %s", notif.uid, split_line[6].c_str(), split_line[7].c_str(), split_line[8].c_str());
 
 	notifNew(notif);
 }
@@ -220,18 +240,14 @@ void Android::handleCallIncoming(const std::vector<std::string>& split_line){
 	const auto& name = split_line[2];
 	const auto& number = split_line[3];
 
-	if(currentRingingState) return;
-
-	currentRingingState = true;
-
 	const Notif notif = {
 			.uid = (uint32_t) id,
-			.title = name + " (" + number + ")", // name(number)
-			.message = "Incoming call",
-			.appID = "",
+			.title = name,
+			.message = number,
 			.category = Notif::Category::IncomingCall
 	};
 
+	callIds.insert(id);
 	notifNew(notif);
 }
 
@@ -253,16 +269,22 @@ void Android::handleTime(const std::vector<std::string>& split_line){
 // callIncomingStop;<callID>
 void Android::handleCallIncomingStop(const std::vector<std::string>& split_line){
 	const uint32_t id = std::stoull(split_line[1]);
-
 	ESP_LOGI(TAG, "Incoming call stopped for ID %ld", id);
-	notifRemove(id);
 
-	currentRingingState = false;
+	callIds.erase(id);
+	notifRemove(id);
 }
 
 // findPhoneStopAck
-void Android::handleFindPhoneStopAck(const std::vector<std::string>& split_line){
+void Android::handleFindPhoneStopAck(){
 	ESP_LOGI(TAG, "Find phone stopped ack received"); // one-minute ringing timeout from app
+	findPhone = false;
+}
+
+// findPhoneStopNack
+void Android::handleFindPhoneStopNack(){
+	ESP_LOGI(TAG, "Find phone stopped nack received");
+	findPhone = false;
 }
 
 // mediaState;<state>
@@ -320,11 +342,6 @@ void Android::mediaNext(){
 void Android::mediaPrev(){
 	if(!connected) return;
 	uart.printf("mediaPrev\n");
-}
-
-void Android::requestTime(){
-	if(!connected) return;
-	uart.printf("time\n");
 }
 
 std::vector<std::string> Android::splitProtocolMsg(const std::string& s, char delim){
