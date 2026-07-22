@@ -41,6 +41,10 @@ void LockSkin::loop(){
 		clock->loop();
 	}
 
+	if(media != nullptr){
+		media->loop();
+	}
+
 	setDateLabel();
 }
 
@@ -48,7 +52,6 @@ void LockSkin::prepare(){
 
 	lv_obj_scroll_to(rest, 0, 0, LV_ANIM_OFF);
 	lv_obj_scroll_to(*this, 0, 0, LV_ANIM_OFF);
-	lv_group_focus_obj(main);
 
 	if(locker != nullptr){
 		locker->hide();
@@ -67,6 +70,39 @@ void LockSkin::prepare(){
 	}
 
 	updateNotifs();
+
+	auto phone = (Phone*) Services.get(Service::Phone);
+	if(phone->getMediaState() == MediaState::Stopped){
+		lv_obj_add_flag(*media, LV_OBJ_FLAG_HIDDEN);
+	}else{
+		mediaInfo(phone->getMedia());
+		media->setState(phone->getMediaState());
+		lv_obj_clear_flag(*media, LV_OBJ_FLAG_HIDDEN);
+	}
+
+	lv_group_focus_obj(main);
+	lv_obj_scroll_to_view(main, LV_ANIM_OFF);
+}
+
+void LockSkin::mediaState(MediaState state){
+	if(state == MediaState::Stopped){
+		if(media->isActive()){
+			media->deselect();
+		}
+		lv_obj_add_flag(*media, LV_OBJ_FLAG_HIDDEN);
+	}else{
+		media->setState(state);
+		lv_obj_clear_flag(*media, LV_OBJ_FLAG_HIDDEN);
+	}
+
+	if(state != MediaState::Stopped && (media->isActive() || lv_group_get_focused(inputGroup) == *media)) return;
+
+	lv_group_focus_obj(main);
+	lv_obj_scroll_to_view(main, LV_ANIM_OFF);
+}
+
+void LockSkin::mediaInfo(const MediaInfo& info){
+	media->setInfo(info);
 }
 
 void LockSkin::notifAdd(const Notif& notif){
@@ -94,6 +130,7 @@ void LockSkin::notifAdd(const Notif& notif){
 		auto focused = lv_group_get_focused(inputGroup);
 		lv_obj_move_to_index(*item, 0);
 		lv_group_remove_all_objs(inputGroup);
+		lv_group_add_obj(inputGroup, *media);
 		lv_group_add_obj(inputGroup, getMain());
 		for(int j = 0; j < lv_obj_get_child_cnt(notifList); ++j){
 			lv_group_add_obj(inputGroup, lv_obj_get_child(notifList, j));
@@ -198,6 +235,9 @@ void LockSkin::buildUI(){
 
 	lv_obj_add_flag(*this, LV_OBJ_FLAG_SCROLLABLE);
 	lv_obj_set_flex_flow(*this, LV_FLEX_FLOW_COLUMN);
+
+	media = new MediaElement(*this);
+	lv_obj_add_flag(*media, LV_OBJ_FLAG_HIDDEN);
 
 	main = lv_obj_create(*this);
 	if(main == nullptr){
@@ -324,11 +364,15 @@ void LockSkin::buildUI(){
 
 	lv_obj_add_flag(*this, LV_OBJ_FLAG_SCROLL_ONE);
 	lv_obj_set_scroll_snap_y(*this, LV_SCROLL_SNAP_START);
+	lv_obj_add_flag(*media, LV_OBJ_FLAG_SNAPPABLE);
 	lv_obj_add_flag(main, LV_OBJ_FLAG_SNAPPABLE);
 	lv_obj_add_flag(rest, LV_OBJ_FLAG_SNAPPABLE);
 
+	lv_group_add_obj(inputGroup, *media);
 	lv_group_add_obj(inputGroup, main);
 	lv_group_set_wrap(inputGroup, false);
+	lv_obj_add_flag(*media, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
+	lv_obj_clear_flag(*media, LV_OBJ_FLAG_SCROLLABLE);
 	lv_obj_add_flag(main, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
 	lv_obj_clear_flag(main, LV_OBJ_FLAG_SCROLLABLE);
 }

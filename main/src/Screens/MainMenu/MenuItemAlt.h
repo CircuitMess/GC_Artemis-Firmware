@@ -9,6 +9,9 @@ public:
 	MenuItemAlt(lv_obj_t* parent, const char* imagePath, const char* labelText);
 	void setAltParams(const char* imagePathAlt, const char* labelTextAlt);
 
+	bool alt();
+	void restore();
+
 private:
 	const std::string imagePath;
 	const std::string labelText;

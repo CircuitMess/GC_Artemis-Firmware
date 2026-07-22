@@ -4,6 +4,7 @@
 #include "LV_Interface/LVObject.h"
 #include "UIElements/StatusBar.h"
 #include "UIElements/ClockLabelBig.h"
+#include "UIElements/MediaElement.h"
 #include "Slider.h"
 #include "Item.h"
 
@@ -13,6 +14,7 @@ public:
 
 	inline Slider* getLocker() const { return locker; }
 	inline lv_obj_t* getMain() noexcept { return main; }
+	inline MediaElement* getMedia() noexcept { return media; }
 
 	void loop();
 	void prepare();
@@ -21,8 +23,12 @@ public:
 	void notifRem(uint32_t id);
 	void notifsClear();
 
+	void mediaState(MediaState state);
+	void mediaInfo(const MediaInfo& info);
+
 private:
 	lv_group_t* inputGroup = nullptr;
+	MediaElement* media = nullptr;
 	lv_obj_t* main = nullptr;
 	PhoneElement* phoneElement;
 	BatteryElement* batteryElement;

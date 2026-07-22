@@ -20,6 +20,14 @@ void MenuItemAlt::setAltParams(const char* imagePathAlt, const char* labelTextAl
 	}
 }
 
+bool MenuItemAlt::alt(){
+	return isAlt;
+}
+
+void MenuItemAlt::restore(){
+	onDefocus();
+}
+
 void MenuItemAlt::onClick(){
 	if(isAlt){
 		setOrig();

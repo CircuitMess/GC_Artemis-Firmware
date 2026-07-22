@@ -94,17 +94,17 @@ MainMenu::MainMenu() : phone(*((Phone*) Services.get(Service::Phone))), queue(4)
 	//find my phone
 	lv_obj_add_event_cb(*items[0], [](lv_event_t* evt){
 		auto menu = static_cast<MainMenu*>(evt->user_data);
-		if(menu->findPhoneRinging){
-			menu->stopPhoneRing();
+		if(menu->phone.findPhoneActive()){
+			menu->phone.findPhoneStop();
 		}else{
-			menu->startPhoneRing();
+			menu->phone.findPhoneStart();
 		}
 	}, LV_EVENT_CLICKED, this);
 
 	lv_obj_add_event_cb(*items[0], [](lv_event_t* evt){
 		auto menu = static_cast<MainMenu*>(evt->user_data);
-		if(menu->findPhoneRinging){
-			menu->stopPhoneRing();
+		if(menu->phone.findPhoneActive()){
+			menu->phone.findPhoneStop();
 		}
 	}, LV_EVENT_DEFOCUSED, this);
 
@@ -173,14 +173,16 @@ void MainMenu::onStarting(){
 }
 
 void MainMenu::onStop(){
-	findPhoneRinging = false;
 	phone.findPhoneStop();
 }
 
 void MainMenu::loop(){
 	statusBar->loop();
 
-	handleRing();
+	MenuItemAlt* find = (MenuItemAlt*) items[0];
+	if(find->alt() && !phone.findPhoneActive()){
+		find->restore();
+	}
 
 	Event evt;
 	if(queue.get(evt, 0)){
@@ -223,7 +225,7 @@ void MainMenu::handlePhoneChange(Phone::Event& event){
 
 	if(event.action == Phone::Event::Connected && event.data.phoneType == Phone::PhoneType::Android){
 		lv_obj_clear_flag(findPhone, LV_OBJ_FLAG_HIDDEN);
-	}else{
+	}else if(event.action == Phone::Event::Disconnected){
 		lv_obj_add_flag(findPhone, LV_OBJ_FLAG_HIDDEN);
 	}
 
@@ -252,30 +254,4 @@ void MainMenu::setConnAlts(){
 	const auto connAlt = phone.getPhoneType() == Phone::PhoneType::None
 						 ? ItemInfos[4].iconAltPath : ItemInfos[4].iconPath;
 	connEl->setAltParams(connAlt, ConnDesc[(int) phone.getPhoneType()]);
-}
-
-void MainMenu::startPhoneRing(){
-	if(findPhoneRinging) return;
-
-	findPhoneRinging = true;
-	phone.findPhoneStart();
-	findPhoneCounter = millis();
-	findPhoneState = true;
-}
-
-void MainMenu::stopPhoneRing(){
-	if(!findPhoneRinging) return;
-
-	findPhoneRinging = false;
-	phone.findPhoneStop();
-}
-
-void MainMenu::handleRing(){
-	if(!findPhoneRinging) return;
-
-	if(millis() - findPhoneCounter >= FindPhonePeriod){
-		findPhoneCounter = millis();
-		findPhoneState = !findPhoneState;
-		findPhoneState ? phone.findPhoneStart() : phone.findPhoneStop();
-	}
 }

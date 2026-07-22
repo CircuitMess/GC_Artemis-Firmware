@@ -46,11 +46,6 @@ private:
 
 	void setConnAlts();
 
-	bool findPhoneRinging = false;
-	void startPhoneRing();
-	void stopPhoneRing();
-	void handleRing();
-
 	bool findPhoneState = false;
 	uint32_t findPhoneCounter = 0;
 	static constexpr uint32_t FindPhonePeriod = 1000; //1 second

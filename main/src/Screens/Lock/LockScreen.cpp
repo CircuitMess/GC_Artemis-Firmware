@@ -4,11 +4,20 @@
 #include "Services/Time.h"
 #include "Util/stdafx.h"
 #include "Screens/MainMenu/MainMenu.h"
+#include "Screens/CallScreen.h"
 #include "Services/SleepMan.h"
 #include "LV_Interface/FSLVGL.h"
 #include "LV_Interface/InputLVGL.h"
 
 LockScreen::LockScreen() : ts(*((Time*) Services.get(Service::Time))), phone(*((Phone*) Services.get(Service::Phone))), queue(24){
+	if(phone.getCall().category == Notif::Category::IncomingCall){
+		lv_async_call([](void* data){
+			auto scr = (LockScreen*) data;
+			scr->transition([](){ return std::make_unique<CallScreen>(); });
+		}, this);
+		return;
+	}
+
 	buildUI();
 
 	if(skin != nullptr && skin->getMain() != nullptr){
@@ -100,6 +109,21 @@ void LockScreen::processInput(const Input::Data& evt){
 		return;
 	}
 
+	if(skin->getMedia()->isActive()){
+		if(evt.action == Input::Data::Press){
+			if(evt.btn == Input::Alt){
+				skin->getMedia()->deselect();
+			}else if(evt.btn == Input::Select){
+				skin->getMedia()->playPause();
+			}else if(evt.btn == Input::Up){
+				skin->getMedia()->prev();
+			}else if(evt.btn == Input::Down){
+				skin->getMedia()->next();
+			}
+		}
+		return;
+	}
+
 	if(evt.btn == Input::Alt && evt.action == Input::Data::Press && lv_group_get_focused(inputGroup) != skin->getMain()){
 		lv_group_focus_obj(skin->getMain());
 		return;
@@ -127,11 +151,24 @@ void LockScreen::processEvt(const Phone::Event& evt){
 
 	if(evt.action == Phone::Event::Added || evt.action == Phone::Event::Changed){
 		auto notif = phone.getNotif(evt.data.addChgRem.id);
+		if(notif.category == Notif::Category::IncomingCall){
+			lv_async_call([](void* d){
+				auto scr = (LockScreen*) d;
+				scr->transition([](){ return std::make_unique<CallScreen>(); });
+			}, this);
+			return;
+		}
 		skin->notifAdd(notif);
 	}else if(evt.action == Phone::Event::Removed){
 		skin->notifRem(evt.data.addChgRem.id);
 	}else if(evt.action == Phone::Event::Cleared){
 		skin->notifsClear();
+	}else if(evt.action == Phone::Event::MediaInfo){
+		skin->mediaInfo(phone.getMedia());
+	}else if(evt.action == Phone::Event::MediaState){
+		skin->mediaState(evt.data.mediaState);
+	}else if(evt.action == Phone::Event::Disconnected || evt.action == Phone::Event::MediaDisconnected){
+		skin->mediaState(MediaState::Stopped);
 	}
 }
 
