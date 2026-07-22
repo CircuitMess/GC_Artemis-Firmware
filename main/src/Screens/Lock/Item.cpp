@@ -91,6 +91,13 @@ void Item::update(const Notif& notif){
 	notifIcon = ::notifIcon(notif);
 	lv_img_set_src(icon, ::iconPath(notifIcon, true));
 
+	if(notif.category == Notif::Category::IncomingCall){
+		lv_label_set_text(label, "Incoming call");
+		lv_label_set_text_fmt(body, "%s (%s)", notif.title.c_str(), notif.message.c_str());
+
+		return;
+	}
+
 	lv_label_set_text(label, notif.title.c_str());
 
 	auto copy = notif.message;
