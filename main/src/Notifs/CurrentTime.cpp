@@ -1,6 +1,7 @@
 #include "CurrentTime.h"
 #include "Services/Time.h"
 #include "Util/Services.h"
+#include "Util/stdafx.h"
 
 CurrentTime::CurrentTime(BLE::Client* client) : Threaded("CurrentTime", 2 * 1024){
 	service = client->addService(ServiceUUID);
@@ -13,20 +14,20 @@ CurrentTime::CurrentTime(BLE::Client* client) : Threaded("CurrentTime", 2 * 1024
 
 void CurrentTime::loop(){
 	if(chr == nullptr || !chr->connected()){
-		vTaskDelay(500);
+		delayMillis(1000);
 		return;
 	}
 
 	auto notif = chr->getNextNotif();
 	if(!notif){
-		vTaskDelay(500);
+		delayMillis(1000);
 		return;
 	}
 
 	setTime(notif->data);
 }
 
-void CurrentTime::setTime(const std::vector<uint8_t>& data){
+void CurrentTime::setTime(const PSRAMByteBuffer& data){
 	if(data.size() < 7) return;
 
 	int year = data[0] | (data[1] << 8);

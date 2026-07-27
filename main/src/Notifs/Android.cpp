@@ -3,19 +3,53 @@
 #include "Services/Time.h"
 #include <esp_log.h>
 #include <cctype>
+#include <optional>
+#include <algorithm>
 
 static const char* TAG = "Android";
 
 Android::Android(BLE::Server* server) : Threaded("Android", 4 * 1024), server(server), uart(server){
 	callIds.reserve(4);
-	server->setOnDisconnectCb([this](const esp_bd_addr_t addr){ onDisconnect(); });
+	rxBuf.reserve(1024);
+	disconnectSub = server->addOnDisconnectCb([this](const esp_bd_addr_t addr){ onDisconnect(); });
 	start();
 }
 
 Android::~Android(){
 	stop();
-	server->setOnConnectCb({});
-	server->setOnDisconnectCb({});
+	server->removeOnDisconnectCb(disconnectSub);
+}
+
+// Walks `buf` honoring length-prefixed string parameters (`<length>:<bytes>`), so a
+// `\n` inside such a string does not falsely end the frame. Returns the iterator one
+// past the terminating top-level `\n` (may equal buf.cend()), or std::nullopt when
+// more data is needed.
+static std::optional<PSRAMByteBuffer::const_iterator> findFrameEnd(const PSRAMByteBuffer& buf){
+	auto it = buf.cbegin();
+	while(true){
+		auto p = it;
+		size_t value = 0;
+		bool isNumber = false;
+		while(p != buf.cend() && *p >= '0' && *p <= '9'){
+			isNumber = true;
+			value = value * 10 + (*p - '0');
+			++p;
+		}
+
+		if(isNumber && p != buf.cend() && *p == ':'){
+			++p;
+			if((size_t) std::distance(p, buf.cend()) < value) return std::nullopt;
+			it = p + value;
+		}else{
+			while(it != buf.cend() && *it != ';' && *it != '\n') ++it;
+			if(it == buf.cend()) return std::nullopt;
+		}
+
+		if(it == buf.cend()) return std::nullopt;
+		if(*it == '\n') return it + 1;
+		// *it == ';'
+		++it;
+	}
 }
 
 void Android::onConnect(){
@@ -31,6 +65,9 @@ void Android::onConnect(){
 void Android::onDisconnect(){
 	if(!connected) return;
 	connected = false;
+	findPhone = false;
+	callIds.clear();
+	rxBuf.clear();
 	NotifSource::disconnect();
 	MediaSource::disconnect();
 }
@@ -75,21 +112,30 @@ bool Android::findPhoneActive(){
 }
 
 void Android::loop(){
-	auto data = uart.scan_nl(portMAX_DELAY);
-	if(!data || data->empty()) return;
+	auto chunk = uart.scan_nl(portMAX_DELAY);
+	if(!chunk || chunk->empty()) return;
 
-	std::string line(data->cbegin(), data->cend());
-	data.reset();
+	rxBuf.insert(rxBuf.end(), chunk->cbegin(), chunk->cend());
+	chunk.reset();
 
-	// trimming
-	line.erase(line.begin(), std::find_if(line.begin(), line.end(), [](unsigned char ch){ return !std::isspace(ch); }));
-	line.erase(std::find_if(line.rbegin(), line.rend(), [](unsigned char ch){ return !std::isspace(ch); }).base(), line.end());
+	while(true){
+		auto frameEnd = findFrameEnd(rxBuf);
+		if(!frameEnd) break;
 
-	handleCommand(line);
+		std::string line(rxBuf.cbegin(), *frameEnd);
+		rxBuf.erase(rxBuf.cbegin(), *frameEnd);
+
+		// trimming
+		line.erase(line.begin(), std::find_if(line.begin(), line.end(), [](unsigned char ch){ return !std::isspace(ch); }));
+		line.erase(std::find_if(line.rbegin(), line.rend(), [](unsigned char ch){ return !std::isspace(ch); }).base(), line.end());
+
+		handleCommand(line);
+	}
 }
 
 void Android::handleCommand(const std::string& line){
 	const auto split_line = splitProtocolMsg(line);
+	if(split_line.empty()) return;
 	const auto& command = split_line[0];
 
 	if(command == "hello"){
@@ -113,7 +159,7 @@ void Android::handleCommand(const std::string& line){
 		handleTime(split_line);
 		return;
 	}else if(command == "notifAdd"){
-		if(split_line.size() < 5){
+		if(split_line.size() < 9){
 			ESP_LOGW(TAG, "Invalid notifAdd command: %s", line.c_str());
 			return;
 		}
@@ -129,7 +175,7 @@ void Android::handleCommand(const std::string& line){
 		handleNotifDel(split_line);
 		return;
 	}else if(command == "notifModify"){
-		if(split_line.size() < 5){
+		if(split_line.size() < 7){
 			ESP_LOGW(TAG, "Invalid notifMod command: %s", line.c_str());
 			return;
 		}
@@ -167,7 +213,7 @@ void Android::handleCommand(const std::string& line){
 		handleMediaState(split_line);
 		return;
 	}else if(command == "mediaInfo"){
-		if(split_line.size() < 2){
+		if(split_line.size() < 5){
 			ESP_LOGW(TAG, "Invalid mediaInfo command: %s", line.c_str());
 			return;
 		}
@@ -183,7 +229,7 @@ void Android::handleCommand(const std::string& line){
 // hello;<protocolVersion>
 void Android::handleHello(const std::vector<std::string>& split_line){
 	const auto&  protocolVersion = split_line[1];
-	uart.printf("version;%s;%s\n", protocolVersion.c_str(), FirmwareVersion); // response, give protocol version even if missmatch
+	uart.printf("version;%s;%s\n", ProtocolVersion, FirmwareVersion);
 	if(protocolVersion != ProtocolVersion){
 		ESP_LOGW(TAG, "Connection failed! Protocol version mismatch: version %s, expected %s", protocolVersion.c_str(), ProtocolVersion);
 	}else{
@@ -253,8 +299,8 @@ void Android::handleCallIncoming(const std::vector<std::string>& split_line){
 
 //time;<timestamp>;<timezoneOffset>
 void Android::handleTime(const std::vector<std::string>& split_line){
-	const uint64_t timestamp = std::stoll(split_line[1]);
-	const uint32_t timezone_offset = std::stoul(split_line[2]);
+	const int64_t timestamp = std::stoll(split_line[1]);
+	const int32_t timezone_offset = std::stol(split_line[2]); // signed: negative offsets like -480 (UTC-8) are valid
 	ESP_LOGI(TAG, "Got UNIX time: %lld", timestamp);
 	ESP_LOGI(TAG, "Got timezone: %ld", timezone_offset);
 
@@ -346,6 +392,7 @@ void Android::mediaPrev(){
 
 std::vector<std::string> Android::splitProtocolMsg(const std::string& s, char delim){
 	std::vector<std::string> out;
+	out.reserve(static_cast<size_t>(std::count(s.begin(), s.end(), delim)) + 1);
 
 	size_t i = 0;
 	const size_t n = s.size();

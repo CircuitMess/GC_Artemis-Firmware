@@ -4,9 +4,9 @@ class Char {
 public:
 
 	struct Notif {
-		std::vector<uint8_t> data;
+		PSRAMByteBuffer data;
 		bool isIndicate;
-		Notif(std::vector<uint8_t> data, bool isIndicate) : data(std::move(data)), isIndicate(isIndicate){}
+		Notif(PSRAMByteBuffer data, bool isIndicate) : data(std::move(data)), isIndicate(isIndicate){}
 	};
 
 	/** Whether Characteristic is associated with the remote */
@@ -24,7 +24,8 @@ public:
 
 	void writeDescr(uint16_t uuid, const std::vector<uint8_t>& data);
 
-	void write(const std::vector<uint8_t>& data);
+	/** Returns true if the write was actually issued to the stack (connected and WRITE-capable). */
+	bool write(const std::vector<uint8_t>& data);
 
 	void read();
 

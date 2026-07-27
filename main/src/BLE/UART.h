@@ -3,6 +3,7 @@
 
 #include "Server.h"
 #include "Util/Threaded.h"
+#include "Util/PSRAMAllocator.h"
 #include <vector>
 
 namespace BLE {
@@ -22,7 +23,7 @@ public:
 	 * Waits until a new-line character, and returns the contents including the nl char.
 	 * May contain multiple lines. This is a blocking function.
 	 */
-	std::unique_ptr<std::vector<uint8_t>> scan_nl(TickType_t wait = portMAX_DELAY);
+	std::unique_ptr<PSRAMByteBuffer> scan_nl(TickType_t wait = portMAX_DELAY);
 
 private:
 	BLE::Server* server;
@@ -32,9 +33,9 @@ private:
 	std::shared_ptr<BLE::Server::Char> rxChar;
 
 
-	std::vector<uint8_t> txBuf;
-	std::vector<uint8_t> rxBuf;
-	using Line = std::vector<uint8_t>;
+	PSRAMByteBuffer txBuf;
+	PSRAMByteBuffer rxBuf;
+	using Line = PSRAMByteBuffer;
 	PtrQueue<Line> rxQueue;
 
 	void loop() override;

@@ -3,6 +3,7 @@
 
 #include "Android.h"
 #include "ANCS/Client.h"
+#include "AMS/Client.h"
 #include "CurrentTime.h"
 #include "NotifSource.h"
 #include "MediaSource.h"
@@ -60,6 +61,7 @@ public:
 
 private:
 	ANCS::Client ancs;
+	AMS::Client ams;
 	CurrentTime cTime;
 	Android android;
 

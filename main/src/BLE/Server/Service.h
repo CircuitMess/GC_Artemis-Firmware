@@ -7,14 +7,17 @@ public:
 
 private:
 	friend BLE::Server;
+
 	Service(esp_gatt_srvc_id_t id);
 
 	esp_gatt_srvc_id_t id;
-	std::unordered_set<std::shared_ptr<BLE::Server::Char>> chars;
+	std::vector<std::shared_ptr<BLE::Server::Char>> chars;
 
 	uint16_t hndl = 0xffff;
 	void establish(uint16_t hndl);
 	std::shared_ptr<Server::Char> charCreated(esp_gatt_status_t status, esp_bt_uuid_t uid, std::unique_ptr<BLE::Server::CharInfo> charInfo);
+
+	void onDisconnect();
 
 };
 

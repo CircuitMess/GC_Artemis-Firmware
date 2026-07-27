@@ -1,14 +1,17 @@
 #ifndef CLOCKSTAR_FIRMWARE_BLE_SERVER_H
 #define CLOCKSTAR_FIRMWARE_BLE_SERVER_H
 
+#include "Util/Queue.h"
+#include "Util/PSRAMAllocator.h"
 #include <cstdint>
 #include <cstring>
+#include <mutex>
 #include <vector>
 #include <memory>
 #include <functional>
+#include <queue>
 #include <unordered_set>
 #include <unordered_map>
-#include <Util/Queue.h>
 #include <esp_bt_defs.h>
 #include <esp_gatt_defs.h>
 #include <esp_gatts_api.h>
@@ -35,8 +38,11 @@ public:
 
 	using ConnectCB = std::function<void(const esp_bd_addr_t)>;
 	using DisconnectCB = std::function<void(const esp_bd_addr_t)>;
-	void setOnConnectCb(ConnectCB cb);
-	void setOnDisconnectCb(DisconnectCB cb);
+	using SubHandle = uint32_t;
+	SubHandle addOnConnectCb(ConnectCB cb);
+	SubHandle addOnDisconnectCb(DisconnectCB cb);
+	void removeOnConnectCb(SubHandle handle);
+	void removeOnDisconnectCb(SubHandle handle);
 
 private:
 	static Server* self;
@@ -44,10 +50,47 @@ private:
 
 	std::unordered_set<std::shared_ptr<Service>> services;
 	std::unordered_map<uint16_t, Char*> chars;
-	std::unordered_map<uint16_t, uint16_t> descRequests; // descr uuid -> char hndl
 
-	ConnectCB onConnectCB;
-	DisconnectCB onDisconnectCB;
+	// Serialized queue of pending descriptor add requests.
+	//
+	// Bluedroid associates a descriptor with the most recently added characteristic in
+	// the same service ("follow" semantics), and ESP_GATTS_ADD_CHAR_DESCR_EVT does not
+	// carry the parent characteristic handle (espressif/esp-idf#1484). To map each event
+	// back to the characteristic that asked for it, we keep at most one outstanding
+	// esp_ble_gatts_add_char_descr at a time: the head of the queue is the request being
+	// answered by the next ESP_GATTS_ADD_CHAR_DESCR_EVT.
+	//
+	// All BLE API calls and bluedroid callbacks share the BTC task thread, so the queue
+	// needs no locking. The application is also expected to drive the BLE abstraction
+	// from a single thread, regardless of whether Client and Server are both in use.
+	//
+	// CAVEAT: this only works if every service has at most one descriptor-bearing
+	// characteristic (i.e. one with the NOTIFY or INDICATE property bit set).
+	//
+	// TODO: replace this with esp_ble_gatts_create_attr_tab
+	// The attribute-table API builds the whole service+chars+descriptors atomically
+	// and reports all handles in a single event, side-stepping the "follow" rule and
+	// this serialization entirely.
+	struct DescrReq {
+		uint16_t charHndl;
+		uint16_t serviceHndl;
+		esp_bt_uuid_t uuid;
+		esp_gatt_perm_t perm;
+	};
+	std::queue<DescrReq> pendingDescrs;
+	bool descrInFlight = false;
+
+	void queueDescr(DescrReq req);
+	void tryIssueNextDescr();
+
+	// Callback maps are mutated from app threads (construction & destruction of Android
+	// et al.) and iterated on the BTC task in onConnect / onDisconnect. Guard with a
+	// mutex; iterate over a snapshot taken under the lock to avoid holding it across
+	// user callbacks.
+	std::unordered_map<SubHandle, ConnectCB> onConnectCBs;
+	std::unordered_map<SubHandle, DisconnectCB> onDisconnectCBs;
+	SubHandle nextSubHandle = 1;
+	mutable std::mutex cbMut;
 
 	friend GAP;
 	GAP* gap;

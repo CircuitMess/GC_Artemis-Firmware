@@ -2,8 +2,8 @@
 #include "Client.h"
 #include "Server.h"
 #include "ConMan.h"
+#include <cstring>
 #include <esp_log.h>
-#include <esp_gap_ble_api.h>
 #include <esp_gatt_common_api.h>
 
 static const char* TAG = "BLE";
@@ -68,9 +68,21 @@ void BLE::GAP::ble_GAP_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* 
 			//advertising start complete event to indicate advertising start successfully or failed
 			if(param->adv_start_cmpl.status != ESP_BT_STATUS_SUCCESS){
 				ESP_LOGE(TAG, "advertising start failed, error status = %x", param->adv_start_cmpl.status);
+				ConMan.onAdvStartComplete(false);
 				break;
 			}
 			ESP_LOGI(TAG, "advertising start success");
+			ConMan.onAdvStartComplete(true);
+			break;
+
+		case ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT:
+			if(param->adv_stop_cmpl.status != ESP_BT_STATUS_SUCCESS){
+				ESP_LOGW(TAG, "advertising stop failed, error status = %x", param->adv_stop_cmpl.status);
+				ConMan.onAdvStopComplete(false);
+				break;
+			}
+			ESP_LOGI(TAG, "advertising stop success");
+			ConMan.onAdvStopComplete(true);
 			break;
 
 		case ESP_GAP_BLE_NC_REQ_EVT:
@@ -91,8 +103,10 @@ void BLE::GAP::ble_GAP_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* 
 				ESP_LOGI(TAG, "fail reason = 0x%x", param->ble_security.auth_cmpl.fail_reason);
 				break;
 			}
-			ESP_LOGI(TAG, "paired");
-			esp_log_buffer_hex("addr", param->ble_security.auth_cmpl.bd_addr, ESP_BD_ADDR_LEN);
+			uint64_t addr = 0;
+			memcpy(&addr, param->ble_security.auth_cmpl.bd_addr, ESP_BD_ADDR_LEN);
+			addr = __builtin_bswap64(addr) >> 16;
+			ESP_LOGI(TAG, "paired, addr = %012llx", (unsigned long long) addr);
 
 			if(client){
 				client->onPairDone();
@@ -113,15 +127,12 @@ void BLE::GAP::ble_GAP_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* 
 void BLE::GAP::configDone(Config config){
 	configsDone.insert(config);
 	if(configsDone.size() == (int) Config::COUNT){
-		ConMan.disconnect(); // Starts advertising
+		ConMan.start();
 	}
 }
 
 void BLE::GAP::initSecure(){
-	uint32_t passkey = 123456; // static passkey
-	esp_ble_gap_set_security_param(ESP_BLE_SM_SET_STATIC_PASSKEY, &passkey, sizeof(uint32_t));
-
-	esp_ble_auth_req_t auth_req = ESP_LE_AUTH_REQ_SC_MITM_BOND; // bonding with peer device after authentication
+	esp_ble_auth_req_t auth_req = ESP_LE_AUTH_REQ_SC_BOND;
 	esp_ble_gap_set_security_param(ESP_BLE_SM_AUTHEN_REQ_MODE, &auth_req, sizeof(uint8_t));
 
 	esp_ble_io_cap_t iocap = ESP_IO_CAP_NONE; // set the IO capability to No output No input

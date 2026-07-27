@@ -10,8 +10,8 @@ BLE::UART::UART(BLE::Server* server) : Threaded("BLE UART", 2 * 1024), server(se
 	txChar = service->addChar(TxCharUID, ESP_GATT_CHAR_PROP_BIT_NOTIFY);
 	rxChar = service->addChar(RxCharUID, ESP_GATT_CHAR_PROP_BIT_WRITE);
 
-	rxBuf.reserve(4 * 1024);
-	txBuf.reserve(4 * 1024);
+	rxBuf.reserve(1024);
+	txBuf.reserve(256);
 
 	start();
 }
@@ -38,7 +38,7 @@ void BLE::UART::print(const std::vector<uint8_t>& data){
 
 std::vector<uint8_t> BLE::UART::scan(){
 	if(rxBuf.empty()) return {};
-	std::vector<uint8_t> ret = rxBuf;
+	std::vector<uint8_t> ret(rxBuf.begin(), rxBuf.end());
 	rxBuf.clear();
 	return ret;
 }

@@ -1,4 +1,5 @@
 #include "../Client.h"
+#include "Util/UUIDFmt.h"
 #include <esp_log.h>
 
 static const char* TAG = "BLE::Client::Service";
@@ -44,8 +45,8 @@ void BLE::Client::Service::pull(){
 	for(const auto& chr : chars){
 		auto remote = svc->getCharByUUID(chr->uuid);
 		if(remote.uuid.len == 0){
-			ESP_LOGW(TAG, "Registered characteristic not found in remote service. Char UUID: ");
-			esp_log_buffer_hex(TAG, chr->uuid.uuid.uuid128, 16);
+			ESP_LOGW(TAG, "Registered characteristic not found in remote service. Char UUID: %s",
+				formatUUID128(chr->uuid.uuid.uuid128).c_str());
 			continue;
 		}
 

@@ -6,6 +6,8 @@
 #include "Notifs/MediaInfo.h"
 #include "BLE/Server.h"
 #include "BLE/UART.h"
+#include "Util/PSRAMAllocator.h"
+#include <atomic>
 #include <string>
 #include <map>
 #include <unordered_map>
@@ -38,7 +40,10 @@ private:
 	BLE::Server* server;
 	BLE::UART uart;
 
-	bool connected = false;
+	BLE::Server::SubHandle disconnectSub = 0;
+
+	// Written from the BLE/BTC task (onConnect/onDisconnect), read from the Android worker task in loop().
+	std::atomic<bool> connected = false;
 
 	void onConnect();
 	void onDisconnect();
@@ -64,6 +69,8 @@ private:
 	void callReject(uint32_t uid);
 
 	std::unordered_set<uint32_t> callIds;
+
+	PSRAMByteBuffer rxBuf;
 
 	bool findPhone = false;
 

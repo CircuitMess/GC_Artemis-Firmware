@@ -1,4 +1,5 @@
 #include "../Client.h"
+#include "Util/UUIDFmt.h"
 #include <esp_log.h>
 
 static const char* TAG = "BLE::Client::ServiceInfo";
@@ -32,12 +33,14 @@ esp_gattc_char_elem_t BLE::Client::ServiceInfo::getCharByUUID(esp_bt_uuid_t uuid
 
 	auto ret = esp_ble_gattc_get_char_by_uuid(client->iface.hndl, client->con.hndl, startHndl, endHndl, uuid, &chr, &count);
 	if(ret != ESP_GATT_OK){
-		ESP_LOGE(TAG, "get_char_by_uuid error 0x%x for uuid ", ret);
-		esp_log_buffer_hex(TAG, uuid.uuid.uuid128, 16);
+		ESP_LOGE(TAG, "get_char_by_uuid error 0x%x for uuid %s", ret, formatUUID128(uuid.uuid.uuid128).c_str());
 		return {};
 	}
 
-	if(count == 0) return {};
+	if(count == 0){
+		ESP_LOGW(TAG, "getCharByUUID returned 0 results");
+		return {};
+	}
 
 	return chr;
 }

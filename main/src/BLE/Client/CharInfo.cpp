@@ -12,6 +12,11 @@ void BLE::Client::CharInfo::regForNotify(){
 	esp_ble_gattc_register_for_notify(client->iface.hndl, (uint8_t*) client->con.addr, hndl);
 }
 
+void BLE::Client::CharInfo::unregForNotify(){
+	ESP_LOGV(TAG, "Unregistering for notify");
+	esp_ble_gattc_unregister_for_notify(client->iface.hndl, (uint8_t*) client->con.addr, hndl);
+}
+
 void BLE::Client::CharInfo::writeDescr(esp_bt_uuid_t uuid, uint8_t* data, size_t len){
 	ESP_LOGV(TAG, "Write to descriptors");
 

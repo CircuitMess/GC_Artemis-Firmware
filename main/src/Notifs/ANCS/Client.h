@@ -1,15 +1,19 @@
 #ifndef CLOCKSTAR_FIRMWARE_ANCS_H
 #define CLOCKSTAR_FIRMWARE_ANCS_H
 
-#include <BLE/Client.h>
+#include "BLE/Client.h"
 #include "Notifs/NotifSource.h"
 #include "Util/Threaded.h"
+#include "Util/PSRAMAllocator.h"
 #include "Model.h"
 #include <queue>
 #include <deque>
 #include <mutex>
+#include <atomic>
 #include <cstdint>
 #include <vector>
+#include <unordered_set>
+#include <unordered_map>
 
 namespace ANCS {
 
@@ -29,7 +33,7 @@ private:
 		std::shared_ptr<BLE::Client::Char> data;
 	} chr;
 
-	bool connected = false;
+	std::atomic<bool> connected{ false };
 
 	void onConn();
 	void onDiscon();
@@ -40,21 +44,52 @@ private:
 	void loopNotif();
 	void loopData();
 
+	// Attribute text accumulated off the BLE wire is kept in PSRAM. get() exposes
+	// it as std::string_view, so Notif's public std::string members are unaffected.
+	using AttrMap = std::unordered_map<AttributeID, PSRAMString, std::hash<AttributeID>, std::equal_to<AttributeID>,
+		PSRAMAllocator<std::pair<const AttributeID, PSRAMString>>>;
+
 	struct QueuedNotif {
 		uint32_t uid;
 		CategoryID category;
 		bool modify; // whether it's a new notification or a modification
-		std::unordered_map<AttributeID, std::string> attrs;
+		AttrMap attrs;
 		AttributeID currAttr = AttributeID::COUNT;
 		uint32_t currAttrLen = 0;
+		AttributeID lastRequested = AttributeID::COUNT; // ID of the last attribute we asked the phone for; ANCS replies are in request order so receiving this means the notif is complete
 	};
-	std::queue<QueuedNotif> needData;
-	std::mutex needDataMut;
 
-	void requestData(uint32_t uid);
+	// Request pipeline. At most one GetNotificationAttributes is outstanding at
+	// a time, so a stale UID produces a single 0xA2 instead of a write storm.
+	// loopNotif() only enqueues; loopData() owns the state machine; both may call
+	// pumpRequest() (guarded by reqState). A stale/absent UID is dropped either
+	// promptly (NotificationRemoved -> abandonInFlight) or, for a true 0xA2 with
+	// no removal event, after RequestTimeoutMs elapses with no DataSource reply.
+	//
+	// mut protects needData, queuedUids, dataQueue and the reqState/inFlight*
+	// fields. onDiscon (BLE/BTC task) resets them while the workers mutate them.
+	enum class ReqState { Idle, Awaiting, Processing };
+
+	std::deque<QueuedNotif, PSRAMAllocator<QueuedNotif>> needData;
+	std::unordered_set<uint32_t> queuedUids;
+	std::deque<uint8_t, PSRAMAllocator<uint8_t>> dataQueue;
+	std::mutex mut;
+
+	ReqState reqState = ReqState::Idle;
+	uint32_t inFlightUid = 0;
+	uint64_t reqStartMs = 0;
+	bool abandonInFlight = false;
+
+	static constexpr size_t MaxQueued = 16;
+	static constexpr uint32_t IdlePollMs = 1000;          // loopData poll while Idle (only to pick up a newly-pumped request)
+	static constexpr uint32_t PollMs = 250;               // loopData poll while a request is in flight (Awaiting)
+	static constexpr uint64_t RequestTimeoutMs = 3500;    // drop if no DataSource response arrives (e.g. a stale UID / 0xA2)
+	static constexpr uint32_t ProcessingTimeoutMs = 3500; // salvage if a notif stalls mid-parse
+
+	void pumpRequest();             // start the next request if Idle; caller holds mut
+	void dropInFlight();            // discard the in-flight (front) entry; caller holds mut
+	bool requestData(uint32_t uid); // issue GetNotificationAttributes for front; returns whether issued; caller holds mut
 	void processData(bool sendIncomplete);
-	std::deque<uint8_t> dataQueue;
-	bool processingAttrs = false;
 
 	static constexpr esp_bt_uuid_t ServiceUUID =			{ .len = ESP_UUID_LEN_128, .uuid = { .uuid128 = { 0xD0, 0x00, 0x2D, 0x12, 0x1E, 0x4B, 0x0F, 0xA4, 0x99, 0x4E, 0xCE, 0xB5, 0x31, 0xF4, 0x05, 0x79 }}};
 	static constexpr esp_bt_uuid_t Char_NotifSource_UUID =	{ .len = ESP_UUID_LEN_128, .uuid = { .uuid128 = { 0xbd, 0x1d, 0xa2, 0x99, 0xe6, 0x25, 0x58, 0x8c, 0xd9, 0x42, 0x01, 0x63, 0x0d, 0x12, 0xbf, 0x9f }}};
@@ -66,4 +101,4 @@ private:
 }
 
 
-#endif //CLOCKSTAR_FIRMWARE_CLIENT_H
+#endif //CLOCKSTAR_FIRMWARE_ANCS_H

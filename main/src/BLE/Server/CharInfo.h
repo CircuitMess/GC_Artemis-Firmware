@@ -4,17 +4,15 @@ class CharInfo {
 public:
 	CharInfo(BLE::Server* server, const BLE::Server::Service* service, uint16_t hndl);
 
-	/*void regForNotify();
-
-	void writeDescr(esp_bt_uuid_t uuid, uint8_t* data, size_t len);
-
-	void write(uint8_t* data, size_t len, bool needResponse);*/
-
 	void addDescr(esp_bt_uuid_t uuid, esp_gatt_perm_t perm);
 
-	esp_err_t sendResp(uint32_t trans, esp_gatt_status_t status, esp_gatt_rsp_t* resp = nullptr);
+	// `conn_id` is the connection that originated the request being answered.
+	esp_err_t sendResp(uint16_t conn_id, uint32_t trans, esp_gatt_status_t status, esp_gatt_rsp_t* resp = nullptr);
 
-	void sendNotif(std::vector<uint8_t> data);
+	// Sends a notification on this characteristic to the connected peer; if there is no
+	// connection, drops silently. Reads directly from the caller's buffer (no copy) and
+	// fragments it into MTU-sized chunks.
+	void sendNotif(const uint8_t* data, size_t len);
 
 private:
 	BLE::Server* server;

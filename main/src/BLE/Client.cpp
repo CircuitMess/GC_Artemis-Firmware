@@ -101,15 +101,29 @@ void BLE::Client::ble_GATTC_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_i
 void BLE::Client::onConnect(const esp_ble_gattc_cb_param_t::gattc_connect_evt_param* param){
 	memcpy(con.addr, param->remote_bda, 6);
 
+	// Capture the conn_id now so onPairDone() has a valid handle even if the
+	// AUTH_CMPL event arrives before ESP_GATTC_OPEN_EVT (see maybeStartDiscovery).
+	con.hndl = param->conn_id;
+	con.opened = false;
+	con.paired = false;
+	con.discovering = false;
+
 	// Server notifies ConMan, which in turn sets connection parameters
 
-	esp_ble_set_encryption(con.addr, ESP_BLE_SEC_ENCRYPT_MITM);
-	// ble_set_encryption initiates pairing. After the devices complete pairing,
-	// the ESP_GAP_BLE_AUTH_CMPL_EVT comes up (handled by BLE), and BLE calls onPairDone().
+	// Open the GATT client connection immediately so a control block (clcb) exists
+	// from link-up. A bonded iPhone re-uses its persisted ANCS CCCD subscriptions
+	// and starts pushing notifications as soon as the link encrypts; if the open
+	// is deferred until after pairing, those notifications arrive before the clcb
+	// exists and bluedroid drops them ("indication/notif for unknown device,
+	// ignore"). The ACL already exists here, so this only creates the virtual GATT
+	// connection. Encryption is started from onOpen, once the clcb is in place.
+	esp_ble_gattc_open(iface.hndl, con.addr, BLE_ADDR_TYPE_PUBLIC, true);
 }
 
 void BLE::Client::onPairDone(){
-	esp_ble_gattc_open(iface.hndl, con.addr, BLE_ADDR_TYPE_PUBLIC, true);
+	// Link is now encrypted. Discovery proceeds once the connection is also open.
+	con.paired = true;
+	maybeStartDiscovery();
 }
 
 void BLE::Client::onOpen(const esp_ble_gattc_cb_param_t::gattc_open_evt_param* param){
@@ -119,6 +133,24 @@ void BLE::Client::onOpen(const esp_ble_gattc_cb_param_t::gattc_open_evt_param* p
 	}
 
 	con.hndl = param->conn_id;
+	con.opened = true;
+
+	// Now that the GATT client connection (clcb) exists, start pairing. When it
+	// completes, ESP_GAP_BLE_AUTH_CMPL_EVT fires (handled by BLE) and BLE calls
+	// onPairDone(). Discovery proceeds once the link is also encrypted.
+	esp_ble_set_encryption(con.addr, ESP_BLE_SEC_ENCRYPT_MITM);
+
+	maybeStartDiscovery();
+}
+
+void BLE::Client::maybeStartDiscovery(){
+	// Begin MTU negotiation (then, via onMtuResp, service discovery) only once the
+	// GATT connection is open AND the link is encrypted. ESP_GATTC_OPEN_EVT and
+	// ESP_GAP_BLE_AUTH_CMPL_EVT can arrive in either order — for a bonded iPhone
+	// the controller may auto-encrypt before the open completes — so whichever
+	// finishes last triggers discovery. `discovering` ensures it starts once.
+	if(!con.opened || !con.paired || con.discovering) return;
+	con.discovering = true;
 
 	esp_ble_gattc_send_mtu_req(iface.hndl, con.hndl);
 }
@@ -232,7 +264,12 @@ void BLE::Client::close(){
 	}
 	chars.clear();
 
-	con.hndl = 0;
+	// Reset to the "no connection" sentinel that ConnectionInfo::operator bool
+	// checks (0xffff), not 0 — otherwise a closed connection still reads as valid.
+	con.hndl = 0xffff;
+	con.opened = false;
+	con.paired = false;
+	con.discovering = false;
 	memset(con.addr, 0, 6);
 
 	// Server notifies ConMan, which in turn starts advertising

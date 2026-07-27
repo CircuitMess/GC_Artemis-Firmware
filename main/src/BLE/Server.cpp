@@ -12,7 +12,7 @@ BLE::Server* BLE::Server::self = nullptr;
 
 BLE::Server::Server(GAP* gap) : gap(gap){
 	if(self != nullptr){
-		ESP_LOGE(TAG, "Client already exists");
+		ESP_LOGE(TAG, "Server already exists");
 		return;
 	}
 	self = this;
@@ -33,7 +33,7 @@ BLE::Server::~Server(){
 std::shared_ptr<BLE::Server::Service> BLE::Server::addService(esp_bt_uuid_t uuid){
 	esp_gatt_srvc_id_t id = {
 			.id = { .uuid = uuid, .inst_id = 0 }, // Assumes only single inst_id
-			.is_primary = services.empty()
+			.is_primary = true
 	};
 
 	std::shared_ptr<Service> srv(new Service(id));
@@ -47,12 +47,28 @@ void BLE::Server::start(){
 	esp_ble_gatts_app_register(AppID);
 }
 
-void BLE::Server::setOnConnectCb(BLE::Server::ConnectCB cb){
-	onConnectCB = cb;
+BLE::Server::SubHandle BLE::Server::addOnConnectCb(BLE::Server::ConnectCB cb){
+	std::lock_guard lock(cbMut);
+	const SubHandle handle = nextSubHandle++;
+	onConnectCBs.emplace(handle, std::move(cb));
+	return handle;
 }
 
-void BLE::Server::setOnDisconnectCb(BLE::Server::DisconnectCB cb){
-	onDisconnectCB = cb;
+BLE::Server::SubHandle BLE::Server::addOnDisconnectCb(BLE::Server::DisconnectCB cb){
+	std::lock_guard lock(cbMut);
+	const SubHandle handle = nextSubHandle++;
+	onDisconnectCBs.emplace(handle, std::move(cb));
+	return handle;
+}
+
+void BLE::Server::removeOnConnectCb(BLE::Server::SubHandle handle){
+	std::lock_guard lock(cbMut);
+	onConnectCBs.erase(handle);
+}
+
+void BLE::Server::removeOnDisconnectCb(BLE::Server::SubHandle handle){
+	std::lock_guard lock(cbMut);
+	onDisconnectCBs.erase(handle);
 }
 
 void BLE::Server::onPairDone(){
@@ -163,26 +179,51 @@ void BLE::Server::onCharCreated(const esp_ble_gatts_cb_param_t::gatts_add_char_e
 }
 
 void BLE::Server::onCharDescrCreated(const esp_ble_gatts_cb_param_t::gatts_add_char_descr_evt_param* param){
-	if(param->status != ESP_GATT_OK){
-		ESP_LOGE(TAG, "failed adding char descr, status = 0x%x", param->status);
+	// We always have exactly one esp_ble_gatts_add_char_descr in flight (see the
+	// pendingDescrs comment in Server.h). The head of pendingDescrs is the request
+	// being answered by this event, regardless of the descriptor UUID.
+	descrInFlight = false;
+
+	if(pendingDescrs.empty()){
+		ESP_LOGW(TAG, "ADD_CHAR_DESCR_EVT with no pending request");
 		return;
 	}
 
-	const auto descrUid = param->descr_uuid;
-	if(descrUid.len != ESP_UUID_LEN_16) return;
+	const auto req = pendingDescrs.front();
+	pendingDescrs.pop();
 
-	auto it = descRequests.find(descrUid.uuid.uuid16);
-	if(it == descRequests.end()) return;
+	if(param->status != ESP_GATT_OK){
+		ESP_LOGE(TAG, "failed adding char descr, status = 0x%x", param->status);
+		tryIssueNextDescr();
+		return;
+	}
 
-	auto it2 = chars.find(it->second);
-	if(it2 == chars.end()) return;
+	auto it = chars.find(req.charHndl);
+	if(it == chars.end()){
+		ESP_LOGW(TAG, "Pending descr's parent char hndl %d not registered", req.charHndl);
+		tryIssueNextDescr();
+		return;
+	}
 
-	it2->second->ctrlDescrHndl = param->attr_handle;
-	descRequests.erase(it);
-
-	chars.insert(std::make_pair(param->attr_handle, it2->second));
+	it->second->ctrlDescrHndl = param->attr_handle;
+	chars.insert(std::make_pair(param->attr_handle, it->second));
 
 	ESP_LOGI(TAG, "Added descriptor to characteristic");
+
+	tryIssueNextDescr();
+}
+
+void BLE::Server::queueDescr(DescrReq req){
+	pendingDescrs.push(req);
+	tryIssueNextDescr();
+}
+
+void BLE::Server::tryIssueNextDescr(){
+	if(descrInFlight || pendingDescrs.empty()) return;
+
+	descrInFlight = true;
+	auto& req = pendingDescrs.front();
+	esp_ble_gatts_add_char_descr(req.serviceHndl, &req.uuid, req.perm, nullptr, nullptr);
 }
 
 void BLE::Server::onMtuResp(const esp_ble_gatts_cb_param_t::gatts_mtu_evt_param* param){
@@ -204,20 +245,47 @@ void BLE::Server::onConnect(const esp_ble_gatts_cb_param_t::gatts_connect_evt_pa
 
 	ConMan.connect(param->remote_bda);
 
-	if(onConnectCB){
-		onConnectCB(con.addr);
+	std::vector<ConnectCB> cbs;
+	{
+		std::lock_guard lock(cbMut);
+		cbs.reserve(onConnectCBs.size());
+		for(const auto& [_, cb] : onConnectCBs){
+			if(cb) cbs.push_back(cb);
+		}
+	}
+	for(const auto& cb : cbs){
+		cb(con.addr);
 	}
 }
 
 void BLE::Server::onDisconnect(const esp_ble_gatts_cb_param_t::gatts_disconnect_evt_param* param){
 	ESP_LOGI(TAG, "Disconnected. Reason: 0x%x", param->reason);
+
+	// Snapshot the address before clearing so subscribers see the disconnecting peer.
+	esp_bd_addr_t peer;
+	memcpy(peer, param->remote_bda, 6);
+
 	memset(con.addr, 0, 6);
 	con.hndl = 0xffff;
+	con.MTU_size = 23;
+
+	// CCCD state is per-connection; drop it so a reconnecting peer starts clean.
+	for(const auto& service : services){
+		service->onDisconnect();
+	}
 
 	ConMan.disconnect();
 
-	if(onDisconnectCB){
-		onDisconnectCB(con.addr);
+	std::vector<DisconnectCB> cbs;
+	{
+		std::lock_guard lock(cbMut);
+		cbs.reserve(onDisconnectCBs.size());
+		for(const auto& [_, cb] : onDisconnectCBs){
+			if(cb) cbs.push_back(cb);
+		}
+	}
+	for(const auto& cb : cbs){
+		cb(peer);
 	}
 }
 

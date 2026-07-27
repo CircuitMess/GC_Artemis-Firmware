@@ -3,7 +3,7 @@
 #include <functional>
 #include <esp_log.h>
 
-Phone::Phone(BLE::Server* server, BLE::Client* client) : ancs(client), cTime(client), android(server){
+Phone::Phone(BLE::Server* server, BLE::Client* client) : ancs(client), ams(client), cTime(client), android(server){
 	auto reg = [this](NotifSource* src){
 		src->setOnConnect([this, src](){ onConnect(src); });
 		src->setOnDisconnect([this, src](){ onDisconnect(src); });
@@ -15,7 +15,6 @@ Phone::Phone(BLE::Server* server, BLE::Client* client) : ancs(client), cTime(cli
 	reg(&ancs);
 	reg(&android);
 
-	// media registration (only Android currently implements MediaSource)
 	auto mreg = [this](MediaSource* src){
 		src->setOnConnect([this, src](){ onMediaConnect(src); });
 		src->setOnDisconnect([this, src](){ onMediaDisconnect(src); });
@@ -24,6 +23,7 @@ Phone::Phone(BLE::Server* server, BLE::Client* client) : ancs(client), cTime(cli
 	};
 
 	mreg(&android);
+	mreg(&ams);
 }
 
 bool Phone::isConnected(){
@@ -65,11 +65,15 @@ Notif Phone::getCall(){
 }
 
 void Phone::callIgnore(uint32_t uid){
-	notifs.erase(findNotif(uid));
+	auto notif = findNotif(uid);
+	if(notif == notifs.end()) return;
+	notifs.erase(notif);
 }
 
 void Phone::callReject(uint32_t uid){
-	notifs.erase(findNotif(uid));
+	auto notif = findNotif(uid);
+	if(notif == notifs.end()) return;
+	notifs.erase(notif);
 	if(current == &android){
 		current->actionNeg(uid);
 	}
@@ -135,9 +139,6 @@ void Phone::onDisconnect(NotifSource* src){
 		notifs.clear();
 		Events::post(Facility::Phone, Event { .action = Event::Cleared, .data = { .phoneType = getPhoneType() } });
 	}
-
-	currentMediaState = MediaState::Stopped;
-	currentMedia = {};
 }
 
 void Phone::onMediaConnect(MediaSource* src){
@@ -147,8 +148,11 @@ void Phone::onMediaConnect(MediaSource* src){
 
 void Phone::onMediaDisconnect(MediaSource* src){
 	if(mediaCurrent != src) return;
-	Events::post(Facility::Phone, Event { .action = Event::MediaDisconnected });
 	mediaCurrent = nullptr;
+	Events::post(Facility::Phone, Event { .action = Event::MediaDisconnected });
+
+	currentMediaState = MediaState::Stopped;
+	currentMedia = {};
 }
 
 void Phone::onMediaInfo(const MediaInfo& media){

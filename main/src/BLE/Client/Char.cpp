@@ -55,9 +55,19 @@ void BLE::Client::Char::close(){
 	if(!chr) return;
 	ESP_LOGI(TAG, "Closed");
 
+	// Free this char's slot in bluedroid's notify registration table. The stack's own
+	// clear-on-disconnect can miss it when the peer's RPA rotated mid-session, and the
+	// table only holds BTA_GATTC_NOTIF_REG_MAX entries — leaked slots eventually fail
+	// re-registration on reconnect ("Max Notification Reached").
+	if((props & ESP_GATT_CHAR_PROP_BIT_NOTIFY) && (remoteProps & ESP_GATT_CHAR_PROP_BIT_NOTIFY)){
+		chr->unregForNotify();
+	}
+
 	chr.reset();
 	remoteProps = 0;
 	configsDone.clear();
+
+	while(notifQueue.get(0) != nullptr){}
 }
 
 void BLE::Client::Char::configDone(Char::Config config){
@@ -81,7 +91,7 @@ void BLE::Client::Char::onRegNotify(const esp_ble_gattc_cb_param_t::gattc_reg_fo
 
 void BLE::Client::Char::onNotify(const esp_ble_gattc_cb_param_t::gattc_notify_evt_param* param){
 	if(notifQueue.size != 1){
-		notifQueue.post(std::make_unique<Notif>(std::vector(param->value, param->value + param->value_len), !param->is_notify), 0);
+		notifQueue.post(std::make_unique<Notif>(PSRAMByteBuffer(param->value, param->value + param->value_len), !param->is_notify), 0);
 	}
 }
 
@@ -99,15 +109,16 @@ void BLE::Client::Char::writeDescr(uint16_t uuid, const std::vector<uint8_t>& da
 	chr->writeDescr(id, (uint8_t*) data.data(), data.size());
 }
 
-void BLE::Client::Char::write(const std::vector<uint8_t>& data){
-	if(!connected()) return;
+bool BLE::Client::Char::write(const std::vector<uint8_t>& data){
+	if(!connected()) return false;
 
 	if(!(props & ESP_GATT_CHAR_PROP_BIT_WRITE) || !(remoteProps & ESP_GATT_CHAR_PROP_BIT_WRITE)){
 		ESP_LOGW(TAG, "Requesting writy, but WRITE property bit isn't");
-		return;
+		return false;
 	}
 
 	chr->write((uint8_t*) data.data(), data.size(), true);
+	return true;
 }
 
 void BLE::Client::Char::read(){

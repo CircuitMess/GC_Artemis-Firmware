@@ -1,7 +1,7 @@
 #ifndef CLOCKSTAR_FIRMWARE_GAP_H
 #define CLOCKSTAR_FIRMWARE_GAP_H
 
-
+#define BLE_42_FEATURE_SUPPORT TRUE
 #include <esp_gap_ble_api.h>
 #include <unordered_set>
 #include <esp_gattc_api.h>
@@ -16,17 +16,8 @@ public:
 	GAP();
 	virtual ~GAP();
 
-	struct InterfaceInfo {
-		uint8_t appID = 0xff;
-		uint8_t ifHndl = 0xff;
-
-		bool operator()(){ return appID != 0xff && ifHndl != 0; }
-	};
-
 private:
 	static GAP* self;
-
-	InterfaceInfo iface;
 
 	void ble_GAP_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* param);
 
@@ -64,7 +55,7 @@ private:
 			.adv_int_min        = 0x20, // 20ms = 32 (0x20) * 0.625ms
 			.adv_int_max        = 0x20, // Apple: After 30 seconds of no connection, feel free to switch to 1285ms (0x808)
 			.adv_type           = ADV_TYPE_IND,
-			.own_addr_type      = BLE_ADDR_TYPE_RPA_PUBLIC,
+			.own_addr_type      = BLE_ADDR_TYPE_PUBLIC,
 			.channel_map        = ADV_CHNL_ALL,
 			.adv_filter_policy  = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
 	};

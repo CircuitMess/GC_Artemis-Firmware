@@ -1,22 +1,28 @@
-#include <BLE/Server.h>
+#include "BLE/Server.h"
 #include <esp_log.h>
 #include <cstring>
 
 static const char* TAG = "BLE::Server::Char";
 
 BLE::Server::Char::Char(esp_bt_uuid_t uuid, esp_gatt_char_prop_t props) : uuid(uuid), props(props), writeQueue((props & (ESP_GATT_CHAR_PROP_BIT_WRITE | ESP_GATT_CHAR_PROP_BIT_WRITE_NR)) ? 12 : 1){
-	writeData.reserve(12 * 1024);
-
 	if(props & (ESP_GATT_CHAR_PROP_BIT_WRITE | ESP_GATT_CHAR_PROP_BIT_WRITE_NR)){
+		// Only write-capable chars ever accumulate prepared writes; reserve (in PSRAM) only
+		// for them so notify/read-only chars don't hold a 2KB buffer they can never use.
+		writeData.reserve(MaxWriteData);
 		perm |= ESP_GATT_PERM_WRITE;
 	}
 	if(props & (ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_NOTIFY | ESP_GATT_CHAR_PROP_BIT_INDICATE)){
-		perm = ESP_GATT_PERM_READ;
+		perm |= ESP_GATT_PERM_READ;
 	}
 }
 
-void BLE::Server::Char::setOnWriteCb(WriteCB cb){
-	onWriteCB = cb;
+void BLE::Server::Char::setNotifRegCb(NotifRegCB cb){
+	if(!(props & (ESP_GATT_CHAR_PROP_BIT_NOTIFY))){
+		ESP_LOGW(TAG, "Set NotifReg CB, but NOTIFY property bit isn't set");
+		return;
+	}
+
+	onNotifRegCB = std::move(cb);
 }
 
 std::unique_ptr<BLE::Server::Char::WriteMsg> BLE::Server::Char::getNextWrite(TickType_t wait){
@@ -28,7 +34,7 @@ std::unique_ptr<BLE::Server::Char::WriteMsg> BLE::Server::Char::getNextWrite(Tic
 	return writeQueue.get(wait);
 }
 
-void BLE::Server::Char::sendNotif(const std::vector<uint8_t>& data){
+void BLE::Server::Char::sendNotif(const uint8_t* data, size_t len){
 	if(!(props & (ESP_GATT_CHAR_PROP_BIT_NOTIFY))){
 		ESP_LOGW(TAG, "Sending notif, but NOTIFY property bit isn't set");
 		return;
@@ -36,7 +42,7 @@ void BLE::Server::Char::sendNotif(const std::vector<uint8_t>& data){
 
 	if(!notifyEn) return;
 
-	chr->sendNotif(data);
+	chr->sendNotif(data, len);
 }
 
 void BLE::Server::Char::establish(std::unique_ptr<BLE::Server::CharInfo> info){
@@ -54,12 +60,19 @@ void BLE::Server::Char::onRead(const esp_ble_gatts_cb_param_t::gatts_read_evt_pa
 }
 
 void BLE::Server::Char::onWrite(const esp_ble_gatts_cb_param_t::gatts_write_evt_param* param){
+	// CCCD writes (NOTIFY/INDICATE enable/disable) target the descriptor's own handle.
+	// Handle the descriptor branch fully and return — falling through would post the
+	// 2-byte CCCD value into writeQueue and surface it to the app as a data write.
 	if(!param->is_prep && param->len == 2 && param->handle == ctrlDescrHndl){
-		uint16_t val = param->value[1] << 8 | param->value[0];
+		const uint16_t val = param->value[1] << 8 | param->value[0];
 		if(val == 0x0001){
 			if(props & ESP_GATT_CHAR_PROP_BIT_NOTIFY){
 				ESP_LOGI(TAG, "Client enabling NOTIFY");
 				notifyEn = true;
+
+				if(onNotifRegCB){
+					onNotifRegCB(param->bda);
+				}
 			}else{
 				ESP_LOGW(TAG, "Client enabling NOTIFY, but prop bit isn't set");
 			}
@@ -70,12 +83,23 @@ void BLE::Server::Char::onWrite(const esp_ble_gatts_cb_param_t::gatts_write_evt_
 			}else{
 				ESP_LOGW(TAG, "Client enabling INDICATE, but prop bit isn't set");
 			}
+		}else if(val == 0x0000){
+			ESP_LOGI(TAG, "Client disabling NOTIFY/INDICATE");
+			notifyEn = false;
+			indicateEn = false;
+		}else{
+			ESP_LOGW(TAG, "Unknown CCCD value 0x%04x", val);
 		}
+
+		if(param->need_rsp){
+			chr->sendResp(param->conn_id, param->trans_id, ESP_GATT_OK);
+		}
+		return;
 	}
 
 	auto resp = [this, param](esp_gatt_status_t status, esp_gatt_rsp_t* resp = nullptr){
 		if(!param->need_rsp) return true;
-		return chr->sendResp(param->trans_id, status, resp) == ESP_OK;
+		return chr->sendResp(param->conn_id, param->trans_id, status, resp) == ESP_OK;
 	};
 
 	if(param->is_prep){
@@ -84,7 +108,7 @@ void BLE::Server::Char::onWrite(const esp_ble_gatts_cb_param_t::gatts_write_evt_
 			return;
 		}
 
-		if(param->offset + param->len > writeData.capacity()){
+		if(param->offset + param->len > MaxWriteData){
 			resp(ESP_GATT_INVALID_ATTR_LEN);
 			return;
 		}
@@ -104,14 +128,21 @@ void BLE::Server::Char::onWrite(const esp_ble_gatts_cb_param_t::gatts_write_evt_
 		writeData.insert(writeData.end(), param->value, param->value + param->len);
 	}else{
 		resp(ESP_GATT_OK);
-		writeQueue.post(std::make_unique<WriteMsg>(std::vector(param->value, param->value + param->len)), 0);
+		writeQueue.post(std::make_unique<WriteMsg>(PSRAMByteBuffer(param->value, param->value + param->len)), 0);
 	}
 }
 
 void BLE::Server::Char::onExecWrite(const esp_ble_gatts_cb_param_t::gatts_exec_write_evt_param* param){
 	if(writeData.empty()) return;
 
-	chr->sendResp(param->trans_id, ESP_GATT_OK);
-	writeQueue.post(std::make_unique<WriteMsg>(std::vector(writeData.cbegin(), writeData.cend())), 0);
+	chr->sendResp(param->conn_id, param->trans_id, ESP_GATT_OK);
+	writeQueue.post(std::make_unique<WriteMsg>(PSRAMByteBuffer(writeData.cbegin(), writeData.cend())), 0);
+	writeData.clear();
+}
+
+void BLE::Server::Char::onDisconnect(){
+	// CCCD state is per-connection; the peer must re-enable on reconnect, so drop our bookkeeping.
+	notifyEn = false;
+	indicateEn = false;
 	writeData.clear();
 }
