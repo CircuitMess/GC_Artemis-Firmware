@@ -87,6 +87,8 @@ void CallScreen::buildUI(){
 	lv_obj_set_style_border_width(*this, 1, 0);
 	lv_obj_set_style_border_opa(*this, LV_OPA_COVER, 0);
 	lv_obj_set_style_border_color(*this, settings->get().themeData.primaryColor, 0);
+	lv_obj_set_style_bg_opa(*this, LV_OPA_COVER, 0);
+	lv_obj_set_style_bg_color(*this, settings->get().themeData.backgroundColor, 0);
 
 	lv_obj_set_style_pad_all(*this, 0, 0);
 	lv_obj_set_style_pad_gap(*this, 5, 0);
