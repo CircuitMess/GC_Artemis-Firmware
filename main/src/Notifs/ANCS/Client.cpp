@@ -400,7 +400,7 @@ void ANCS::Client::processData(bool sendIncomplete){
 		// is not contiguous; assemble byte-by-byte).
 		auto& dst = needData.front().attrs[attrID];
 		dst.reserve(dst.size() + attrLen);
-		for(uint16_t k = 0; k < attrLen; k++){
+		for(uint32_t k = 0; k < attrLen; k++){
 			dst.push_back((char) dataQueue[k]);
 		}
 		dataQueue.erase(dataQueue.begin(), dataQueue.begin() + attrLen);
