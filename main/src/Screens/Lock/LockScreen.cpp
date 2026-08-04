@@ -109,6 +109,7 @@ void LockScreen::processInput(const Input::Data& evt){
 		return;
 	}
 
+	auto* settings = (Settings*) Services.get(Service::Settings);
 	if(skin->getMedia()->isActive()){
 		if(evt.action == Input::Data::Press){
 			if(evt.btn == Input::Alt){
@@ -116,9 +117,9 @@ void LockScreen::processInput(const Input::Data& evt){
 			}else if(evt.btn == Input::Select){
 				skin->getMedia()->playPause();
 			}else if(evt.btn == Input::Up){
-				skin->getMedia()->prev();
+				settings->get().screenRotate ? skin->getMedia()->next() : skin->getMedia()->prev();
 			}else if(evt.btn == Input::Down){
-				skin->getMedia()->next();
+				settings->get().screenRotate ? skin->getMedia()->prev() : skin->getMedia()->next();
 			}
 		}
 		return;
