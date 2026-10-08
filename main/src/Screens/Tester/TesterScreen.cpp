@@ -59,7 +59,7 @@ void TesterScreen::loop(){
 						return;
 					}
 				}
-			}else if(iosMode){
+			}else if(blocked){
 				free(evt.data);
 				return;
 			}else if(data->btn == Input::Select && data->action == Input::Data::Press){
@@ -120,13 +120,13 @@ void TesterScreen::buildUI(){
 	lv_obj_set_style_pad_all(content, 0, 0);
 	lv_obj_clear_flag(content, LV_OBJ_FLAG_SCROLLABLE);
 
-	onlyAndroidLabel = lv_label_create(*this);
-	lv_label_set_text(onlyAndroidLabel, "ONLY\nANDROID");
-	lv_obj_add_style(onlyAndroidLabel, textStyle, 0);
-	lv_obj_set_style_text_font(onlyAndroidLabel, &lv_font_unscii_16, 0);
-	lv_obj_set_style_text_align(onlyAndroidLabel, LV_TEXT_ALIGN_CENTER, 0);
-	lv_obj_add_flag(onlyAndroidLabel, LV_OBJ_FLAG_HIDDEN);
-	lv_obj_center(onlyAndroidLabel);
+	blockedLabel = lv_label_create(*this);
+	lv_label_set_text(blockedLabel, "NO\nPHONE");
+	lv_obj_add_style(blockedLabel, textStyle, 0);
+	lv_obj_set_style_text_font(blockedLabel, &lv_font_unscii_16, 0);
+	lv_obj_set_style_text_align(blockedLabel, LV_TEXT_ALIGN_CENTER, 0);
+	lv_obj_add_flag(blockedLabel, LV_OBJ_FLAG_HIDDEN);
+	lv_obj_center(blockedLabel);
 
 	lv_obj_t* title = lv_label_create(content);
 	lv_label_set_text(title, "TESTER");
@@ -198,16 +198,16 @@ void TesterScreen::buildUI(){
 }
 
 void TesterScreen::applyMode(){
-	if(content == nullptr || onlyAndroidLabel == nullptr){
+	if(content == nullptr || blockedLabel == nullptr){
 		return;
 	}
 
-	if(iosMode){
+	if(blocked){
 		lv_obj_add_flag(content, LV_OBJ_FLAG_HIDDEN);
-		lv_obj_clear_flag(onlyAndroidLabel, LV_OBJ_FLAG_HIDDEN);
+		lv_obj_clear_flag(blockedLabel, LV_OBJ_FLAG_HIDDEN);
 	}else{
 		lv_obj_clear_flag(content, LV_OBJ_FLAG_HIDDEN);
-		lv_obj_add_flag(onlyAndroidLabel, LV_OBJ_FLAG_HIDDEN);
+		lv_obj_add_flag(blockedLabel, LV_OBJ_FLAG_HIDDEN);
 	}
 }
 
@@ -277,19 +277,12 @@ void TesterScreen::updateSelector(){
 }
 
 void TesterScreen::updateStatus(){
-	if(statusLabel == nullptr){
+	if(statusLabel == nullptr || blockedLabel == nullptr){
 		return;
 	}
 
 	std::string status;
 	const Phone::PhoneType type = phone.getPhoneType();
-
-	const bool ios = type == Phone::PhoneType::IPhone;
-	if(ios != iosMode){
-		iosMode = ios;
-		applyMode();
-	}
-
 	if(type == Phone::PhoneType::Android){
 		status = "android";
 		const std::optional<uint8_t> battery = phone.getPhoneBattery();
@@ -307,6 +300,18 @@ void TesterScreen::updateStatus(){
 	}
 	statusCache = status;
 	lv_label_set_text(statusLabel, status.c_str());
+
+	if(type == Phone::PhoneType::IPhone){
+		lv_label_set_text(blockedLabel, "ONLY\nANDROID");
+	}else if(type == Phone::PhoneType::None){
+		lv_label_set_text(blockedLabel, "NO\nPHONE");
+	}
+
+	const bool nowBlocked = type != Phone::PhoneType::Android;
+	if(nowBlocked != blocked){
+		blocked = nowBlocked;
+		applyMode();
+	}
 }
 
 void TesterScreen::updateLog(){

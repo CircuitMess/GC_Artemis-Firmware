@@ -36,7 +36,7 @@ private:
 	LVStyle textStyle;
 
 	lv_obj_t* content = nullptr;
-	lv_obj_t* onlyAndroidLabel = nullptr;
+	lv_obj_t* blockedLabel = nullptr;
 	lv_obj_t* statusLabel = nullptr;
 	lv_obj_t* logHeader = nullptr;
 	lv_obj_t* logLabels[LogLines] = { nullptr };
@@ -56,7 +56,7 @@ private:
 	bool altHeld = false;
 	bool altModified = false;
 	bool paramMode = false;
-	bool iosMode = false;
+	bool blocked = false;
 	uint64_t lastPoll = 0;
 
 	void loop() override;
