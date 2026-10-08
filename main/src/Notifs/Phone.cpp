@@ -24,6 +24,8 @@ Phone::Phone(BLE::Server* server, BLE::Client* client) : ancs(client), ams(clien
 
 	mreg(&android);
 	mreg(&ams);
+
+	android.setOnBattery([this](uint8_t percent){ onBattery(percent); });
 }
 
 bool Phone::isConnected(){
@@ -74,9 +76,24 @@ void Phone::callReject(uint32_t uid){
 	auto notif = findNotif(uid);
 	if(notif == notifs.end()) return;
 	notifs.erase(notif);
-	if(current == &android){
+	if(current != nullptr){
 		current->actionNeg(uid);
 	}
+}
+
+void Phone::callAnswer(uint32_t uid){
+	std::deque<Notif>::iterator notif = findNotif(uid);
+	if(notif == notifs.end()){
+		return;
+	}
+	notifs.erase(notif);
+	if(current != nullptr){
+		current->actionPos(uid);
+	}
+}
+
+std::optional<uint8_t> Phone::getPhoneBattery() const{
+	return phoneBattery;
 }
 
 const MediaInfo& Phone::getMedia() const{
@@ -128,12 +145,14 @@ void Phone::onConnect(NotifSource* src){
 
 	currentMediaState = MediaState::Stopped;
 	currentMedia = {};
+	phoneBattery.reset();
 }
 
 void Phone::onDisconnect(NotifSource* src){
 	if(current != src) return;
 	Events::post(Facility::Phone, Event { .action = Event::Disconnected, .data = { .phoneType = getPhoneType() } });
 	current = nullptr;
+	phoneBattery.reset();
 
 	if(!notifs.empty()){
 		notifs.clear();
@@ -163,6 +182,14 @@ void Phone::onMediaInfo(const MediaInfo& media){
 void Phone::onMediaState(MediaState state){
 	currentMediaState = state;
 	Events::post(Facility::Phone, Event { .action = Event::MediaState, .data = { .mediaState = getMediaState() } });
+}
+
+void Phone::onBattery(uint8_t percent){
+	if(current != &android){
+		return;
+	}
+	phoneBattery = percent;
+	Events::post(Facility::Phone, Event { .action = Event::BatteryChanged, .data = { .battery = percent } });
 }
 
 void Phone::onAdd(Notif notif){
@@ -215,4 +242,8 @@ void Phone::findPhoneStop(){
 bool Phone::findPhoneActive(){
 	if(current != &android) return false;
 	return android.findPhoneActive();
+}
+
+Android& Phone::getAndroid(){
+	return android;
 }

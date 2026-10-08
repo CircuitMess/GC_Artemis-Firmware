@@ -21,6 +21,7 @@ private:
 
 	void onIgnore();
 	void onReject();
+	void onAnswer();
 
 	static constexpr uint32_t NotifInterval = 1000;
 	uint32_t notifTime;

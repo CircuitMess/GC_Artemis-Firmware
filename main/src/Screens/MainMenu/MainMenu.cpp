@@ -6,6 +6,7 @@
 #include "Screens/Theremin/Theremin.h"
 #include "Screens/PerseCtrl/PerseCtrlScreen.h"
 #include "Screens/Settings/SettingsScreen.h"
+#include "Screens/Tester/TesterScreen.h"
 #include "Util/stdafx.h"
 #include "LV_Interface/InputLVGL.h"
 #include "Screens/Lander/LunarLander.h"
@@ -92,7 +93,7 @@ MainMenu::MainMenu() : phone(*((Phone*) Services.get(Service::Phone))), queue(4)
 	}
 
 	//find my phone
-	lv_obj_add_event_cb(*items[0], [](lv_event_t* evt){
+	lv_obj_add_event_cb(*items[1], [](lv_event_t* evt){
 		auto menu = static_cast<MainMenu*>(evt->user_data);
 		if(menu->phone.findPhoneActive()){
 			menu->phone.findPhoneStop();
@@ -101,7 +102,7 @@ MainMenu::MainMenu() : phone(*((Phone*) Services.get(Service::Phone))), queue(4)
 		}
 	}, LV_EVENT_CLICKED, this);
 
-	lv_obj_add_event_cb(*items[0], [](lv_event_t* evt){
+	lv_obj_add_event_cb(*items[1], [](lv_event_t* evt){
 		auto menu = static_cast<MainMenu*>(evt->user_data);
 		if(menu->phone.findPhoneActive()){
 			menu->phone.findPhoneStop();
@@ -127,15 +128,16 @@ MainMenu::~MainMenu(){
 }
 
 void MainMenu::setupItemPaths(Theme theme){
-	ItemInfos[0].iconPath = THEMED_FILE(Menu, Find, theme);
-	ItemInfos[0].iconAltPath = THEMED_FILE(Menu, Find, theme);
-	ItemInfos[1].iconPath = THEMED_FILE(Menu, Lunar, theme);
-	ItemInfos[2].iconPath = THEMED_FILE(Menu, Level, theme);
-	ItemInfos[3].iconPath = THEMED_FILE(Menu, Theremin, theme);
-	ItemInfos[4].iconPath = THEMED_FILE(Menu, Connection, theme);
-	ItemInfos[4].iconAltPath = THEMED_FILE(Menu, Connection, theme);
-	ItemInfos[5].iconPath = THEMED_FILE(Menu, Rover, theme);
-	ItemInfos[6].iconPath = THEMED_FILE(Menu, Settings, theme);
+	ItemInfos[0].iconPath = THEMED_FILE(Menu, Settings, theme);
+	ItemInfos[1].iconPath = THEMED_FILE(Menu, Find, theme);
+	ItemInfos[1].iconAltPath = THEMED_FILE(Menu, Find, theme);
+	ItemInfos[2].iconPath = THEMED_FILE(Menu, Lunar, theme);
+	ItemInfos[3].iconPath = THEMED_FILE(Menu, Level, theme);
+	ItemInfos[4].iconPath = THEMED_FILE(Menu, Theremin, theme);
+	ItemInfos[5].iconPath = THEMED_FILE(Menu, Connection, theme);
+	ItemInfos[5].iconAltPath = THEMED_FILE(Menu, Connection, theme);
+	ItemInfos[6].iconPath = THEMED_FILE(Menu, Rover, theme);
+	ItemInfos[7].iconPath = THEMED_FILE(Menu, Settings, theme);
 }
 
 void MainMenu::resetMenuIndex(){
@@ -157,10 +159,10 @@ void MainMenu::onStarting(){
 	}
 
 	if(phone.getPhoneType() != Phone::PhoneType::Android){
-		lv_obj_add_flag(*items[0], LV_OBJ_FLAG_HIDDEN);
+		lv_obj_add_flag(*items[1], LV_OBJ_FLAG_HIDDEN);
 
-		if(lastIndex == 0){
-			lastIndex = 1;
+		if(lastIndex == 1){
+			lastIndex = 2;
 		}
 	}
 
@@ -179,7 +181,7 @@ void MainMenu::onStop(){
 void MainMenu::loop(){
 	statusBar->loop();
 
-	MenuItemAlt* find = (MenuItemAlt*) items[0];
+	MenuItemAlt* find = (MenuItemAlt*) items[1];
 	if(find->alt() && !phone.findPhoneActive()){
 		find->restore();
 	}
@@ -205,6 +207,7 @@ void MainMenu::onClick(){
 	lastIndex = index;
 
 	std::function<void()> launcher[] = {
+			[this](){ transition([](){ return std::make_unique<TesterScreen>(); }); },
 			[](){ },
 			[this](){ transition([](){ return std::make_unique<LunarLander>(); }); },
 			[this](){ transition([](){ return std::make_unique<Level>(); }); },
@@ -220,7 +223,7 @@ void MainMenu::onClick(){
 void MainMenu::handlePhoneChange(Phone::Event& event){
 	auto focused = lv_group_get_focused(inputGroup);
 	auto index = lv_obj_get_index(focused);
-	auto& findPhone = *items[0];
+	auto& findPhone = *items[1];
 	bool hiddenBefore = lv_obj_has_flag(findPhone, LV_OBJ_FLAG_HIDDEN);
 
 	if(event.action == Phone::Event::Connected && event.data.phoneType == Phone::PhoneType::Android){
@@ -230,9 +233,9 @@ void MainMenu::handlePhoneChange(Phone::Event& event){
 	}
 
 	if(hiddenBefore != lv_obj_has_flag(findPhone, LV_OBJ_FLAG_HIDDEN)){
-		if(!hiddenBefore && index == 0){
-			lv_obj_scroll_to_view(*items[1], LV_ANIM_OFF);
-			lv_group_focus_obj(*items[1]);
+		if(!hiddenBefore && index == 1){
+			lv_obj_scroll_to_view(*items[2], LV_ANIM_OFF);
+			lv_group_focus_obj(*items[2]);
 		}else{
 			lv_obj_scroll_to_view(*items[index], LV_ANIM_OFF);
 			lv_group_focus_obj(*items[index]);
@@ -249,9 +252,9 @@ void MainMenu::handleInput(Input::Data& event){
 }
 
 void MainMenu::setConnAlts(){
-	auto connEl = (MenuItemAlt*) items[4];
+	auto connEl = (MenuItemAlt*) items[5];
 
 	const auto connAlt = phone.getPhoneType() == Phone::PhoneType::None
-						 ? ItemInfos[4].iconAltPath : ItemInfos[4].iconPath;
+						 ? ItemInfos[5].iconAltPath : ItemInfos[5].iconPath;
 	connEl->setAltParams(connAlt, ConnDesc[(int) phone.getPhoneType()]);
 }

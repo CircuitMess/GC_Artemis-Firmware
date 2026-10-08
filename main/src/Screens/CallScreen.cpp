@@ -39,6 +39,12 @@ void CallScreen::onReject(){
 	transition([](){ return std::make_unique<LockScreen>(); });
 }
 
+void CallScreen::onAnswer(){
+	Phone* phone = (Phone*) Services.get(Service::Phone);
+	phone->callAnswer(notif.uid);
+	transition([](){ return std::make_unique<LockScreen>(); });
+}
+
 void CallScreen::loop(){
 	Event evt;
 	if(evts.get(evt, 0)){
@@ -141,7 +147,7 @@ void CallScreen::buildUI(){
 	lv_obj_add_style(btnIgnore, btnStylePress, LV_STATE_PRESSED);
 	lv_group_add_obj(inputGroup, btnIgnore);
 	auto labelIgnore = lv_label_create(btnIgnore);
-	lv_label_set_text(labelIgnore, "Ignore");
+	lv_label_set_text(labelIgnore, "IGNORE");
 
 	lv_obj_add_event_cb(btnIgnore, [](lv_event_t* e){
 		auto scr = (CallScreen*) e->user_data;
@@ -157,11 +163,27 @@ void CallScreen::buildUI(){
 	lv_obj_add_style(btnReject, btnStylePress, LV_STATE_PRESSED);
 	lv_group_add_obj(inputGroup, btnReject);
 	auto labelReject = lv_label_create(btnReject);
-	lv_label_set_text(labelReject, "Reject");
+	lv_label_set_text(labelReject, "REJECT");
 
 	lv_obj_add_event_cb(btnReject, [](lv_event_t* e){
 		auto scr = (CallScreen*) e->user_data;
 		scr->onReject();
+	}, LV_EVENT_CLICKED, this);
+
+	lv_obj_t* btnAnswer = lv_obj_create(btns);
+	lv_obj_clear_flag(btnAnswer, LV_OBJ_FLAG_SCROLLABLE);
+	lv_obj_add_flag(btnAnswer, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
+	lv_obj_set_size(btnAnswer, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+	lv_obj_add_style(btnAnswer, btnStyle, 0);
+	lv_obj_add_style(btnAnswer, btnStyleFocus, LV_STATE_FOCUSED);
+	lv_obj_add_style(btnAnswer, btnStylePress, LV_STATE_PRESSED);
+	lv_group_add_obj(inputGroup, btnAnswer);
+	lv_obj_t* labelAnswer = lv_label_create(btnAnswer);
+	lv_label_set_text(labelAnswer, "ANSWER");
+
+	lv_obj_add_event_cb(btnAnswer, [](lv_event_t* e){
+		CallScreen* scr = (CallScreen*) e->user_data;
+		scr->onAnswer();
 	}, LV_EVENT_CLICKED, this);
 
 	lv_group_set_wrap(inputGroup, false);

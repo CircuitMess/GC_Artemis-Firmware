@@ -35,6 +35,7 @@ public:
 	std::shared_ptr<Service> addService(esp_bt_uuid_t uuid);
 
 	void start();
+	void disconnect();
 
 	using ConnectCB = std::function<void(const esp_bd_addr_t)>;
 	using DisconnectCB = std::function<void(const esp_bd_addr_t)>;

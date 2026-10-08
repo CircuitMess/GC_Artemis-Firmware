@@ -20,11 +20,12 @@ public:
 
 	struct Event {
 		enum { Connected, Disconnected, Added, Changed, Removed, Cleared,
-		      MediaConnected, MediaDisconnected, MediaState, MediaInfo } action;
+		      MediaConnected, MediaDisconnected, MediaState, MediaInfo, BatteryChanged } action;
 		union {
 			struct { uint32_t id; } addChgRem;
 			PhoneType phoneType;
 			::MediaState mediaState;
+			uint8_t battery;
 		} data;
 	};
 
@@ -42,6 +43,9 @@ public:
 	Notif getCall();
 	void callIgnore(uint32_t uid);
 	void callReject(uint32_t uid);
+	void callAnswer(uint32_t uid);
+
+	std::optional<uint8_t> getPhoneBattery() const;
 
 	void doPos(uint32_t id);
 	void doNeg(uint32_t id);
@@ -59,6 +63,8 @@ public:
 	void findPhoneStop();
 	bool findPhoneActive();
 
+	Android& getAndroid();
+
 private:
 	ANCS::Client ancs;
 	AMS::Client ams;
@@ -71,6 +77,8 @@ private:
 	MediaInfo currentMedia;
 	MediaState currentMediaState = MediaState::Stopped;
 
+	std::optional<uint8_t> phoneBattery;
+
 	void onConnect(NotifSource* src);
 	void onDisconnect(NotifSource* src);
 
@@ -79,6 +87,8 @@ private:
 
 	void onMediaInfo(const MediaInfo& media);
 	void onMediaState(MediaState state);
+
+	void onBattery(uint8_t percent);
 
 	void onAdd(Notif notif);
 	void onModify(Notif notif);

@@ -21,6 +21,7 @@ BLE::UART::~UART(){
 }
 
 void BLE::UART::printf(const char* fmt, ...){
+	std::lock_guard<std::mutex> lock(txMut);
 	txBuf.resize(txBuf.capacity());
 
 	va_list argptr;
@@ -33,6 +34,7 @@ void BLE::UART::printf(const char* fmt, ...){
 }
 
 void BLE::UART::print(const std::vector<uint8_t>& data){
+	std::lock_guard<std::mutex> lock(txMut);
 	txChar->sendNotif(data);
 }
 

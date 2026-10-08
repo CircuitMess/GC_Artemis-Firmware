@@ -8,16 +8,29 @@
 #include "BLE/UART.h"
 #include "Util/PSRAMAllocator.h"
 #include <atomic>
+#include <functional>
 #include <string>
 #include <map>
 #include <unordered_map>
 #include <vector>
+#include <deque>
+#include <mutex>
+#include <optional>
 
 // Communication with Android devices via BLE UART
 class Android : public NotifSource, public MediaSource, private Threaded {
 public:
-	static constexpr const char* ProtocolVersion = "1";
+	static constexpr uint32_t ProtocolVersion = 2;
 	static constexpr const char* FirmwareVersion = "v2.1";
+	static constexpr size_t LogSize = 50;
+
+	struct LogEntry {
+		bool tx;
+		uint32_t deltaMs;
+		std::string line;
+	};
+
+	using BatteryCB = std::function<void(uint8_t percent)>;
 
 	Android(BLE::Server* server);
 	virtual ~Android();
@@ -34,6 +47,15 @@ public:
 	void findPhoneStop();
 	bool findPhoneActive();
 
+	void setOnBattery(BatteryCB onBattery);
+
+	void sendRaw(const std::string& line);
+	void dropConnection();
+	std::vector<LogEntry> getLog();
+	uint32_t getLogSeq();
+	std::optional<uint32_t> getLastCallId();
+	std::optional<uint32_t> getLastNotifId();
+
 private:
 	void loop() override;
 
@@ -44,6 +66,26 @@ private:
 
 	// Written from the BLE/BTC task (onConnect/onDisconnect), read from the Android worker task in loop().
 	std::atomic<bool> connected = false;
+
+	uint32_t appProtocolVersion = 0;
+
+	BatteryCB onBattery;
+
+	struct StoredLogEntry {
+		bool tx;
+		uint32_t deltaMs;
+		PSRAMString line;
+	};
+
+	std::mutex testMut;
+	std::deque<StoredLogEntry, PSRAMAllocator<StoredLogEntry>> lineLog;
+	std::atomic<uint32_t> logSeq = 0;
+	uint64_t lastLogTime = 0;
+	std::optional<uint32_t> lastCallId;
+	std::optional<uint32_t> lastNotifId;
+
+	void tx(const char* fmt, ...);
+	void logLine(bool isTx, const std::string& line);
 
 	void onConnect();
 	void onDisconnect();
@@ -62,11 +104,13 @@ private:
 	void handleFindPhoneStopNack();
 	void handleMediaState(const std::vector<std::string>& split_line);
 	void handleMediaInfo(const std::vector<std::string>& split_line);
+	void handleBattery(const std::vector<std::string>& split_line);
 
 	static std::vector<std::string> splitProtocolMsg(const std::string& s, char delim = ';');
 
 	void notifList();
 	void callReject(uint32_t uid);
+	void requestBattery();
 
 	std::unordered_set<uint32_t> callIds;
 

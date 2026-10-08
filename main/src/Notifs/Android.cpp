@@ -1,8 +1,11 @@
 #include "Android.h"
 #include "Util/Services.h"
+#include "Util/stdafx.h"
 #include "Services/Time.h"
 #include <esp_log.h>
 #include <cctype>
+#include <cstdlib>
+#include <cstdarg>
 #include <optional>
 #include <algorithm>
 
@@ -58,13 +61,15 @@ void Android::onConnect(){
 	NotifSource::connect();
 	MediaSource::connect();
 
-	uart.printf("time\n");
-	uart.printf("notifList\n");
+	tx("time\n");
+	tx("notifList\n");
+	requestBattery();
 }
 
 void Android::onDisconnect(){
 	if(!connected) return;
 	connected = false;
+	appProtocolVersion = 0;
 	findPhone = false;
 	callIds.clear();
 	rxBuf.clear();
@@ -76,7 +81,14 @@ void Android::onDisconnect(){
 void Android::actionPos(uint32_t uid){
 	if(!connected) return;
 
-	uart.printf("notifPos;%d\n", uid);
+	if(callIds.contains(uid)){
+		tx("callAnswer;%lu\n", uid);
+		callIds.erase(uid);
+		notifRemove(uid);
+		return;
+	}
+
+	tx("notifPos;%d\n", uid);
 }
 
 // notifNeg;<notifID>
@@ -84,31 +96,101 @@ void Android::actionNeg(uint32_t uid){
 	if(!connected) return;
 
 	if(callIds.contains(uid)){
-		uart.printf("callReject;%d\n", uid);
+		tx("callReject;%d\n", uid);
 		callIds.erase(uid);
 		notifRemove(uid);
 		return;
 	}
 
-	uart.printf("notifNeg;%d\n", uid);
+	tx("notifNeg;%d\n", uid);
 }
 
 void Android::findPhoneStart(){
 	if(!connected) return;
 	if(findPhone) return;
-	uart.printf("findPhoneStart\n");
+	tx("findPhoneStart\n");
 	findPhone = true;
 }
 
 void Android::findPhoneStop(){
 	if(!connected) return;
 	if(!findPhone) return;
-	uart.printf("findPhoneStop\n");
+	tx("findPhoneStop\n");
 	findPhone = false;
 }
 
 bool Android::findPhoneActive(){
 	return findPhone;
+}
+
+void Android::setOnBattery(BatteryCB onBattery){
+	Android::onBattery = std::move(onBattery);
+}
+
+void Android::sendRaw(const std::string& line){
+	tx("%s\n", line.c_str());
+}
+
+void Android::dropConnection(){
+	server->disconnect();
+}
+
+std::vector<Android::LogEntry> Android::getLog(){
+	std::lock_guard<std::mutex> lock(testMut);
+	std::vector<LogEntry> out;
+	out.reserve(lineLog.size());
+	for(const StoredLogEntry& entry : lineLog){
+		out.push_back(LogEntry{ .tx = entry.tx, .deltaMs = entry.deltaMs, .line = std::string(entry.line.c_str(), entry.line.size()) });
+	}
+	return out;
+}
+
+uint32_t Android::getLogSeq(){
+	return logSeq;
+}
+
+void Android::tx(const char* fmt, ...){
+	char buf[256];
+	va_list args;
+	va_start(args, fmt);
+	const int len = vsnprintf(buf, sizeof(buf), fmt, args);
+	va_end(args);
+
+	if(len <= 0){
+		return;
+	}
+
+	std::string line(buf, std::min((size_t) len, sizeof(buf) - 1));
+	while(!line.empty() && line.back() == '\n'){
+		line.pop_back();
+	}
+
+	logLine(true, line);
+	uart.printf("%s\n", line.c_str());
+}
+
+void Android::logLine(bool isTx, const std::string& line){
+	const uint64_t now = millis();
+
+	std::lock_guard<std::mutex> lock(testMut);
+	const uint32_t delta = lastLogTime == 0 ? 0 : (uint32_t) (now - lastLogTime);
+	lastLogTime = now;
+
+	lineLog.push_back(StoredLogEntry{ .tx = isTx, .deltaMs = delta, .line = PSRAMString(line.c_str(), line.size()) });
+	while(lineLog.size() > LogSize){
+		lineLog.pop_front();
+	}
+	logSeq++;
+}
+
+std::optional<uint32_t> Android::getLastCallId(){
+	std::lock_guard<std::mutex> lock(testMut);
+	return lastCallId;
+}
+
+std::optional<uint32_t> Android::getLastNotifId(){
+	std::lock_guard<std::mutex> lock(testMut);
+	return lastNotifId;
 }
 
 void Android::loop(){
@@ -134,6 +216,10 @@ void Android::loop(){
 }
 
 void Android::handleCommand(const std::string& line){
+	if(!line.empty()){
+		logLine(false, line);
+	}
+
 	const auto split_line = splitProtocolMsg(line);
 	if(split_line.empty()) return;
 	const auto& command = split_line[0];
@@ -220,6 +306,14 @@ void Android::handleCommand(const std::string& line){
 
 		handleMediaInfo(split_line);
 		return;
+	}else if(command == "battery"){
+		if(split_line.size() < 2){
+			ESP_LOGW(TAG, "Invalid battery command: %s", line.c_str());
+			return;
+		}
+
+		handleBattery(split_line);
+		return;
 	}else{
 		ESP_LOGW(TAG, "Unknown command: %s", line.c_str());
 		return;
@@ -228,14 +322,21 @@ void Android::handleCommand(const std::string& line){
 
 // hello;<protocolVersion>
 void Android::handleHello(const std::vector<std::string>& split_line){
-	const auto&  protocolVersion = split_line[1];
-	uart.printf("version;%s;%s\n", ProtocolVersion, FirmwareVersion);
-	if(protocolVersion != ProtocolVersion){
-		ESP_LOGW(TAG, "Connection failed! Protocol version mismatch: version %s, expected %s", protocolVersion.c_str(), ProtocolVersion);
-	}else{
-		ESP_LOGI(TAG, "Connected! Hello received, protocol version: %s", protocolVersion.c_str());
-		onConnect();
+	const uint32_t protocolVersion = std::strtoul(split_line[1].c_str(), nullptr, 10);
+	tx("version;%lu;%s\n", ProtocolVersion, FirmwareVersion);
+
+	if(protocolVersion == 0){
+		ESP_LOGW(TAG, "Connection failed! Invalid protocol version: %s", split_line[1].c_str());
+		return;
 	}
+
+	if(protocolVersion > ProtocolVersion){
+		ESP_LOGW(TAG, "App protocol version %lu is newer than device protocol version %lu", protocolVersion, ProtocolVersion);
+	}
+
+	appProtocolVersion = protocolVersion;
+	ESP_LOGI(TAG, "Connected! Hello received, protocol version: %lu", protocolVersion);
+	onConnect();
 }
 
 
@@ -252,6 +353,11 @@ void Android::handleNotifAdd(const std::vector<std::string>& split_line){
 			.category = mapNotifCategories(cat_val),
 	};
 	ESP_LOGI(TAG, "New notif ID %ld, cat %s, notifPos: %s, notifNeg: %s", notif.uid, split_line[6].c_str(), split_line[7].c_str(), split_line[8].c_str());
+
+	{
+		std::lock_guard<std::mutex> lock(testMut);
+		lastNotifId = id;
+	}
 
 	notifNew(notif);
 }
@@ -277,6 +383,12 @@ void Android::handleNotifModify(const std::vector<std::string>& split_line){
 	};
 
 	ESP_LOGI(TAG, "Mod notif ID %ld", notif.uid);
+
+	{
+		std::lock_guard<std::mutex> lock(testMut);
+		lastNotifId = id;
+	}
+
 	notifModify(notif);
 }
 
@@ -294,6 +406,12 @@ void Android::handleCallIncoming(const std::vector<std::string>& split_line){
 	};
 
 	callIds.insert(id);
+
+	{
+		std::lock_guard<std::mutex> lock(testMut);
+		lastCallId = id;
+	}
+
 	notifNew(notif);
 }
 
@@ -348,6 +466,22 @@ void Android::handleMediaState(const std::vector<std::string>& split_line){
 	mediaState(media_state);
 }
 
+// battery;<percent>
+void Android::handleBattery(const std::vector<std::string>& split_line){
+	if(split_line[1].empty()){
+		ESP_LOGW(TAG, "Battery command without percent");
+		return;
+	}
+
+	const unsigned long percentVal = std::strtoul(split_line[1].c_str(), nullptr, 10);
+	const uint8_t percent = (uint8_t) std::min<unsigned long>(percentVal, 100);
+	ESP_LOGI(TAG, "Phone battery: %d%%", percent);
+
+	if(onBattery){
+		onBattery(percent);
+	}
+}
+
 // mediaInfo;<title>;<artist>;<album>;<appID>
 void Android::handleMediaInfo(const std::vector<std::string>& split_line){
 	const auto& title = split_line[1];
@@ -369,25 +503,25 @@ void Android::handleMediaInfo(const std::vector<std::string>& split_line){
 // mediaPlay
 void Android::mediaPlay(){
 	if(!connected) return;
-	uart.printf("mediaPlay\n");
+	tx("mediaPlay\n");
 }
 
 // mediaPause
 void Android::mediaPause(){
 	if(!connected) return;
-	uart.printf("mediaPause\n");
+	tx("mediaPause\n");
 }
 
 // mediaNext
 void Android::mediaNext(){
 	if(!connected) return;
-	uart.printf("mediaNext\n");
+	tx("mediaNext\n");
 }
 
 // mediaPrev
 void Android::mediaPrev(){
 	if(!connected) return;
-	uart.printf("mediaPrev\n");
+	tx("mediaPrev\n");
 }
 
 std::vector<std::string> Android::splitProtocolMsg(const std::string& s, char delim){
@@ -449,12 +583,18 @@ std::vector<std::string> Android::splitProtocolMsg(const std::string& s, char de
 
 void Android::notifList(){
 	if(!connected) return;
-	uart.printf("notifList\n");
+	tx("notifList\n");
 }
 
 void Android::callReject(uint32_t uid){
 	if(!connected) return;
-	uart.printf("callReject;%d\n", uid);
+	tx("callReject;%d\n", uid);
+}
+
+void Android::requestBattery(){
+	if(!connected) return;
+	if(appProtocolVersion < 2) return;
+	tx("battery\n");
 }
 
 Notif::Category Android::mapNotifCategories(const uint32_t category_val){

@@ -32,7 +32,8 @@ private:
 		const char* iconPath = nullptr;
 		const char* iconAltPath = nullptr;
 	};
-	ItemInfo ItemInfos[7] = {
+	ItemInfo ItemInfos[8] = {
+			{ "BLE tester",       nullptr,                                File::Menu::Theme1::Settings,   nullptr },
 			{ "Find my phone",    "Ringing phone...",                     File::Menu::Theme1::Find,       File::Menu::Theme1::Find },
 			{ "Lunar lander",	  nullptr,                  			  File::Menu::Theme1::Lunar, 	  nullptr },
 			{ "Level",            nullptr,                                File::Menu::Theme1::Level,      nullptr },

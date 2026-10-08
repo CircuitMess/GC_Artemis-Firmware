@@ -41,6 +41,13 @@ std::shared_ptr<BLE::Server::Service> BLE::Server::addService(esp_bt_uuid_t uuid
 	return srv;
 }
 
+void BLE::Server::disconnect(){
+	if(!iface || !con){
+		return;
+	}
+	esp_ble_gatts_close(iface.hndl, con.hndl);
+}
+
 void BLE::Server::start(){
 	if(iface.appID != 0xff) return;
 	iface.appID = AppID;

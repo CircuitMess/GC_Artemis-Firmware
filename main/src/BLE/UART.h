@@ -5,6 +5,7 @@
 #include "Util/Threaded.h"
 #include "Util/PSRAMAllocator.h"
 #include <vector>
+#include <mutex>
 
 namespace BLE {
 
@@ -33,6 +34,7 @@ private:
 	std::shared_ptr<BLE::Server::Char> rxChar;
 
 
+	std::mutex txMut;
 	PSRAMByteBuffer txBuf;
 	PSRAMByteBuffer rxBuf;
 	using Line = PSRAMByteBuffer;
